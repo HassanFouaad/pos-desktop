@@ -6,8 +6,10 @@ import {
   SyncShapeToTableOptions,
   SyncShapeToTableResult,
 } from "@electric-sql/pglite-sync";
+import { live } from "@electric-sql/pglite/live";
+import { drizzle } from "drizzle-orm/pglite";
+import { migrate } from "drizzle-orm/pglite/migrator";
 import { config } from "../config";
-
 // Singleton instance of the database
 let db:
   | (PGlite & {
@@ -27,6 +29,7 @@ let db:
       };
     })
   | null = null;
+let migrated = false;
 
 export const getDb = async (): Promise<
   | (PGlite & {
@@ -55,13 +58,20 @@ export const getDb = async (): Promise<
   db = await PGlite.create({
     extensions: {
       electric: electricSync(),
+      live,
     },
   });
+
+  if (!migrated) {
+    const migrationDb = drizzle(db);
+    await migrate(migrationDb, { migrationsFolder: "./src/db/migrations" });
+    migrated = true;
+  }
 
   return db;
 };
 
-export const startSync = async (accessToken: string) => {
+export const startSync = async () => {
   if (!db) {
     throw new Error("Database not initialized. Call getDb() first.");
   }

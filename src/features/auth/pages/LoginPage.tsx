@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDb, startSync } from "../../../db";
+import { getDb, startSync } from "../../../lib/database";
 import { setAuthTokens, setCurrentUser } from "../../../store/authSlice";
 import { useAppDispatch } from "../../../store/hooks";
 import { LoginCredentials, login } from "../api/auth";
@@ -22,7 +22,7 @@ export function LoginPage() {
       dispatch(setCurrentUser(authResponse.user));
 
       await getDb();
-      await startSync(authResponse.accessToken);
+      await startSync();
 
       navigate("/");
     } catch (err) {
