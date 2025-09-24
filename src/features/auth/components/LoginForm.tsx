@@ -48,13 +48,25 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
             margin="normal"
             required
             fullWidth
-            id="email"
-            label="Email Address"
-            autoComplete="email"
+            id="tenantSubDomain"
+            label="Tenant Sub Domain"
+            autoComplete="tenantSubDomain"
             autoFocus
-            {...register("email")}
-            error={!!errors.email}
-            helperText={errors.email?.message}
+            {...register("tenantSubDomain")}
+            error={!!errors.tenantSubDomain}
+            helperText={errors.tenantSubDomain?.message}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="username"
+            label="username Address"
+            autoComplete="username"
+            autoFocus
+            {...register("username")}
+            error={!!errors.username}
+            helperText={errors.username?.message}
           />
           <TextField
             margin="normal"

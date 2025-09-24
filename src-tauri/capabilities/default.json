@@ -5,6 +5,16 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "opener:default"
+    "opener:default",
+    "http:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://*.tauri.app" },
+        { "url": "http://localhost:3000" },
+        { "url": "http://localhost:3007" },
+        { "url": "http://localhost:1420" }
+      ]
+    }
   ]
 }

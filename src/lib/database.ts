@@ -7,8 +7,7 @@ import {
   SyncShapeToTableResult,
 } from "@electric-sql/pglite-sync";
 import { live } from "@electric-sql/pglite/live";
-import { drizzle } from "drizzle-orm/pglite";
-import { migrate } from "drizzle-orm/pglite/migrator";
+import { fetch } from "@tauri-apps/plugin-http";
 import { config } from "../config";
 // Singleton instance of the database
 let db:
@@ -63,8 +62,6 @@ export const getDb = async (): Promise<
   });
 
   if (!migrated) {
-    const migrationDb = drizzle(db);
-    await migrate(migrationDb, { migrationsFolder: "./src/db/migrations" });
     migrated = true;
   }
 
@@ -83,6 +80,7 @@ export const startSync = async () => {
         shape: {
           url: config.ELECTRIC_URL,
           params: { table: "stores" },
+          fetchClient: fetch,
         },
         table: "stores",
         primaryKey: ["id"],
