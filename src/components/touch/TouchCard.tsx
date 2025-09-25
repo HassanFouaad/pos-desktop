@@ -15,14 +15,14 @@ const StyledCard = styled(Card)(({ theme }) => ({
   flexDirection: "column",
   height: "100%",
   overflow: "hidden",
-  borderRadius: theme.spacing(1.5),
-  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-  transition: "transform 0.2s, box-shadow 0.2s",
+  // borderRadius is handled by the theme
+  // boxShadow is handled by the theme
+  transition: "transform 0.2s, background-color 0.2s",
   "&:active": {
     transform: "scale(0.98)",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
   },
   position: "relative",
+  backgroundColor: "transparent",
 }));
 
 const CardBadge = styled(Box)(({ theme }) => ({
@@ -85,7 +85,7 @@ export const TouchCard = ({
         pointerEvents: disabled ? "none" : "auto",
       }}
     >
-      <CardActionArea onClick={onClick} disabled={disabled} sx={{ height: "100%" }}>
+      <CardActionArea onClick={onClick} disabled={disabled} sx={{ height: "100%", borderRadius: 2 }}>
         {/* Badge (if provided) */}
         {badge && <CardBadge>{badge}</CardBadge>}
 

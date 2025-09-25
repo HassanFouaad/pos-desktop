@@ -13,7 +13,8 @@ const NumpadContainer = styled(Paper)(({ theme }) => ({
   flexDirection: "column",
   gap: theme.spacing(2),
   borderRadius: theme.spacing(2),
-  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+  // boxShadow is handled by theme
+  backgroundColor: theme.palette.background.paper,
   width: "100%",
   maxWidth: "400px",
 }));
@@ -113,47 +114,47 @@ export const TouchNumpad = ({
 
       <ButtonGrid>
         {/* First row */}
-        <TouchButton variant="outlined" onClick={() => handleButtonClick("7")}>
+        <TouchButton variant="text" onClick={() => handleButtonClick("7")}>
           7
         </TouchButton>
-        <TouchButton variant="outlined" onClick={() => handleButtonClick("8")}>
+        <TouchButton variant="text" onClick={() => handleButtonClick("8")}>
           8
         </TouchButton>
-        <TouchButton variant="outlined" onClick={() => handleButtonClick("9")}>
+        <TouchButton variant="text" onClick={() => handleButtonClick("9")}>
           9
         </TouchButton>
 
         {/* Second row */}
-        <TouchButton variant="outlined" onClick={() => handleButtonClick("4")}>
+        <TouchButton variant="text" onClick={() => handleButtonClick("4")}>
           4
         </TouchButton>
-        <TouchButton variant="outlined" onClick={() => handleButtonClick("5")}>
+        <TouchButton variant="text" onClick={() => handleButtonClick("5")}>
           5
         </TouchButton>
-        <TouchButton variant="outlined" onClick={() => handleButtonClick("6")}>
+        <TouchButton variant="text" onClick={() => handleButtonClick("6")}>
           6
         </TouchButton>
 
         {/* Third row */}
-        <TouchButton variant="outlined" onClick={() => handleButtonClick("1")}>
+        <TouchButton variant="text" onClick={() => handleButtonClick("1")}>
           1
         </TouchButton>
-        <TouchButton variant="outlined" onClick={() => handleButtonClick("2")}>
+        <TouchButton variant="text" onClick={() => handleButtonClick("2")}>
           2
         </TouchButton>
-        <TouchButton variant="outlined" onClick={() => handleButtonClick("3")}>
+        <TouchButton variant="text" onClick={() => handleButtonClick("3")}>
           3
         </TouchButton>
 
         {/* Fourth row */}
         {allowDecimals ? (
-          <TouchButton variant="outlined" onClick={() => handleButtonClick(".")}>
+          <TouchButton variant="text" onClick={() => handleButtonClick(".")}>
             .
           </TouchButton>
         ) : (
           <Box /> // Empty space if decimals not allowed
         )}
-        <TouchButton variant="outlined" onClick={() => handleButtonClick("0")}>
+        <TouchButton variant="text" onClick={() => handleButtonClick("0")}>
           0
         </TouchButton>
         <IconButton

@@ -14,14 +14,13 @@ import { ApiResponse } from "./types";
 class TauriHttpClient {
   private static instance: TauriHttpClient;
   private baseUrl: string;
-  private timeout: number;
+  
   private refreshPromise: Promise<string | null> | null = null;
   private isRefreshing = false;
 
   private constructor() {
     const config = getConfig();
     this.baseUrl = config.apiBaseUrl;
-    this.timeout = config.timeout;
   }
 
   /**
@@ -46,7 +45,10 @@ class TauriHttpClient {
     const token = getLocalStorage("accessToken");
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
+      headers['x-sync-token'] = token;
     }
+
+    
 
     return headers;
   }

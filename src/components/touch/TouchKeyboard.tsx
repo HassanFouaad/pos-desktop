@@ -11,8 +11,8 @@ import { TouchButton } from "./TouchButton";
 const KeyboardContainer = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(1.5),
   borderRadius: theme.spacing(2),
-  backgroundColor: theme.palette.grey[100],
-  boxShadow: "0 4px 8px rgba(0,0,0,0.12)",
+  backgroundColor: theme.palette.background.paper,
+  // boxShadow is handled by theme
   width: "100%",
   maxWidth: "900px",
   margin: "0 auto",
@@ -33,7 +33,7 @@ const Key = styled(TouchButton)(({ theme }) => ({
   fontSize: "1rem",
   fontWeight: "normal",
   margin: "2px",
-  borderRadius: theme.spacing(0.5),
+  // borderRadius is inherited from theme
 }));
 
 // Define keyboard layouts
@@ -108,7 +108,7 @@ export const TouchKeyboard = ({
       {/* Number row */}
       <KeyboardRow>
         {QWERTY_LAYOUT[0].map((key) => (
-          <Key key={key} variant="outlined" onClick={() => handleKeyPress(key)}>
+          <Key key={key} variant="text" onClick={() => handleKeyPress(key)}>
             {key}
           </Key>
         ))}
@@ -117,7 +117,7 @@ export const TouchKeyboard = ({
       {/* First letter row */}
       <KeyboardRow>
         {QWERTY_LAYOUT[1].map((key) => (
-          <Key key={key} variant="outlined" onClick={() => handleKeyPress(key)}>
+          <Key key={key} variant="text" onClick={() => handleKeyPress(key)}>
             {capsLock ? key.toUpperCase() : key}
           </Key>
         ))}
@@ -126,7 +126,7 @@ export const TouchKeyboard = ({
       {/* Second letter row */}
       <KeyboardRow>
         <Key
-          variant={capsLock ? "contained" : "outlined"}
+          variant={capsLock ? "contained" : "text"}
           color={capsLock ? "primary" : "inherit"}
           onClick={() => handleKeyPress("capslock")}
           sx={{ flex: 1.5 }}
@@ -134,7 +134,7 @@ export const TouchKeyboard = ({
           Caps
         </Key>
         {QWERTY_LAYOUT[2].map((key) => (
-          <Key key={key} variant="outlined" onClick={() => handleKeyPress(key)}>
+          <Key key={key} variant="text" onClick={() => handleKeyPress(key)}>
             {capsLock ? key.toUpperCase() : key}
           </Key>
         ))}
@@ -143,12 +143,12 @@ export const TouchKeyboard = ({
       {/* Third letter row */}
       <KeyboardRow>
         {QWERTY_LAYOUT[3].map((key) => (
-          <Key key={key} variant="outlined" onClick={() => handleKeyPress(key)}>
+          <Key key={key} variant="text" onClick={() => handleKeyPress(key)}>
             {capsLock ? key.toUpperCase() : key}
           </Key>
         ))}
         <Key
-          variant="outlined"
+          variant="text"
           color="error"
           onClick={() => handleKeyPress("backspace")}
           sx={{ flex: 1.5 }}
@@ -160,12 +160,12 @@ export const TouchKeyboard = ({
       {/* Special keys row */}
       <KeyboardRow>
         {getSpecialKeys().map((key) => (
-          <Key key={key} variant="outlined" onClick={() => handleKeyPress(key)}>
+          <Key key={key} variant="text" onClick={() => handleKeyPress(key)}>
             {key}
           </Key>
         ))}
         <Key
-          variant="outlined"
+          variant="text"
           onClick={() => handleKeyPress("space")}
           sx={{ flex: mode === "email" ? 3 : 6 }}
         >

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDb, startSync } from "../../../lib/database";
+import { startSync } from "../../../db/database";
 import { setAuthTokens, setCurrentUser } from "../../../store/authSlice";
 import { useAppDispatch } from "../../../store/hooks";
-import { LoginCredentials, login } from "../api/auth";
+import { LoginCredentials } from "../api/auth";
 import { LoginForm } from "../components/LoginForm";
+import { authService } from "../services/auth.service";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -16,18 +17,25 @@ export function LoginPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const authResponse = await login(data);
+      const user = await authService.loginUser(data);
 
-      dispatch(setAuthTokens({ accessToken: authResponse.accessToken }));
-      dispatch(setCurrentUser(authResponse.user));
+      // Note: In offline mode, accessToken might not be available,
+      // but the app should be designed to handle this gracefully.
+      dispatch(
+        setAuthTokens({
+          accessToken: localStorage.getItem("accessToken") || "",
+        })
+      );
+      dispatch(setCurrentUser(user));
 
-      await getDb();
       await startSync();
 
       navigate("/");
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
-      setError("Failed to sign in. Please check your credentials.");
+      setError(
+        err.message || "Failed to sign in. Please check your credentials."
+      );
       console.error(err);
     } finally {
       setIsLoading(false);

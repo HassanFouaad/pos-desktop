@@ -1,21 +1,14 @@
+import { ArrowBack as BackIcon } from "@mui/icons-material";
 import {
   AppBar,
   Box,
-  Drawer,
   IconButton,
   Stack,
   styled,
   Toolbar,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from "@mui/material";
-import {
-  Menu as MenuIcon,
-  Close as CloseIcon,
-  ArrowBack as BackIcon,
-} from "@mui/icons-material";
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
 // Styled components
@@ -30,42 +23,34 @@ const PosContainer = styled(Box)(({ theme }) => ({
 
 const PosAppBar = styled(AppBar)(({ theme }) => ({
   zIndex: theme.zIndex.drawer + 1,
-  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
 }));
 
 const MainContent = styled(Box)(({ theme }) => ({
   flexGrow: 1,
+
   overflowY: "auto",
+
   padding: theme.spacing(2),
+
   [theme.breakpoints.down("sm")]: {
     padding: theme.spacing(1),
   },
 }));
 
-const NavDrawer = styled(Drawer)(({ theme }) => ({
-  width: 280,
-  flexShrink: 0,
-  "& .MuiDrawer-paper": {
-    width: 280,
-    boxSizing: "border-box",
-    backgroundColor: theme.palette.background.paper,
-  },
-}));
-
 const BottomActions = styled(Box)(({ theme }) => ({
-  backgroundColor: theme.palette.background.paper,
-  boxShadow: "0 -2px 8px rgba(0,0,0,0.1)",
-  padding: theme.spacing(2),
+  backgroundColor: "transparent",
+  padding: theme.spacing(0),
   zIndex: 10,
+  position: "fixed",
+  bottom: 0,
+  width: "100%",
 }));
 
-// Props interface
 export interface POSLayoutModernProps {
   children: ReactNode;
   title?: string;
   showBackButton?: boolean;
   bottomActions?: ReactNode;
-  sidebarContent?: ReactNode;
   appBarContent?: ReactNode;
 }
 
@@ -74,24 +59,13 @@ export const POSLayoutModern = ({
   title = "Modern POS",
   showBackButton = false,
   bottomActions,
-  sidebarContent,
   appBarContent,
 }: POSLayoutModernProps) => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
 
   const handleBackNavigation = () => {
     navigate(-1);
   };
-
-  const toggleDrawer = () => {
-    setDrawerOpen(!drawerOpen);
-  };
-
-  // Only show drawer when sidebar content is provided
-  const showDrawer = !!sidebarContent;
 
   return (
     <PosContainer>
@@ -108,19 +82,7 @@ export const POSLayoutModern = ({
             >
               <BackIcon />
             </IconButton>
-          ) : (
-            showDrawer && (
-              <IconButton
-                edge="start"
-                color="inherit"
-                aria-label="menu"
-                onClick={toggleDrawer}
-                sx={{ mr: 2 }}
-              >
-                {drawerOpen ? <CloseIcon /> : <MenuIcon />}
-              </IconButton>
-            )
-          )}
+          ) : null}
 
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             {title}
@@ -131,29 +93,11 @@ export const POSLayoutModern = ({
         </Toolbar>
       </PosAppBar>
 
-      {/* Main Content with optional Drawer */}
       <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
-        {/* Side Drawer */}
-        {showDrawer && (
-          <NavDrawer
-            variant={isMobile ? "temporary" : "persistent"}
-            open={isMobile ? drawerOpen : true}
-            onClose={toggleDrawer}
-          >
-            <Toolbar /> {/* Spacer to match AppBar height */}
-            {sidebarContent}
-          </NavDrawer>
-        )}
-
-        {/* Main Content Area */}
-        <MainContent
-          sx={{
-            width: showDrawer && !isMobile ? "calc(100% - 280px)" : "100%",
-          }}
-        >
+        <MainContent>
           <Stack
             direction="column"
-            sx={{ height: "100%", pb: bottomActions ? 8 : 0 }}
+            sx={{ height: 1, overflowY: "hidden", overflowX: "hidden" }}
           >
             {children}
           </Stack>
@@ -161,17 +105,7 @@ export const POSLayoutModern = ({
       </Box>
 
       {/* Bottom Action Bar (if provided) */}
-      {bottomActions && (
-        <BottomActions
-          sx={{
-            position: "fixed",
-            bottom: 0,
-            width: "100%",
-          }}
-        >
-          {bottomActions}
-        </BottomActions>
-      )}
+      {bottomActions && <BottomActions>{bottomActions}</BottomActions>}
     </PosContainer>
   );
 };

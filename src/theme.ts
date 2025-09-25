@@ -1,233 +1,262 @@
-import { createTheme, responsiveFontSizes } from "@mui/material/styles";
-import { deepmerge } from "@mui/utils";
+import { createTheme, responsiveFontSizes, ThemeOptions } from "@mui/material/styles";
 
-// Define the base theme
-const baseTheme = createTheme({
-  palette: {
-    primary: {
-      main: "#3a36db", // Slightly more vibrant blue
-      light: "#6c63ff",
-      dark: "#2a28a8",
-    },
-    secondary: {
-      main: "#00b894", // Fresh mint green
-      light: "#55efc4",
-      dark: "#00856a",
-    },
-    error: {
-      main: "#ff5252", // Bright red
-    },
-    warning: {
-      main: "#ffa726", // Orange
-    },
-    success: {
-      main: "#00c853", // Green
-    },
-    background: {
-      default: "#f8f9fa",
-      paper: "#ffffff",
-    },
-    text: {
-      primary: "#212529",
-      secondary: "#495057",
-    },
-  },
-  shape: {
-    borderRadius: 12, // Larger border radius for touch-friendly UI
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h1: {
-      fontSize: '2.5rem',
-      fontWeight: 700,
-    },
-    h2: {
-      fontSize: '2.2rem',
-      fontWeight: 700,
-    },
-    h3: {
-      fontSize: '1.8rem',
-      fontWeight: 600,
-    },
-    h4: {
-      fontSize: '1.6rem',
-      fontWeight: 600,
-    },
-    h5: {
-      fontSize: '1.4rem',
-      fontWeight: 500,
-    },
-    h6: {
-      fontSize: '1.2rem',
-      fontWeight: 500,
-    },
-    body1: {
-      fontSize: '1rem',
-    },
-    body2: {
-      fontSize: '0.9rem',
-    },
-    button: {
-      textTransform: 'none', // No uppercase for buttons
-      fontWeight: 500,
-    },
-  },
-  spacing: 8, // Base spacing unit
-});
 
-// Create a touch-optimized theme by extending the base theme
-const touchTheme = createTheme(deepmerge(baseTheme, {
-  components: {
-    // Touch-friendly button styles
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          minWidth: "100px",
-          minHeight: "56px", // Larger touch target (min 48px recommended)
-          padding: "12px 24px",
-          borderRadius: "12px",
-          fontSize: "1rem",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-          textTransform: "none",
-          "&:active": {
-            transform: "scale(0.98)",
-          },
-        },
-        sizeLarge: {
-          minHeight: "64px",
-          fontSize: "1.2rem",
-        },
-        containedPrimary: {
-          background: "linear-gradient(45deg, #3a36db 30%, #6c63ff 90%)",
-        },
+// Define the color palettes for light and dark themes
+const lightPalette = {
+  primary: {
+    main: "#3a36db",
+    light: "#6c63ff",
+    dark: "#2a28a8",
+    contrastText: "#ffffff",
+  },
+  secondary: {
+    main: "#00b894",
+    light: "#55efc4",
+    dark: "#00856a",
+    contrastText: "#ffffff",
+  },
+  background: {
+    default: "#f8f9fa",
+    paper: "#ffffff",
+  },
+  text: {
+    primary: "#212529",
+    secondary: "#495057",
+  },
+  action: {
+    hover: 'rgba(58, 54, 219, 0.08)', // Light primary hover for light theme
+    disabled: 'rgba(0, 0, 0, 0.26)',
+  },
+};
+
+const darkPalette = {
+  primary: {
+    main: "#6c63ff",
+    light: "#8a84ff",
+    dark: "#3a36db",
+    contrastText: "#ffffff",
+  },
+  secondary: {
+    main: "#55efc4",
+    light: "#8afff7",
+    dark: "#00b894",
+    contrastText: "#000000",
+  },
+  background: {
+    default: "#121212",
+    paper: "#1e1e1e",
+  },
+  text: {
+    primary: "#e0e0e0",
+    secondary: "#a0a0a0",
+  },
+  action: {
+    hover: 'rgba(108, 99, 255, 0.12)', // Lighter primary hover for dark theme
+    disabled: 'rgba(255, 255, 255, 0.3)',
+  },
+};
+
+// Function to create the theme based on the mode (light/dark)
+export const getTheme = (mode: 'light' | 'dark'): ThemeOptions => {
+  const palette = mode === 'light' ? lightPalette : darkPalette;
+
+  return {
+    palette: {
+      mode,
+      ...palette,
+      error: {
+        main: "#ff5252",
+      },
+      warning: {
+        main: "#ffa726",
+      },
+      success: {
+        main: "#00c853",
+      },
+      action: palette.action,
+    },
+    shape: {
+      borderRadius: 12,
+    },
+    typography: {
+      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+      h1: { fontSize: '2.5rem', fontWeight: 700 },
+      h2: { fontSize: '2.2rem', fontWeight: 700 },
+      h3: { fontSize: '1.8rem', fontWeight: 600 },
+      h4: { fontSize: '1.6rem', fontWeight: 600 },
+      h5: { fontSize: '1.4rem', fontWeight: 500 },
+      h6: { fontSize: '1.2rem', fontWeight: 500 },
+      body1: { fontSize: '1rem' },
+      body2: { fontSize: '0.9rem' },
+      button: {
+        textTransform: 'none',
+        fontWeight: 500,
       },
     },
-    // Touch-friendly text field styles
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          marginBottom: "16px",
-          "& .MuiInputBase-root": {
-            minHeight: "56px", // Larger touch target
-            fontSize: "1.1rem",
+    spacing: 8,
+    components: {
+      // Flatten all Paper components
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            elevation: 0,
+            boxShadow: "none",
+            border: "none",
+            backgroundImage: "none", // Ensure no gradient backgrounds are inherited
           },
-          "& .MuiInputLabel-root": {
-            fontSize: "1.1rem",
-          },
-          "& .MuiOutlinedInput-root": {
+        },
+      },
+      // Modern, unified button styles
+      MuiButton: {
+        defaultProps: {
+          disableElevation: true,
+        },
+        styleOverrides: {
+          root: {
+            minWidth: "100px",
+            minHeight: "56px",
+            padding: "12px 24px",
             borderRadius: "12px",
-            "& fieldset": {
-              borderWidth: "1px",
+            fontSize: "1rem",
+            textTransform: "none",
+            "&:active": {
+              transform: "scale(0.98)",
+            },
+          },
+          containedPrimary: {
+            color: palette.primary.contrastText,
+            "& .MuiSvgIcon-root": {
+              color: palette.primary.contrastText,
+            },
+          },
+          text: {
+            color: palette.text.secondary,
+            "& .MuiSvgIcon-root": {
+              color: palette.text.secondary,
+            },
+          },
+          textPrimary: {
+            color: palette.primary.main,
+            "& .MuiSvgIcon-root": {
+              color: palette.primary.main,
+            },
+          }
+        },
+      },
+      // Unified icon button styles (no circles)
+      MuiIconButton: {
+        styleOverrides: {
+          root: {
+            width: "56px",
+            height: "56px",
+            borderRadius: "12px", // Same as regular buttons
+            color: palette.text.secondary,
+            "&.Mui-disabled": {
+              color: palette.action?.disabled,
+            },
+            "&:hover": {
+              backgroundColor: palette.action?.hover,
+            },
+          },
+          colorPrimary: {
+            color: palette.primary.main,
+            "&:hover": {
+              backgroundColor: palette.action.hover,
             },
           },
         },
       },
-    },
-    // Touch-friendly icon button styles
-    MuiIconButton: {
-      styleOverrides: {
-        root: {
-          width: "56px", // Larger touch target
-          height: "56px", // Larger touch target
-          borderRadius: "12px",
-        },
-        sizeLarge: {
-          width: "64px",
-          height: "64px",
+      // Flatten cards
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            borderRadius: "16px",
+            boxShadow: "none",
+            backgroundColor: 'transparent',
+          },
         },
       },
-    },
-    // Touch-friendly cards
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: "16px",
-          boxShadow: "0 4px 8px rgba(0,0,0,0.05)",
+      // AppBar should be flat
+      MuiAppBar: {
+        styleOverrides: {
+          root: {
+            boxShadow: "none",
+            backgroundImage: "none",
+            backgroundColor: palette.background.default, // Blends in with background
+            color: palette.text.primary
+          },
         },
       },
-    },
-    // Touch-friendly list items
-    MuiListItem: {
-      styleOverrides: {
-        root: {
-          padding: "16px 24px", // More padding for touch targets
-          "&.MuiListItem-dense": {
-            padding: "12px 24px",
+      // Touch-friendly text field styles
+      MuiTextField: {
+        styleOverrides: {
+          root: {
+            "& .MuiInputBase-root": {
+              minHeight: "56px",
+              fontSize: "1.1rem",
+              borderRadius: "12px",
+            },
+            "& .MuiInputLabel-root": {
+              fontSize: "1.1rem",
+            },
+            "& .MuiOutlinedInput-root": {
+              "& fieldset": {
+                borderWidth: "1px",
+              },
+            },
+          },
+        },
+      },
+      // Other components...
+      MuiListItem: {
+        styleOverrides: {
+          root: {
+            padding: "16px 24px",
+          },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          root: {
+            padding: "16px 24px",
+            fontSize: "1rem",
+          },
+          head: {
+            fontWeight: 600,
+          },
+        },
+      },
+      MuiTab: {
+        styleOverrides: {
+          root: {
+            minHeight: "56px",
+            fontSize: "1rem",
+            textTransform: "none",
+            fontWeight: 500,
+            "&.Mui-selected": {
+              fontWeight: 700,
+            },
+          },
+        },
+      },
+      MuiDialog: {
+        styleOverrides: {
+          paper: {
+            borderRadius: "20px",
+            padding: "16px",
           },
         },
       },
     },
-    // Touch-friendly table cells
-    MuiTableCell: {
-      styleOverrides: {
-        root: {
-          padding: "16px 24px", // Larger cells for touch
-          fontSize: "1rem",
-        },
-        head: {
-          fontWeight: 600,
-        },
-      },
-    },
-    // Touch-friendly checkboxes and radio buttons
-    MuiCheckbox: {
-      styleOverrides: {
-        root: {
-          padding: "12px", // Larger touch target
-        },
-      },
-    },
-    MuiRadio: {
-      styleOverrides: {
-        root: {
-          padding: "12px", // Larger touch target
-        },
-      },
-    },
-    // Touch-friendly tabs
-    MuiTab: {
-      styleOverrides: {
-        root: {
-          minHeight: "56px",
-          fontSize: "1rem",
-          textTransform: "none",
-          fontWeight: 500,
-          "&.Mui-selected": {
-            fontWeight: 700,
-          },
-        },
-      },
-    },
-    // Touch-friendly dialogs
-    MuiDialog: {
-      styleOverrides: {
-        paper: {
-          borderRadius: "20px",
-          padding: "16px",
-        },
-      },
-    },
-    // Touch-friendly switches
-    MuiSwitch: {
-      styleOverrides: {
-        root: {
-          width: "58px",
-          height: "38px",
-          padding: "12px",
-        },
-        thumb: {
-          width: "20px",
-          height: "20px",
-        },
-        track: {
-          borderRadius: "20px",
-        },
-      },
-    },
-  },
-}));
+  };
+};
 
-// Make fonts responsive based on screen size
-const theme = responsiveFontSizes(touchTheme);
+// Create a default theme and allow font size responsiveness
+const createResponsiveTheme = (mode: 'light' | 'dark') => {
+  const themeOptions = getTheme(mode);
+  let theme = createTheme(themeOptions);
+  theme = responsiveFontSizes(theme);
+  return theme;
+}
 
-export default theme;
+export default createResponsiveTheme;

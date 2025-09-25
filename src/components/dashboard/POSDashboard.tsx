@@ -1,16 +1,16 @@
 import {
-  AssignmentTurnedIn as OrdersIcon,
-  BarChart as ReportsIcon,
-  CurrencyExchange as PaymentIcon,
-  MoreHoriz as MoreIcon,
   PeopleAlt as CustomersIcon,
-  Receipt as ReceiptIcon,
-  ShoppingCart as SalesIcon,
+  MoreHoriz as MoreIcon,
+  AssignmentTurnedIn as OrdersIcon,
+  CurrencyExchange as PaymentIcon,
   ViewModule as ProductsIcon,
+  Receipt as ReceiptIcon,
+  BarChart as ReportsIcon,
+  ShoppingCart as SalesIcon,
 } from "@mui/icons-material";
-import { Box, Grid, Typography } from "@mui/material";
-import { TouchCard } from "../touch/TouchCard";
+import { Box, Typography } from "@mui/material";
 import { TouchGridLayout } from "../layout/TouchGridLayout";
+import { TouchCard } from "../touch/TouchCard";
 
 interface DashboardTileProps {
   title: string;
@@ -32,6 +32,10 @@ const DashboardTile = ({ title, icon, color, onClick }: DashboardTileProps) => (
           justifyContent: "center",
           height: "100%",
           minHeight: "120px",
+          borderRadius: 2, // Add border radius to the content area
+          "&:hover": {
+            backgroundColor: (theme) => theme.palette.action.hover,
+          },
         }}
         onClick={onClick}
       >

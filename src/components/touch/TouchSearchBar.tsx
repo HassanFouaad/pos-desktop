@@ -26,10 +26,10 @@ const SearchContainer = styled(Box)(({ theme }) => ({
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
   "& .MuiInputBase-root": {
-    borderRadius: theme.spacing(3),
+    borderRadius: theme.shape.borderRadius, // Use theme's border radius
     backgroundColor: theme.palette.background.paper,
     height: "56px",
-    boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+    // boxShadow is handled by theme
     fontSize: "1.1rem",
   },
   "& .MuiOutlinedInput-notchedOutline": {
@@ -49,7 +49,7 @@ const KeyboardContainer = styled(Box)(({ theme }) => ({
   borderTopRightRadius: theme.spacing(2),
   padding: theme.spacing(2),
   paddingBottom: theme.spacing(4),
-  boxShadow: "0 -4px 12px rgba(0,0,0,0.1)",
+  // boxShadow is handled by theme
   width: "100%",
   maxWidth: "900px",
   outline: "none",

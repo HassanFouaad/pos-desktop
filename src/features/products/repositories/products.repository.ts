@@ -1,27 +1,20 @@
 import { eq } from "drizzle-orm";
-import { getDrizzleDb } from "../../../lib/drizzle";
-import { products } from "../models/schema";
+import { drizzle } from "drizzle-orm/pglite";
+import { drizzleDb } from "../../../db/drizzle";
+import { DatabaseSchema, products } from "../../../db/schemas";
 
 export class ProductsRepository {
-  private db: Awaited<ReturnType<typeof getDrizzleDb>> | null = null;
+  private db!: ReturnType<typeof drizzle<typeof DatabaseSchema>>;
 
   constructor() {
-    getDrizzleDb().then((db) => {
-      this.db = db;
-    });
+    this.db = drizzleDb.database;
   }
 
   async getAllProducts() {
-    if (!this.db) {
-      this.db = await getDrizzleDb();
-    }
-    return this.db.select().from(products).execute();
+    return this.db?.select().from(products).execute();
   }
 
   async getProductById(id: number) {
-    if (!this.db) {
-      this.db = await getDrizzleDb();
-    }
     const [product] = await this.db
       .select()
       .from(products)

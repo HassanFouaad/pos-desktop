@@ -10,11 +10,35 @@
     {
       "identifier": "http:default",
       "allow": [
-        { "url": "https://*.tauri.app" },
-        { "url": "http://localhost:3000" },
-        { "url": "http://localhost:3007" },
-        { "url": "http://localhost:1420" }
+        {
+          "url": "https://*.tauri.app"
+        },
+        {
+          "url": "http://localhost:3000"
+        },
+        {
+          "url": "http://localhost:3007"
+        },
+        {
+          "url": "http://localhost:1420"
+        }
       ]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [{ "path": "$APPDATA/databases" }]
+    },
+    {
+      "identifier": "fs:default",
+      "allow": [{ "path": "$APPDATA/databases/*" }]
+    },
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$APPDATA/databases/*" }]
+    },
+    {
+      "identifier": "fs:write-files",
+      "allow": [{ "path": "$APPDATA/databases/*" }]
     }
   ]
 }

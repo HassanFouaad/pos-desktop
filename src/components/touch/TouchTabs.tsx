@@ -1,11 +1,11 @@
 import { Box, Tab, Tabs, styled } from "@mui/material";
-import { ReactNode, SyntheticEvent, useState } from "react";
+import { ReactElement, ReactNode, SyntheticEvent, useState } from "react";
 
 // Styled components
 const StyledTabs = styled(Tabs)(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
-  borderRadius: theme.spacing(1),
-  boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+  borderRadius: theme.shape.borderRadius,
+  // boxShadow is handled by theme
   minHeight: "56px",
   "& .MuiTabs-indicator": {
     height: "4px",
@@ -76,7 +76,7 @@ export const TouchTabs = ({
             key={tab.value}
             label={showTextLabels ? tab.label : undefined}
             value={tab.value}
-            icon={tab.icon}
+            icon={tab.icon as ReactElement | undefined}
             iconPosition="start"
             disabled={tab.disabled}
           />
