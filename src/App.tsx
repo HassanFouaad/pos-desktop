@@ -6,6 +6,9 @@ import {
   Routes,
   useNavigate,
 } from "react-router-dom";
+// Import the sync service and related handlers
+import { syncService } from "./db/sync/sync.service";
+// Import handlers to ensure they're registered
 import { GridDashboard } from "./components/dashboard/GridDashboard";
 import { GridLayout } from "./components/layout/GridLayout";
 import { FloatingNavigation } from "./components/navigation/FloatingNavigation";
@@ -15,6 +18,8 @@ import { ProtectedRoute } from "./features/auth/components/ProtectedRoute";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { authService } from "./features/auth/services/auth.service";
 import CustomersPage from "./features/customers/pages";
+// Import customer handler to ensure it's registered with the sync service
+import "./features/customers/services/customer-sync-handler";
 import ProductsPage from "./features/products/pages";
 import { setAuthTokens, setCurrentUser } from "./store/authSlice";
 import { useAppDispatch } from "./store/hooks";
@@ -56,6 +61,8 @@ function App() {
           if (token) {
             dispatch(setAuthTokens({ accessToken: token }));
           }
+          // Start the sync service (which will handle customers and other entities)
+          await syncService.start();
         }
       } catch (error) {
         console.error("Failed to initialize auth:", error);
@@ -65,6 +72,11 @@ function App() {
     };
 
     initializeAuth();
+
+    // Cleanup function to stop the sync service when the app unmounts
+    return () => {
+      syncService.stop();
+    };
   }, [dispatch]);
 
   if (isInitializing) {

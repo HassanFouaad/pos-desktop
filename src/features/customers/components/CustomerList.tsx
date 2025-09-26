@@ -64,7 +64,7 @@ export const CustomerList = () => {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await customersRepository.createPendingCustomer(data);
+      await customersRepository.createCustomer(data);
       setCreateModalOpen(false);
       setSnackbarOpen(true);
       // Re-fetch the list to show the new pending customer if desired

@@ -33,5 +33,8 @@ export const endpoints = {
     me: "/v1/auth/me",
     changePassword: "/v1/auth/change-password",
   },
+  customers: {
+    create: "/v1/customers",
+  },
   // Add other endpoints as needed
 };

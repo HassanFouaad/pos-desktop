@@ -1,16 +1,95 @@
+import { store } from "../../../store";
+import {
+  logout,
+  setAuthTokens,
+  setCurrentUser,
+} from "../../../store/authSlice";
+import { networkStatus } from "../../../utils/network-status";
 import {
   getLocalStorage,
-  setLocalStorage,
   removeLocalStorage,
+  setLocalStorage,
 } from "../../../utils/storage";
 import {
   usersRepository,
   UsersRepository,
 } from "../../users/repositories/users.repository";
-import { login as apiLogin, LoginCredentials, AuthResponse } from "../api/auth";
+import {
+  login as apiLogin,
+  AuthResponse,
+  LoginCredentials,
+  refreshTokenApi,
+} from "../api/auth";
 
 class AuthService {
   constructor(private readonly usersRepo: UsersRepository) {}
+  /**
+   * Determine if an error is retryable (typically network-related errors)
+   */
+  private isRetryableError(error: any): boolean {
+    // Determine if the error is something we can retry
+    // Network errors are typically retryable
+    if (!error) return false;
+
+    const message = error?.statusText?.toLowerCase() || "";
+    const networkErrorKeywords = [
+      "network",
+      "timeout",
+      "connection",
+      "offline",
+      "failed to fetch",
+      "internet",
+      "econnrefused",
+      "internal",
+    ];
+
+    console.log("error", error);
+    // Check for network-related errors
+    const isRetryable =
+      networkErrorKeywords.some((keyword) => message.includes(keyword)) ||
+      error.name === "AbortError" ||
+      (error.status &&
+        (error.status >= 500 || error.status === 429 || error.status === 404));
+    console.log("isRetryable", isRetryable);
+    return isRetryable;
+  }
+  async refreshToken(): Promise<string | null> {
+    try {
+      const authResponse = await refreshTokenApi();
+      if (authResponse.accessToken) {
+        setLocalStorage("accessToken", authResponse.accessToken);
+      }
+
+      if (authResponse.refreshToken && authResponse.accessToken) {
+        setLocalStorage("refreshToken", authResponse.refreshToken);
+        store.dispatch(
+          setAuthTokens({
+            accessToken: authResponse.accessToken,
+            refreshToken: authResponse.refreshToken,
+          })
+        );
+      }
+
+      if (authResponse.user) {
+        setLocalStorage("user", authResponse.user);
+        store.dispatch(setCurrentUser(authResponse.user));
+      }
+
+      return authResponse.refreshToken;
+    } catch (error) {
+      if (this.isRetryableError(error)) {
+        return null;
+      }
+
+      removeLocalStorage("accessToken");
+      removeLocalStorage("refreshToken");
+      removeLocalStorage("user");
+
+      store.dispatch(logout());
+
+      return null;
+    }
+  }
 
   /**
    * Handles both online and offline login.
@@ -28,12 +107,23 @@ class AuthService {
 
       // Persist user to local DB
       await this.usersRepo.setLoggedInUser(authResponse.user.id);
-      await this.usersRepo.upsertUser(authResponse.user);
+      await this.usersRepo.upsertUser(
+        authResponse.user,
+        authResponse.refreshToken
+      );
 
       // Persist tokens to Local Storage
       setLocalStorage("accessToken", authResponse.accessToken);
       setLocalStorage("refreshToken", authResponse.refreshToken);
       setLocalStorage("user", authResponse.user);
+
+      store.dispatch(
+        setAuthTokens({
+          accessToken: authResponse.accessToken,
+          refreshToken: authResponse.refreshToken,
+        })
+      );
+      store.dispatch(setCurrentUser(authResponse.user));
 
       return authResponse.user;
     } else {
@@ -83,7 +173,7 @@ class AuthService {
     const userFromDb = await this.usersRepo.getLoggedInUser();
 
     if (userFromDb) {
-      setLocalStorage("user", userFromDb); // Re-hydrate local storage
+      setLocalStorage("user", userFromDb);
       return userFromDb as AuthResponse["user"];
     }
 
@@ -92,3 +182,9 @@ class AuthService {
 }
 
 export const authService = new AuthService(usersRepository);
+
+networkStatus.addListener(async (online) => {
+  if (online) {
+    await authService.refreshToken();
+  }
+});

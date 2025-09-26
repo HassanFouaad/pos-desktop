@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { setAuthTokens, setCurrentUser } from "../../../store/authSlice";
 import { useAppDispatch } from "../../../store/hooks";
 import { LoginCredentials } from "../api/auth";
 import { LoginForm } from "../components/LoginForm";
@@ -16,16 +15,7 @@ export function LoginPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const user = await authService.loginUser(data);
-
-      // Note: In offline mode, accessToken might not be available,
-      // but the app should be designed to handle this gracefully.
-      dispatch(
-        setAuthTokens({
-          accessToken: localStorage.getItem("accessToken") || "",
-        })
-      );
-      dispatch(setCurrentUser(user));
+      await authService.loginUser(data);
 
       navigate("/");
     } catch (err: any) {

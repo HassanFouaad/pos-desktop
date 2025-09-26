@@ -5,12 +5,14 @@ type User = any;
 interface AuthState {
   user: User | null;
   accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
   accessToken: null,
+  refreshToken: null,
   isAuthenticated: false,
 };
 
@@ -18,8 +20,12 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setAuthTokens: (state, action: PayloadAction<{ accessToken: string }>) => {
+    setAuthTokens: (
+      state,
+      action: PayloadAction<{ accessToken: string; refreshToken: string }>
+    ) => {
       state.accessToken = action.payload.accessToken;
+      state.refreshToken = action.payload.refreshToken;
     },
     setCurrentUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;

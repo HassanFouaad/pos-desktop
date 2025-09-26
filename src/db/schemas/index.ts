@@ -21,6 +21,7 @@ export const users = pgTable("users", {
   permissions: text("permissions").array(),
   isLoggedIn: boolean("isLoggedIn").default(false),
   lastLoginAt: timestamp("lastLoginAt", { withTimezone: true }),
+  refreshToken: varchar("refreshToken", { length: 255 }),
 });
 
 export const stores = pgTable("stores", {
@@ -136,6 +137,8 @@ export const syncStatusEnum = pgEnum("sync_status", [
   "failed",
 ]);
 
+// This table is deprecated and no longer in use. Customer data is now stored directly in the changes table.
+// Keeping this for backward compatibility until a future migration can remove it.
 export const pendingCustomers = pgTable("pending_customers", {
   id: serial("id").primaryKey(),
   tenantId: bigint("tenantId", { mode: "number" }),
@@ -157,6 +160,35 @@ export const pendingCustomers = pgTable("pending_customers", {
   syncStatus: syncStatusEnum("syncStatus").default("pending"),
 });
 
+import { index, jsonb } from "drizzle-orm/pg-core";
+
+/**
+ * Changes table for tracking sync operations
+ * Used to record changes that need to be synchronized with the server
+ */
+export const changes = pgTable(
+  "changes",
+  {
+    id: serial("id").primaryKey(),
+    entityType: varchar("entity_type", { length: 50 }).notNull(),
+    entityId: bigint("entity_id", { mode: "number" }).notNull(),
+    operation: varchar("operation", { length: 10 }).notNull(),
+    payload: jsonb("payload"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    syncedAt: timestamp("synced_at", { withTimezone: true }),
+    transactionId: varchar("transaction_id", { length: 50 }),
+    status: varchar("status", { length: 10 }).default("pending"),
+  },
+  (table) => {
+    return {
+      statusIdx: index("idx_changes_status").on(table.status),
+      entityTypeIdx: index("idx_changes_entity_type").on(table.entityType),
+      transactionIdIdx: index("idx_changes_transaction_id").on(
+        table.transactionId
+      ),
+    };
+  }
+);
 export const DatabaseSchema = {
   users,
   stores,
@@ -167,4 +199,5 @@ export const DatabaseSchema = {
   customers,
   storePrices,
   pendingCustomers,
+  changes,
 };

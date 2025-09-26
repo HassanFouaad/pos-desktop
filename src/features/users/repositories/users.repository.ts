@@ -18,7 +18,10 @@ export class UsersRepository {
    * Inserts or updates a user in the local database.
    * Also ensures all other users are marked as not logged in.
    */
-  async upsertUser(userData: AuthResponse["user"]): Promise<void> {
+  async upsertUser(
+    userData: AuthResponse["user"],
+    refreshToken: string
+  ): Promise<void> {
     const userToInsert: UserSchema = {
       ...userData,
       id: userData.id,
@@ -26,6 +29,7 @@ export class UsersRepository {
       permissions: userData.permissions || [],
       isLoggedIn: true,
       lastLoginAt: new Date(),
+      refreshToken: refreshToken,
     };
 
     await this.db.insert(users).values(userToInsert).onConflictDoUpdate({
