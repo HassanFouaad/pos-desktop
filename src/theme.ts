@@ -1,228 +1,231 @@
-import { createTheme, responsiveFontSizes, ThemeOptions } from "@mui/material/styles";
-
+import {
+  createTheme,
+  responsiveFontSizes,
+  ThemeOptions,
+} from "@mui/material/styles";
 
 // Define the color palettes for light and dark themes
+// More vibrant colors for modern digital UI
 const lightPalette = {
   primary: {
-    main: "#3a36db",
-    light: "#6c63ff",
-    dark: "#2a28a8",
-    contrastText: "#ffffff",
+    main: "#0062FF", // Modern blue
+    light: "#4D8DFF",
+    dark: "#004FC7",
+    contrastText: "#FFFFFF",
   },
   secondary: {
-    main: "#00b894",
-    light: "#55efc4",
-    dark: "#00856a",
-    contrastText: "#ffffff",
+    main: "#00D68F", // Vibrant green
+    light: "#33DFAA",
+    dark: "#00A86F",
+    contrastText: "#FFFFFF",
   },
   background: {
-    default: "#f8f9fa",
-    paper: "#ffffff",
+    default: "#F7FAFC", // Lighter background for better visibility
+    paper: "#FFFFFF",
   },
   text: {
-    primary: "#212529",
-    secondary: "#495057",
+    primary: "#0A1F44", // Darker text for better contrast
+    secondary: "#4E5D78",
   },
   action: {
-    hover: 'rgba(58, 54, 219, 0.08)', // Light primary hover for light theme
-    disabled: 'rgba(0, 0, 0, 0.26)',
+    active: "#0062FF",
+    hover: "rgba(0, 98, 255, 0.08)",
+    selected: "rgba(0, 98, 255, 0.16)",
+    disabled: "rgba(10, 31, 68, 0.38)",
+    disabledBackground: "rgba(10, 31, 68, 0.12)",
   },
 };
 
 const darkPalette = {
   primary: {
-    main: "#6c63ff",
-    light: "#8a84ff",
-    dark: "#3a36db",
-    contrastText: "#ffffff",
+    main: "#4D8DFF", // Lighter blue for dark mode
+    light: "#80ADFF",
+    dark: "#0062FF",
+    contrastText: "#FFFFFF",
   },
   secondary: {
-    main: "#55efc4",
-    light: "#8afff7",
-    dark: "#00b894",
+    main: "#33DFAA", // Lighter green for dark mode
+    light: "#5FE7BE",
+    dark: "#00D68F",
     contrastText: "#000000",
   },
   background: {
-    default: "#121212",
-    paper: "#1e1e1e",
+    default: "#121826", // Dark blue-gray for less eye strain
+    paper: "#1C2433",
   },
   text: {
-    primary: "#e0e0e0",
-    secondary: "#a0a0a0",
+    primary: "#F2F6FF", // Light text for dark mode
+    secondary: "#A6B1C2",
   },
   action: {
-    hover: 'rgba(108, 99, 255, 0.12)', // Lighter primary hover for dark theme
-    disabled: 'rgba(255, 255, 255, 0.3)',
+    active: "#4D8DFF",
+    hover: "rgba(77, 141, 255, 0.12)",
+    selected: "rgba(77, 141, 255, 0.20)",
+    disabled: "rgba(242, 246, 255, 0.38)",
+    disabledBackground: "rgba(242, 246, 255, 0.12)",
   },
 };
 
 // Function to create the theme based on the mode (light/dark)
-export const getTheme = (mode: 'light' | 'dark'): ThemeOptions => {
-  const palette = mode === 'light' ? lightPalette : darkPalette;
+export const getTheme = (mode: "light" | "dark"): ThemeOptions => {
+  const palette = mode === "light" ? lightPalette : darkPalette;
 
   return {
     palette: {
       mode,
       ...palette,
       error: {
-        main: "#ff5252",
+        main: "#FF3D71", // Modern red
+        light: "#FF708D",
+        dark: "#DB2C66",
+        contrastText: "#FFFFFF",
       },
       warning: {
-        main: "#ffa726",
+        main: "#FFAA00", // Modern orange
+        light: "#FFBE33",
+        dark: "#DB9100",
+        contrastText: "#FFFFFF",
       },
       success: {
-        main: "#00c853",
+        main: "#00D68F", // Modern green
+        light: "#33DFAA",
+        dark: "#00A86F",
+        contrastText: "#FFFFFF",
       },
-      action: palette.action,
+      info: {
+        main: "#0095FF", // Modern blue
+        light: "#33AAFF",
+        dark: "#0077DB",
+        contrastText: "#FFFFFF",
+      },
     },
     shape: {
-      borderRadius: 12,
+      borderRadius: 16, // Larger border radius for modern look
     },
     typography: {
-      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-      h1: { fontSize: '2.5rem', fontWeight: 700 },
-      h2: { fontSize: '2.2rem', fontWeight: 700 },
-      h3: { fontSize: '1.8rem', fontWeight: 600 },
-      h4: { fontSize: '1.6rem', fontWeight: 600 },
-      h5: { fontSize: '1.4rem', fontWeight: 500 },
-      h6: { fontSize: '1.2rem', fontWeight: 500 },
-      body1: { fontSize: '1rem' },
-      body2: { fontSize: '0.9rem' },
+      fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+      fontWeightLight: 300,
+      fontWeightRegular: 400,
+      fontWeightMedium: 500,
+      fontWeightBold: 700,
+      h1: { fontSize: "2.5rem", fontWeight: 700, lineHeight: 1.2 },
+      h2: { fontSize: "2.25rem", fontWeight: 700, lineHeight: 1.2 },
+      h3: { fontSize: "1.875rem", fontWeight: 600, lineHeight: 1.2 },
+      h4: { fontSize: "1.5rem", fontWeight: 600, lineHeight: 1.3 },
+      h5: { fontSize: "1.25rem", fontWeight: 500, lineHeight: 1.4 },
+      h6: { fontSize: "1.125rem", fontWeight: 500, lineHeight: 1.4 },
+      body1: { fontSize: "1rem", lineHeight: 1.5 },
+      body2: { fontSize: "0.875rem", lineHeight: 1.6 },
       button: {
-        textTransform: 'none',
-        fontWeight: 500,
+        textTransform: "none",
+        fontWeight: 600,
       },
     },
     spacing: 8,
     components: {
-      // Flatten all Paper components
+      // Eliminate all elevation and shadow for flat design
       MuiPaper: {
+        defaultProps: {
+          elevation: 0,
+        },
         styleOverrides: {
           root: {
-            elevation: 0,
-            boxShadow: "none",
-            border: "none",
-            backgroundImage: "none", // Ensure no gradient backgrounds are inherited
+            backgroundImage: "none",
           },
         },
       },
-      // Modern, unified button styles
+      // Touch-optimized Button
       MuiButton: {
         defaultProps: {
           disableElevation: true,
         },
         styleOverrides: {
           root: {
-            minWidth: "100px",
+            minWidth: "120px",
             minHeight: "56px",
-            padding: "12px 24px",
-            borderRadius: "12px",
             fontSize: "1rem",
+            borderRadius: "12px",
+            padding: "12px 24px",
+            fontWeight: 600,
             textTransform: "none",
             "&:active": {
               transform: "scale(0.98)",
             },
           },
-          containedPrimary: {
-            color: palette.primary.contrastText,
-            "& .MuiSvgIcon-root": {
-              color: palette.primary.contrastText,
+          contained: {
+            "&:hover": {
+              boxShadow: "none",
             },
+          },
+          containedPrimary: {
+            boxShadow: "none",
+          },
+          containedSecondary: {
+            boxShadow: "none",
           },
           text: {
-            color: palette.text.secondary,
-            "& .MuiSvgIcon-root": {
-              color: palette.text.secondary,
-            },
-          },
-          textPrimary: {
-            color: palette.primary.main,
-            "& .MuiSvgIcon-root": {
-              color: palette.primary.main,
-            },
-          }
-        },
-      },
-      // Unified icon button styles (no circles)
-      MuiIconButton: {
-        styleOverrides: {
-          root: {
-            width: "56px",
-            height: "56px",
-            borderRadius: "12px", // Same as regular buttons
-            color: palette.text.secondary,
-            "&.Mui-disabled": {
-              color: palette.action?.disabled,
-            },
             "&:hover": {
-              backgroundColor: palette.action?.hover,
+              backgroundColor:
+                mode === "light"
+                  ? "rgba(0, 98, 255, 0.08)"
+                  : "rgba(77, 141, 255, 0.12)",
             },
           },
-          colorPrimary: {
-            color: palette.primary.main,
+          outlined: {
+            borderWidth: "2px",
             "&:hover": {
-              backgroundColor: palette.action.hover,
+              borderWidth: "2px",
             },
           },
         },
       },
-      // Flatten cards
-      MuiCard: {
-        styleOverrides: {
-          root: {
-            borderRadius: "16px",
-            boxShadow: "none",
-            backgroundColor: 'transparent',
-          },
-        },
-      },
-      // AppBar should be flat
-      MuiAppBar: {
-        styleOverrides: {
-          root: {
-            boxShadow: "none",
-            backgroundImage: "none",
-            backgroundColor: palette.background.default, // Blends in with background
-            color: palette.text.primary
-          },
-        },
-      },
-      // Touch-friendly text field styles
+      // Touch-friendly text fields
       MuiTextField: {
         styleOverrides: {
           root: {
             "& .MuiInputBase-root": {
               minHeight: "56px",
-              fontSize: "1.1rem",
+              fontSize: "1rem",
               borderRadius: "12px",
             },
             "& .MuiInputLabel-root": {
-              fontSize: "1.1rem",
+              fontSize: "1rem",
+              fontWeight: 500,
             },
-            "& .MuiOutlinedInput-root": {
-              "& fieldset": {
-                borderWidth: "1px",
-              },
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor:
+                mode === "light"
+                  ? "rgba(10, 31, 68, 0.2)"
+                  : "rgba(242, 246, 255, 0.2)",
             },
           },
         },
       },
-      // Other components...
-      MuiListItem: {
+      // Flat, touch-friendly cards
+      MuiCard: {
         styleOverrides: {
           root: {
-            padding: "16px 24px",
+            borderRadius: "16px",
+            overflow: "hidden",
+            backgroundColor: palette.background.paper,
+            transition: "transform 0.2s ease-in-out",
           },
         },
       },
-      MuiTableCell: {
+      // Enhanced Grid for touch layouts
+      MuiGrid: {
         styleOverrides: {
           root: {
-            padding: "16px 24px",
-            fontSize: "1rem",
+            // No custom styles needed as we'll use the Grid properly
           },
-          head: {
-            fontWeight: 600,
+        },
+      },
+      // Touch-friendly tab indicators
+      MuiTabs: {
+        styleOverrides: {
+          indicator: {
+            height: 3,
+            borderRadius: "1.5px",
           },
         },
       },
@@ -231,19 +234,54 @@ export const getTheme = (mode: 'light' | 'dark'): ThemeOptions => {
           root: {
             minHeight: "56px",
             fontSize: "1rem",
+            fontWeight: 600,
             textTransform: "none",
-            fontWeight: 500,
+            "&:active": {
+              opacity: 0.8,
+            },
             "&.Mui-selected": {
-              fontWeight: 700,
+              color: palette.primary.main,
             },
           },
         },
       },
+      // Touch-friendly list items
+      MuiListItem: {
+        styleOverrides: {
+          root: {
+            minHeight: "56px",
+            padding: "12px 16px",
+            "&:active": {
+              backgroundColor:
+                mode === "light"
+                  ? "rgba(0, 98, 255, 0.08)"
+                  : "rgba(77, 141, 255, 0.12)",
+            },
+          },
+        },
+      },
+      // Modern dialogs with rounded corners
       MuiDialog: {
         styleOverrides: {
           paper: {
             borderRadius: "20px",
             padding: "16px",
+            boxShadow: "none",
+          },
+        },
+      },
+      // Touch-optimized floating action button
+      MuiFab: {
+        styleOverrides: {
+          root: {
+            boxShadow: "none",
+            "&:active": {
+              boxShadow: "none",
+              transform: "scale(0.98)",
+            },
+            "&:hover": {
+              boxShadow: "none",
+            },
           },
         },
       },
@@ -252,11 +290,11 @@ export const getTheme = (mode: 'light' | 'dark'): ThemeOptions => {
 };
 
 // Create a default theme and allow font size responsiveness
-const createResponsiveTheme = (mode: 'light' | 'dark') => {
+const createResponsiveTheme = (mode: "light" | "dark") => {
   const themeOptions = getTheme(mode);
   let theme = createTheme(themeOptions);
   theme = responsiveFontSizes(theme);
   return theme;
-}
+};
 
 export default createResponsiveTheme;

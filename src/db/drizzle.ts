@@ -6,7 +6,7 @@ import { DatabaseSchema } from "./schemas";
 
 export class DrizzleDb {
   private db: ReturnType<typeof drizzle<typeof DatabaseSchema>> = drizzle(
-    database,
+    database as any,
     { schema: DatabaseSchema }
   );
 

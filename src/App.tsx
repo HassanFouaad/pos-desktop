@@ -1,74 +1,46 @@
-import {
-  ShoppingCart as CartIcon,
-  Person as CustomerIcon,
-  Brightness4 as DarkModeIcon,
-  Home as HomeIcon,
-  Inventory as InventoryIcon,
-  Brightness7 as LightModeIcon,
-  Settings as SettingsIcon,
-} from "@mui/icons-material";
-import { Box, CircularProgress, IconButton } from "@mui/material";
-import { useContext, useEffect, useState } from "react";
+import { CircularProgress, Grid } from "@mui/material";
+import { useEffect, useState } from "react";
 import {
   Route,
   BrowserRouter as Router,
   Routes,
   useNavigate,
 } from "react-router-dom";
-import { POSDashboard } from "./components/dashboard/POSDashboard";
-import { POSLayoutModern } from "./components/layout/POSLayoutModern";
+import { GridDashboard } from "./components/dashboard/GridDashboard";
+import { GridLayout } from "./components/layout/GridLayout";
+import { FloatingNavigation } from "./components/navigation/FloatingNavigation";
 import { ThemeProviderWrapper } from "./components/theme/ThemeProviderWrapper";
-import { NavItem, TouchFooterNav } from "./components/touch/TouchFooterNav";
-import { ThemeContext, ThemeProvider } from "./context/ThemeContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { ProtectedRoute } from "./features/auth/components/ProtectedRoute";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { authService } from "./features/auth/services/auth.service";
+import ProductsPage from "./features/products/pages";
 import { setAuthTokens, setCurrentUser } from "./store/authSlice";
 import { useAppDispatch } from "./store/hooks";
-
-// Main navigation items
-const mainNavItems: NavItem[] = [
-  { label: "Home", path: "/", icon: <HomeIcon sx={{ fontSize: 64 }} /> },
-  {
-    label: "Sales",
-    path: "/sales",
-    icon: <CartIcon sx={{ fontSize: 64 }} />,
-  },
-  {
-    label: "Customers",
-    path: "/customers",
-    icon: <CustomerIcon sx={{ fontSize: 64 }} />,
-  },
-  {
-    label: "Inventory",
-    path: "/inventory",
-    icon: <InventoryIcon sx={{ fontSize: 64 }} />,
-  },
-  {
-    label: "Settings",
-    path: "/settings",
-    icon: <SettingsIcon sx={{ fontSize: 64 }} />,
-  },
-];
 
 // Dashboard wrapper with navigation
 const DashboardWithNav = () => {
   const navigate = useNavigate();
-
-  return <POSDashboard onNavigate={navigate} />;
+  return <GridDashboard onNavigate={navigate} />;
 };
 
-// Theme Toggle Switch Component
-const ThemeToggle = () => {
-  const { mode, toggleTheme } = useContext(ThemeContext);
-  return (
-    <IconButton onClick={toggleTheme} color="inherit">
-      {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
-    </IconButton>
-  );
-};
+// Module placeholder component
+interface ModulePlaceholderProps {
+  title: string;
+}
 
-// POS App with modern layout
+const ModulePlaceholder = ({ title }: ModulePlaceholderProps) => (
+  <Grid
+    container
+    justifyContent="center"
+    alignItems="center"
+    sx={{ height: "100%" }}
+  >
+    <Grid sx={{ textAlign: "center" }}>{title} Module</Grid>
+  </Grid>
+);
+
+// Main POS App
 function App() {
   const dispatch = useAppDispatch();
   const [isInitializing, setIsInitializing] = useState(true);
@@ -96,16 +68,16 @@ function App() {
 
   if (isInitializing) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
+      <Grid
+        container
+        justifyContent="center"
+        alignItems="center"
+        sx={{ height: "100vh" }}
       >
-        <CircularProgress />
-      </Box>
+        <Grid>
+          <CircularProgress />
+        </Grid>
+      </Grid>
     );
   }
 
@@ -119,46 +91,128 @@ function App() {
               <Route
                 path="/"
                 element={
-                  <POSLayoutModern
-                    title="Modern POS"
-                    appBarContent={<ThemeToggle />}
-                    bottomActions={<TouchFooterNav items={mainNavItems} />}
-                  >
+                  <GridLayout title="Modern POS">
                     <DashboardWithNav />
-                  </POSLayoutModern>
+
+                    <FloatingNavigation />
+                  </GridLayout>
                 }
               />
-              {/* These routes would be implemented as needed */}
+
+              {/* Sales Module */}
               <Route
-                path="/sales"
+                path="/sales/*"
                 element={
-                  <POSLayoutModern showBackButton title="Sales">
-                    <div>Sales Module</div>
-                  </POSLayoutModern>
+                  <GridLayout title="Sales">
+                    <Grid>
+                      <ModulePlaceholder title="Sales" />
+                    </Grid>
+                    <FloatingNavigation showBackButton />
+                  </GridLayout>
                 }
               />
+
+              {/* Customers Module */}
               <Route
                 path="/customers"
                 element={
-                  <POSLayoutModern showBackButton title="Customers">
-                    <div>Customers Module</div>
-                  </POSLayoutModern>
+                  <GridLayout title="Customers">
+                    <Grid>
+                      <ModulePlaceholder title="Customers" />
+                    </Grid>
+                    <FloatingNavigation showBackButton />
+                  </GridLayout>
                 }
               />
+
+              {/* Inventory/Products Module */}
               <Route
-                path="/inventory"
+                path="/products"
                 element={
-                  <POSLayoutModern showBackButton title="Inventory">
-                    <div>Inventory Module</div>
-                  </POSLayoutModern>
+                  <GridLayout title="Products">
+                    <Grid>
+                      <ProductsPage />
+                    </Grid>
+                    <FloatingNavigation showBackButton />
+                  </GridLayout>
                 }
               />
+
+              {/* Orders Module */}
+              <Route
+                path="/orders"
+                element={
+                  <GridLayout title="Orders">
+                    <Grid>
+                      <ModulePlaceholder title="Orders" />
+                    </Grid>
+                    <FloatingNavigation showBackButton />
+                  </GridLayout>
+                }
+              />
+
+              {/* Payments Module */}
+              <Route
+                path="/payments"
+                element={
+                  <GridLayout title="Payments">
+                    <Grid>
+                      <ModulePlaceholder title="Payments" />
+                    </Grid>
+                    <FloatingNavigation showBackButton />
+                  </GridLayout>
+                }
+              />
+
+              {/* Receipts Module */}
+              <Route
+                path="/receipts"
+                element={
+                  <GridLayout title="Receipts">
+                    <Grid>
+                      <ModulePlaceholder title="Receipts" />
+                    </Grid>
+                    <FloatingNavigation showBackButton />
+                  </GridLayout>
+                }
+              />
+
+              {/* Reports Module */}
+              <Route
+                path="/reports"
+                element={
+                  <GridLayout title="Reports">
+                    <Grid>
+                      <ModulePlaceholder title="Reports" />
+                    </Grid>
+                    <FloatingNavigation showBackButton />
+                  </GridLayout>
+                }
+              />
+
+              {/* Settings Module */}
               <Route
                 path="/settings"
                 element={
-                  <POSLayoutModern showBackButton title="Settings">
-                    <div>Settings Module</div>
-                  </POSLayoutModern>
+                  <GridLayout title="Settings">
+                    <Grid>
+                      <ModulePlaceholder title="Settings" />
+                    </Grid>
+                    <FloatingNavigation showBackButton />
+                  </GridLayout>
+                }
+              />
+
+              {/* More Module */}
+              <Route
+                path="/more"
+                element={
+                  <GridLayout title="More Options">
+                    <Grid>
+                      <ModulePlaceholder title="More Options" />
+                    </Grid>
+                    <FloatingNavigation showBackButton />
+                  </GridLayout>
                 }
               />
             </Route>

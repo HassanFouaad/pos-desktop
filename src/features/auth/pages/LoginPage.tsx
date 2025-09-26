@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { startSync } from "../../../db/database";
 import { setAuthTokens, setCurrentUser } from "../../../store/authSlice";
 import { useAppDispatch } from "../../../store/hooks";
 import { LoginCredentials } from "../api/auth";
@@ -27,8 +26,6 @@ export function LoginPage() {
         })
       );
       dispatch(setCurrentUser(user));
-
-      await startSync();
 
       navigate("/");
     } catch (err: any) {
