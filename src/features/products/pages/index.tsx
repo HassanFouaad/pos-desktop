@@ -5,7 +5,7 @@ import {
 } from "../../stores/repositories/stores.repository";
 import { CategorySelection } from "../components/CategorySelection";
 import { ProductList } from "../components/ProductList";
-import { CategoryDTO } from "../repositories/products.repository";
+import { CategoryDTO } from "../types/category.dto";
 
 const ProductsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState<CategoryDTO | null>(
@@ -25,18 +25,8 @@ const ProductsPage = () => {
     setSelectedCategory(category);
   };
 
-  const handleBackToCategories = () => {
-    setSelectedCategory(null);
-  };
-
   if (selectedCategory && store) {
-    return (
-      <ProductList
-        category={selectedCategory}
-        onBack={handleBackToCategories}
-        store={store}
-      />
-    );
+    return <ProductList category={selectedCategory} store={store} />;
   }
 
   return <CategorySelection onSelectCategory={handleSelectCategory} />;

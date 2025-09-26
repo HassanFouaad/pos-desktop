@@ -2,15 +2,15 @@ import { Grid, TextField } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
 
-interface ProductSearchProps {
+interface CustomerSearchProps {
   onSearch: (searchTerm: string) => void;
   placeholder?: string;
 }
 
-export const ProductSearch = ({
+export const CustomerSearch = ({
   onSearch,
   placeholder = "Search...",
-}: ProductSearchProps) => {
+}: CustomerSearchProps) => {
   const [text, setText] = useState("");
   const [debouncedText] = useDebounce(text, 500);
 

@@ -14,6 +14,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { ProtectedRoute } from "./features/auth/components/ProtectedRoute";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { authService } from "./features/auth/services/auth.service";
+import CustomersPage from "./features/customers/pages";
 import ProductsPage from "./features/products/pages";
 import { setAuthTokens, setCurrentUser } from "./store/authSlice";
 import { useAppDispatch } from "./store/hooks";
@@ -118,7 +119,7 @@ function App() {
                 element={
                   <GridLayout title="Customers">
                     <Grid>
-                      <ModulePlaceholder title="Customers" />
+                      <CustomersPage />
                     </Grid>
                     <FloatingNavigation showBackButton />
                   </GridLayout>

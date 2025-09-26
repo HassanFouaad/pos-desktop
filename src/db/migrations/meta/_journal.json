@@ -8,6 +8,20 @@
       "when": 1758844297428,
       "tag": "0000_easy_tattoo",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1758851829197,
+      "tag": "0001_orange_speed",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1758854359913,
+      "tag": "0002_complete_exiles",
+      "breakpoints": true
     }
   ]
 }

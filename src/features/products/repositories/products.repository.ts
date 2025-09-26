@@ -1,12 +1,14 @@
-import { eq, ilike, or } from "drizzle-orm";
+import { and, eq, ilike, or } from "drizzle-orm";
 import { DrizzleDb, drizzleDb } from "../../../db/drizzle";
-import { categories, products, productVariants } from "../../../db/schemas";
-
-export type ProductVariantDTO = typeof productVariants.$inferSelect;
-export type ProductDTO = typeof products.$inferSelect & {
-  variants: ProductVariantDTO[];
-};
-export type CategoryDTO = typeof categories.$inferSelect;
+import {
+  categories,
+  inventory,
+  products,
+  productVariants,
+  storePrices,
+} from "../../../db/schemas";
+import { CategoryDTO } from "../types/category.dto";
+import { VariantDetailDTO } from "../types/variant-detail.dto";
 
 export class ProductsRepository {
   private db: DrizzleDb["database"];
@@ -25,56 +27,73 @@ export class ProductsRepository {
     return query.execute();
   }
 
-  async getProducts(
-    categoryId?: number,
-    searchTerm?: string
-  ): Promise<ProductDTO[]> {
-    let query = this.db
-      .select()
-      .from(products)
-      .leftJoin(productVariants, eq(products.id, productVariants.productId))
-      .where(categoryId ? eq(products.categoryId, categoryId) : undefined);
-
-    if (searchTerm) {
-      query.where(
-        or(
-          ilike(products.name, `%${searchTerm}%`),
-          ilike(productVariants.name, `%${searchTerm}%`),
-          ilike(productVariants.sku, `%${searchTerm}%`)
+  /**
+   * Fetches a list of variants for a given category, including product and inventory info.
+   * @param categoryId The ID of the category.
+   * @param storeId The ID of the current store to fetch store-specific prices.
+   * @param searchTerm An optional search term to filter by variant, SKU, or product name.
+   */
+  async getVariantsByCategory(
+    categoryId: number,
+    storeId: number,
+    searchTerm: string | undefined,
+    limit: number,
+    offset: number
+  ): Promise<VariantDetailDTO[]> {
+    const results = await this.db
+      .select({
+        // Explicitly select all columns to shape the DTO correctly
+        id: productVariants.id,
+        productId: productVariants.productId,
+        tenantId: productVariants.tenantId,
+        name: productVariants.name,
+        unitOfMeasure: productVariants.unitOfMeasure,
+        sku: productVariants.sku,
+        baseSellingPrice: productVariants.baseSellingPrice,
+        basePurchasePrice: productVariants.basePurchasePrice,
+        createdAt: productVariants.createdAt,
+        updatedAt: productVariants.updatedAt,
+        inventory: inventory,
+        product: {
+          id: products.id,
+          name: products.name,
+        },
+        storePrice: storePrices.price,
+      })
+      .from(productVariants)
+      .leftJoin(products, eq(productVariants.productId, products.id))
+      .leftJoin(inventory, eq(productVariants.id, inventory.variantId))
+      .leftJoin(
+        storePrices,
+        and(
+          eq(storePrices.variantId, productVariants.id),
+          eq(storePrices.storeId, storeId)
         )
-      );
-    }
-
-    const rows = await query.execute();
-
-    const productMap = new Map<number, ProductDTO>();
-
-    for (const row of rows) {
-      const { products: productData, product_variants: variantData } = row;
-
-      if (!productMap.has(productData.id)) {
-        productMap.set(productData.id, {
-          ...productData,
-          variants: [],
-        });
-      }
-
-      if (variantData) {
-        productMap.get(productData.id)!.variants.push(variantData);
-      }
-    }
-
-    return Array.from(productMap.values());
-  }
-
-  async getProductById(id: number) {
-    const [product] = await this.db
-      .select()
-      .from(products)
-      .where((p) => eq(p.id, id))
-      .limit(1)
+      )
+      .where(
+        and(
+          eq(products.categoryId, categoryId),
+          searchTerm
+            ? or(
+                ilike(productVariants.name, `%${searchTerm}%`),
+                ilike(productVariants.sku, `%${searchTerm}%`),
+                ilike(products.name, `%${searchTerm}%`)
+              )
+            : undefined
+        )
+      )
+      .limit(limit)
+      .offset(offset)
       .execute();
-    return product;
+
+    // If a store-specific price exists, override the baseSellingPrice
+    return results.map((row) => {
+      const { storePrice, ...variantData } = row;
+      if (storePrice !== null && storePrice !== undefined) {
+        variantData.baseSellingPrice = storePrice;
+      }
+      return variantData as VariantDetailDTO;
+    });
   }
 }
 

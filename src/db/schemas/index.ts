@@ -4,7 +4,9 @@ import {
   date,
   decimal,
   integer,
+  pgEnum,
   pgTable,
+  serial,
   text,
   timestamp,
   varchar,
@@ -120,6 +122,41 @@ export const customers = pgTable("customers", {
   updatedAt: timestamp("updatedAt", { withTimezone: true }),
 });
 
+export const storePrices = pgTable("store_prices", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  tenantId: bigint("tenantId", { mode: "number" }),
+  variantId: bigint("variantId", { mode: "number" }),
+  storeId: bigint("storeId", { mode: "number" }),
+  price: decimal("price", { precision: 12, scale: 2 }),
+});
+
+export const syncStatusEnum = pgEnum("sync_status", [
+  "pending",
+  "success",
+  "failed",
+]);
+
+export const pendingCustomers = pgTable("pending_customers", {
+  id: serial("id").primaryKey(),
+  tenantId: bigint("tenantId", { mode: "number" }),
+  name: varchar("name", { length: 255 }),
+  phone: varchar("phone", { length: 50 }).notNull(),
+  dateOfBirth: date("dateOfBirth"),
+  loyaltyNumber: varchar("loyaltyNumber", { length: 100 }),
+  loyaltyPoints: integer("loyaltyPoints"),
+  totalSpent: decimal("totalSpent", { precision: 12, scale: 2 }),
+  totalVisits: integer("totalVisits"),
+  averageOrderValue: decimal("averageOrderValue", {
+    precision: 12,
+    scale: 2,
+  }),
+  lastVisitAt: timestamp("lastVisitAt", { withTimezone: true }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt", { withTimezone: true }),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  syncStatus: syncStatusEnum("syncStatus").default("pending"),
+});
+
 export const DatabaseSchema = {
   users,
   stores,
@@ -128,4 +165,6 @@ export const DatabaseSchema = {
   productVariants,
   inventory,
   customers,
+  storePrices,
+  pendingCustomers,
 };

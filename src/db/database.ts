@@ -91,6 +91,17 @@ const startSync = async () => {
         table: "customers",
         primaryKey: ["id"],
       },
+      store_prices: {
+        shape: {
+          url: config.ELECTRIC_URL + "/store_prices",
+          params: { table: "store_prices" },
+          headers: {
+            "x-sync-token": getLocalStorage("accessToken") ?? "",
+          },
+        },
+        table: "store_prices",
+        primaryKey: ["id"],
+      },
     },
     key: dayjs().subtract(1, "week").endOf("week").format("YYYY-MM-DD"),
     onInitialSync: () => {

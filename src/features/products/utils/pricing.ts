@@ -1,7 +1,4 @@
-import {
-  ProductDTO,
-  ProductVariantDTO,
-} from "../repositories/products.repository";
+import { VariantDetailDTO } from "../types/variant-detail.dto";
 
 /**
  * Formats a numeric value into a currency string using Intl.NumberFormat.
@@ -30,27 +27,8 @@ export const formatCurrency = (
  * @returns The formatted price string.
  */
 export const getVariantPrice = (
-  variant: ProductVariantDTO,
+  variant: VariantDetailDTO,
   storeCurrency?: string | null
 ): string => {
   return formatCurrency(variant.baseSellingPrice, storeCurrency || "EGP");
-};
-
-/**
- * Gets the primary display price for a product.
- * If the product has only one variant, it returns that variant's price.
- * Otherwise, it returns the price of the first variant in the list.
- * @param product The product object.
- * @param storeCurrency The currency of the store.
- * @returns The formatted price string.
- */
-export const getProductPrice = (
-  product: ProductDTO,
-  storeCurrency?: string | null
-): string => {
-  if (!product.variants || product.variants.length === 0) {
-    return ""; // Or some default text like "N/A"
-  }
-  const primaryVariant = product.variants[0];
-  return getVariantPrice(primaryVariant, storeCurrency);
 };
