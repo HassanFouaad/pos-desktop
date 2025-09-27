@@ -52,9 +52,10 @@ export const logout = async (): Promise<void> => {
 /**
  * Refresh token
  */
-export const refreshTokenApi = async (): Promise<AuthResponse> => {
-  const response = await httpClient.post(endpoints.auth.refreshToken);
-  return response.data;
+export const refreshTokenApi = async (refreshToken: string) => {
+  return httpClient.post(endpoints.auth.refreshToken, {
+    refreshToken,
+  });
 };
 
 /**
@@ -72,4 +73,12 @@ export const changePassword = async (
   if (!response.success) {
     throw new Error(response.error?.message || "Failed to change password");
   }
+};
+
+/**
+ * Get me
+ */
+export const getMe = async (): Promise<AuthResponse["user"]> => {
+  const response = await httpClient.get(endpoints.auth.me);
+  return response.data;
 };

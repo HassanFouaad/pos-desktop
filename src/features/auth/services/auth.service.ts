@@ -1,15 +1,8 @@
+import httpClient from "../../../api/core/httpClient";
 import { store } from "../../../store";
-import {
-  logout,
-  setAuthTokens,
-  setCurrentUser,
-} from "../../../store/authSlice";
+import { logout } from "../../../store/authSlice";
 import { networkStatus } from "../../../utils/network-status";
-import {
-  getLocalStorage,
-  removeLocalStorage,
-  setLocalStorage,
-} from "../../../utils/storage";
+import { removeLocalStorage, setLocalStorage } from "../../../utils/storage";
 import {
   usersRepository,
   UsersRepository,
@@ -17,78 +10,15 @@ import {
 import {
   login as apiLogin,
   AuthResponse,
+  getMe,
   LoginCredentials,
-  refreshTokenApi,
 } from "../api/auth";
 
 class AuthService {
   constructor(private readonly usersRepo: UsersRepository) {}
-  /**
-   * Determine if an error is retryable (typically network-related errors)
-   */
-  private isRetryableError(error: any): boolean {
-    // Determine if the error is something we can retry
-    // Network errors are typically retryable
-    if (!error) return false;
 
-    const message = error?.statusText?.toLowerCase() || "";
-    const networkErrorKeywords = [
-      "network",
-      "timeout",
-      "connection",
-      "offline",
-      "failed to fetch",
-      "internet",
-      "econnrefused",
-      "internal",
-    ];
-
-    console.log("error", error);
-    // Check for network-related errors
-    const isRetryable =
-      networkErrorKeywords.some((keyword) => message.includes(keyword)) ||
-      error.name === "AbortError" ||
-      (error.status &&
-        (error.status >= 500 || error.status === 429 || error.status === 404));
-    console.log("isRetryable", isRetryable);
-    return isRetryable;
-  }
   async refreshToken(): Promise<string | null> {
-    try {
-      const authResponse = await refreshTokenApi();
-      if (authResponse.accessToken) {
-        setLocalStorage("accessToken", authResponse.accessToken);
-      }
-
-      if (authResponse.refreshToken && authResponse.accessToken) {
-        setLocalStorage("refreshToken", authResponse.refreshToken);
-        store.dispatch(
-          setAuthTokens({
-            accessToken: authResponse.accessToken,
-            refreshToken: authResponse.refreshToken,
-          })
-        );
-      }
-
-      if (authResponse.user) {
-        setLocalStorage("user", authResponse.user);
-        store.dispatch(setCurrentUser(authResponse.user));
-      }
-
-      return authResponse.refreshToken;
-    } catch (error) {
-      if (this.isRetryableError(error)) {
-        return null;
-      }
-
-      removeLocalStorage("accessToken");
-      removeLocalStorage("refreshToken");
-      removeLocalStorage("user");
-
-      store.dispatch(logout());
-
-      return null;
-    }
+    return await httpClient.refreshToken();
   }
 
   /**
@@ -102,28 +32,17 @@ class AuthService {
     const isOnline = navigator.onLine;
 
     if (isOnline) {
-      // Online login flow
       const authResponse = await apiLogin(credentials);
 
-      // Persist user to local DB
       await this.usersRepo.setLoggedInUser(authResponse.user.id);
       await this.usersRepo.upsertUser(
         authResponse.user,
         authResponse.refreshToken
       );
 
-      // Persist tokens to Local Storage
       setLocalStorage("accessToken", authResponse.accessToken);
       setLocalStorage("refreshToken", authResponse.refreshToken);
       setLocalStorage("user", authResponse.user);
-
-      store.dispatch(
-        setAuthTokens({
-          accessToken: authResponse.accessToken,
-          refreshToken: authResponse.refreshToken,
-        })
-      );
-      store.dispatch(setCurrentUser(authResponse.user));
 
       return authResponse.user;
     } else {
@@ -133,9 +52,6 @@ class AuthService {
       );
 
       if (cachedUser) {
-        // NOTE: In a real-world scenario, we would need a more secure way
-        // to verify credentials offline, like hashing the password.
-        // For this POS system, we are trusting the user exists in the cache.
         await this.usersRepo.setLoggedInUser(cachedUser.id);
         setLocalStorage("user", cachedUser);
 
@@ -155,7 +71,7 @@ class AuthService {
     removeLocalStorage("accessToken");
     removeLocalStorage("refreshToken");
     removeLocalStorage("user");
-    // Redux state will be cleared in the component/slice
+    store.dispatch(logout());
   }
 
   /**
@@ -163,18 +79,12 @@ class AuthService {
    * Order: Local Storage -> Drizzle DB
    */
   async getPersistedUser(): Promise<AuthResponse["user"] | null> {
-    // 1. Try Local Storage first (quickest)
-    const userFromStorage = getLocalStorage<AuthResponse["user"]>("user");
-    if (userFromStorage) {
-      return userFromStorage;
-    }
+    const isOnline = networkStatus.isNetworkOnline();
 
-    // 2. If not in storage, check the Drizzle DB for a logged-in user
-    const userFromDb = await this.usersRepo.getLoggedInUser();
-
-    if (userFromDb) {
-      setLocalStorage("user", userFromDb);
-      return userFromDb as AuthResponse["user"];
+    if (isOnline) {
+      await this.refreshToken();
+      const user = await getMe();
+      return user;
     }
 
     return null;

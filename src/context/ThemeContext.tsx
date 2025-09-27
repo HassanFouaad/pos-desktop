@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useMemo, useState } from "react";
+import { getLocalStorage, setLocalStorage } from "../utils/storage";
 
 type ThemeMode = "light" | "dark";
 
@@ -13,10 +14,16 @@ export const ThemeContext = createContext<ThemeContextType>({
 });
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [mode, setMode] = useState<ThemeMode>("light");
+  const [mode, setMode] = useState<ThemeMode>(
+    (getLocalStorage("theme") as ThemeMode) || "light"
+  );
 
   const toggleTheme = () => {
-    setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
+    setMode((prevMode) => {
+      const newMode = prevMode === "light" ? "dark" : "light";
+      setLocalStorage("theme", newMode);
+      return newMode;
+    });
   };
 
   const value = useMemo(() => ({ mode, toggleTheme }), [mode]);

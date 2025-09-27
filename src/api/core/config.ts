@@ -34,7 +34,7 @@ export const endpoints = {
     changePassword: "/v1/auth/change-password",
   },
   customers: {
-    create: "/v1/customers",
+    create: "/v1/pos/customers",
   },
   // Add other endpoints as needed
 };

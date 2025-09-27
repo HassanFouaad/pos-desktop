@@ -1,4 +1,6 @@
 import { fetch } from "@tauri-apps/plugin-http";
+import { store } from "../../store";
+import { logout } from "../../store/authSlice";
 import {
   getLocalStorage,
   removeLocalStorage,
@@ -14,7 +16,7 @@ import { ApiResponse } from "./types";
 class TauriHttpClient {
   private static instance: TauriHttpClient;
   private baseUrl: string;
-  
+
   private refreshPromise: Promise<string | null> | null = null;
   private isRefreshing = false;
 
@@ -43,12 +45,11 @@ class TauriHttpClient {
     };
 
     const token = getLocalStorage("accessToken");
+
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
-      headers['x-sync-token'] = token;
+      headers["x-sync-token"] = token;
     }
-
-    
 
     return headers;
   }
@@ -84,7 +85,7 @@ class TauriHttpClient {
   /**
    * Handle refresh token logic - skips if offline
    */
-  private async refreshToken(): Promise<string | null> {
+  async refreshToken(): Promise<string | null> {
     // Skip refresh token attempt if offline
     if (!this.isOnline()) {
       console.log("Skipping token refresh - browser is offline");
@@ -119,22 +120,28 @@ class TauriHttpClient {
 
       if (response.ok) {
         const responseData = await response.json();
-        if (responseData.success) {
-          const newToken = responseData.data.accessToken;
-          setLocalStorage("accessToken", newToken);
-          // Some backends also return a new refresh token
-          if (responseData.data.refreshToken) {
-            setLocalStorage("refreshToken", responseData.data.refreshToken);
-          }
-          return newToken;
-        }
+
+        const newAccessToken = responseData.data.accessToken;
+
+        setLocalStorage("accessToken", newAccessToken);
+
+        return responseData.data.accessToken;
       }
-      throw new Error("Failed to refresh token");
+
+      const responseData = await response.json();
+
+      if (!responseData) return null;
+
+      throw new Error(
+        responseData?.error?.message || "Failed to refresh token"
+      );
     } catch (error) {
       // Clear tokens on refresh failure
       removeLocalStorage("accessToken");
       removeLocalStorage("refreshToken");
-      console.error("Token refresh failed:", error);
+
+      store.dispatch(logout());
+
       return null;
     } finally {
       this.isRefreshing = false;
@@ -191,7 +198,7 @@ class TauriHttpClient {
       data: null as unknown as T,
       error: {
         code: String(error.status || "UNKNOWN"),
-        message: error.message || "An unexpected error occurred",
+        message: error?.message || "An unexpected error occurred",
         details: error,
       },
     };
@@ -217,7 +224,10 @@ class TauriHttpClient {
         return this.processResponse<T>(responseData);
       }
 
-      throw response;
+      const errorJSON = await response.json();
+      const errorData = errorJSON?.error || {};
+      ((errorData as any) || {}).status = response?.status;
+      throw errorData;
     } catch (error) {
       return this.handleApiError<T>(error, url, options, isRetry);
     }

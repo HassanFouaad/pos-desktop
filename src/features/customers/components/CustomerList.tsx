@@ -1,9 +1,9 @@
 import { Add } from "@mui/icons-material";
 import {
   Alert,
-  Button,
   CircularProgress,
   Grid,
+  IconButton,
   Snackbar,
   Typography,
 } from "@mui/material";
@@ -77,21 +77,21 @@ export const CustomerList = () => {
   };
 
   return (
-    <Grid container spacing={2}>
-      <Grid size={{ xs: 8 }} sx={{ mb: 2 }}>
+    <Grid container rowSpacing={2}>
+      <Grid size={{ md: 11, sm: 12, xs: 12 }}>
         <CustomerSearch
           onSearch={setSearchTerm}
           placeholder="Search customers by name, phone..."
         />
       </Grid>
-      <Grid size={{ xs: 4 }} sx={{ mb: 2, textAlign: "right" }}>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => setCreateModalOpen(true)}
-        >
-          New Customer
-        </Button>
+
+      <Grid
+        size={{ md: 1, sm: 12, xs: 12 }}
+        sx={{ textAlign: "center", alignItems: "center" }}
+      >
+        <IconButton onClick={() => setCreateModalOpen(true)}>
+          <Add />
+        </IconButton>
       </Grid>
 
       {loading && customers.length === 0 ? (

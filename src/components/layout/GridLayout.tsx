@@ -33,7 +33,7 @@ export const GridLayout = ({
       <Grid container sx={{ height: 1, width: 1 }}>
         <Grid
           size={{ xs: 12 }}
-          sx={{ justifyContent: "center", textAlign: "center" }}
+          sx={{ justifyContent: "center", textAlign: "center", py: 1 }}
         >
           <Typography variant="h4">{title}</Typography>
         </Grid>
