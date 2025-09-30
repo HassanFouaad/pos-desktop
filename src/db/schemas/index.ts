@@ -9,9 +9,14 @@ import {
   serial,
   text,
   timestamp,
+  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-
+export const syncStatusEnum = pgEnum("sync_status", [
+  "pending",
+  "success",
+  "failed",
+]);
 export const users = pgTable("users", {
   id: bigint("id", { mode: "number" }).primaryKey(),
   tenantId: bigint("tenantId", { mode: "number" }),
@@ -55,6 +60,19 @@ export const categories = pgTable("categories", {
   categoryType: varchar("categoryType", { length: 50 }),
   createdAt: timestamp("createdAt", { withTimezone: true }),
   updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  localId: uuid("localId"),
+});
+
+export const pendingCategories = pgTable("pending_categories", {
+  id: bigint("id", { mode: "number" }).primaryKey(),
+  tenantId: bigint("tenantId", { mode: "number" }),
+  name: varchar("name", { length: 255 }),
+  parentCategoryId: bigint("parentCategoryId", { mode: "number" }),
+  categoryType: varchar("categoryType", { length: 50 }),
+  createdAt: timestamp("createdAt", { withTimezone: true }),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  syncStatus: syncStatusEnum("syncStatus").default("pending"),
+  localId: uuid("localId"),
 });
 
 export const products = pgTable("products", {
@@ -124,7 +142,7 @@ export const customers = pgTable("customers", {
   notes: text("notes"),
   createdAt: timestamp("createdAt", { withTimezone: true }),
   updatedAt: timestamp("updatedAt", { withTimezone: true }),
-  localId: varchar("localId", { length: 255 }),
+  localId: uuid("localId"),
 });
 
 export const storePrices = pgTable("store_prices", {
@@ -134,12 +152,6 @@ export const storePrices = pgTable("store_prices", {
   storeId: bigint("storeId", { mode: "number" }),
   price: decimal("price", { precision: 12, scale: 2 }),
 });
-
-export const syncStatusEnum = pgEnum("sync_status", [
-  "pending",
-  "success",
-  "failed",
-]);
 
 // This table is deprecated and no longer in use. Customer data is now stored directly in the changes table.
 // Keeping this for backward compatibility until a future migration can remove it.
@@ -162,7 +174,7 @@ export const pendingCustomers = pgTable("pending_customers", {
   createdAt: timestamp("createdAt", { withTimezone: true }),
   updatedAt: timestamp("updatedAt", { withTimezone: true }),
   syncStatus: syncStatusEnum("syncStatus").default("pending"),
-  localId: varchar("localId", { length: 255 }),
+  localId: uuid("localId"),
 });
 
 import { index, jsonb } from "drizzle-orm/pg-core";
@@ -181,7 +193,7 @@ export const changes = pgTable(
     payload: jsonb("payload"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
     syncedAt: timestamp("synced_at", { withTimezone: true }),
-    transactionId: varchar("transaction_id", { length: 50 }),
+    transactionId: uuid("transaction_id"),
     status: varchar("status", { length: 10 }).default("pending"),
   },
   (table) => {

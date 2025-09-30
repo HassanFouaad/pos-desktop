@@ -57,6 +57,13 @@
       "when": 1759348765432,
       "tag": "0007_clean_automated_janitor",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1759263526690,
+      "tag": "0008_gifted_lyja",
+      "breakpoints": true
     }
   ]
 }
