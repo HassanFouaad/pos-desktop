@@ -175,7 +175,7 @@ export class SyncService {
     this.hasChangesWhileProcessing = false;
 
     try {
-      const { changes, newPosition } = await this.fetchChanges();
+      const { changes } = await this.fetchChanges();
 
       if (changes.length > 0) {
         console.log(`Processing ${changes.length} changes`);
@@ -371,6 +371,7 @@ export class SyncService {
       this.isRunning &&
       !this.processingQueue
     ) {
+      console.log("Processing changes because network is online");
       this.processChanges();
     }
   }

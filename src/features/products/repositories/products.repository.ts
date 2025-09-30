@@ -7,8 +7,8 @@ import {
   productVariants,
   storePrices,
 } from "../../../db/schemas";
-import { CategoryDTO } from "../types/category.dto";
-import { VariantDetailDTO } from "../types/variant-detail.dto";
+import type { CategoryDTO } from "../types/category.dto";
+import type { VariantDetailDTO } from "../types/variant-detail.dto";
 
 export class ProductsRepository {
   private db: DrizzleDb["database"];

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import httpClient, { endpoints } from "../../../api";
+import httpClient, { ApiResponse, endpoints } from "../../../api";
 
 export const loginSchema = z.object({
   tenantSubDomain: z.string().min(1, "Tenant Sub Domain is required"),
@@ -29,17 +29,13 @@ export interface AuthResponse {
  */
 export const login = async (
   credentials: LoginCredentials
-): Promise<AuthResponse> => {
+): Promise<ApiResponse<AuthResponse>> => {
   const response = await httpClient.post<AuthResponse>(
     endpoints.auth.login,
     credentials
   );
 
-  if (!response.success || !response.data) {
-    throw new Error(response.error?.message || "Login failed");
-  }
-
-  return response.data;
+  return response;
 };
 
 /**
@@ -52,7 +48,9 @@ export const logout = async (): Promise<void> => {
 /**
  * Refresh token
  */
-export const refreshTokenApi = async (refreshToken: string) => {
+export const refreshTokenApi = async (
+  refreshToken: string
+): Promise<ApiResponse<Pick<AuthResponse, "accessToken">>> => {
   return httpClient.post(endpoints.auth.refreshToken, {
     refreshToken,
   });
@@ -64,21 +62,19 @@ export const refreshTokenApi = async (refreshToken: string) => {
 export const changePassword = async (
   currentPassword: string,
   newPassword: string
-): Promise<void> => {
+): Promise<ApiResponse<void>> => {
   const response = await httpClient.post(endpoints.auth.changePassword, {
     currentPassword,
     newPassword,
   });
 
-  if (!response.success) {
-    throw new Error(response.error?.message || "Failed to change password");
-  }
+  return response;
 };
 
 /**
  * Get me
  */
-export const getMe = async (): Promise<AuthResponse["user"]> => {
+export const getMe = async (): Promise<ApiResponse<AuthResponse>> => {
   const response = await httpClient.get(endpoints.auth.me);
-  return response.data;
+  return response;
 };

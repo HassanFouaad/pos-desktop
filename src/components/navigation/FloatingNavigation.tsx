@@ -13,11 +13,11 @@ import {
   SpeedDialAction,
   SpeedDialIcon,
   Tooltip,
-  useTheme,
+  useTheme as useMuiTheme,
 } from "@mui/material";
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ThemeContext } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 
 export interface NavigationAction {
   icon: React.ReactNode;
@@ -36,8 +36,9 @@ export const FloatingNavigation = ({
 }: FloatingNavigationProps) => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const theme = useTheme();
-  const { mode, toggleTheme } = useContext(ThemeContext);
+  const muiTheme = useMuiTheme();
+  // Use Redux theme state via custom hook
+  const { mode, toggleTheme } = useTheme();
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -71,7 +72,7 @@ export const FloatingNavigation = ({
             position: "fixed",
             top: 16,
             left: 16,
-            zIndex: theme.zIndex.speedDial,
+            zIndex: muiTheme.zIndex.speedDial,
           }}
         >
           <Tooltip title="Back">
@@ -81,8 +82,8 @@ export const FloatingNavigation = ({
               aria-label="back"
               onClick={handleBack}
               sx={{
-                backgroundColor: theme.palette.background.paper,
-                color: theme.palette.text.primary,
+                backgroundColor: muiTheme.palette.background.paper,
+                color: muiTheme.palette.text.primary,
               }}
             >
               <BackIcon />
@@ -98,7 +99,7 @@ export const FloatingNavigation = ({
           position: "fixed",
           bottom: 16,
           right: 16,
-          zIndex: theme.zIndex.speedDial,
+          zIndex: muiTheme.zIndex.speedDial,
         }}
       >
         <SpeedDial
@@ -110,9 +111,9 @@ export const FloatingNavigation = ({
           direction="up"
           FabProps={{
             sx: {
-              bgcolor: theme.palette.primary.main,
+              bgcolor: muiTheme.palette.primary.main,
               "&:hover": {
-                bgcolor: theme.palette.primary.dark,
+                bgcolor: muiTheme.palette.primary.dark,
               },
             },
           }}
@@ -128,8 +129,8 @@ export const FloatingNavigation = ({
               }}
               FabProps={{
                 sx: {
-                  bgcolor: theme.palette.background.paper,
-                  color: theme.palette.text.primary,
+                  bgcolor: muiTheme.palette.background.paper,
+                  color: muiTheme.palette.text.primary,
                 },
               }}
             />

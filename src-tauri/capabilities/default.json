@@ -21,6 +21,9 @@
         },
         {
           "url": "http://localhost:1420"
+        },
+        {
+          "url": "https://www.google.com"
         }
       ]
     },

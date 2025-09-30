@@ -290,7 +290,7 @@ export const getTheme = (mode: "light" | "dark"): ThemeOptions => {
 };
 
 // Create a default theme and allow font size responsiveness
-const createResponsiveTheme = (mode: "light" | "dark") => {
+const createResponsiveTheme = (mode: Partial<"light" | "dark">) => {
   const themeOptions = getTheme(mode);
   let theme = createTheme(themeOptions);
   theme = responsiveFontSizes(theme);

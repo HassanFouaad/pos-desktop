@@ -6,7 +6,7 @@ import { AuthResponse } from "../../auth/api/auth";
 
 type UserSchema = typeof users.$inferInsert;
 
-export class UsersRepository {
+class UsersRepository {
   private db: ReturnType<typeof drizzle<typeof DatabaseSchema>> =
     drizzleDb.database;
 
@@ -19,17 +19,19 @@ export class UsersRepository {
    * Also ensures all other users are marked as not logged in.
    */
   async upsertUser(
-    userData: AuthResponse["user"],
-    refreshToken: string
+    userData: Partial<AuthResponse["user"]>,
+    accessToken?: string,
+    refreshToken?: string
   ): Promise<void> {
     const userToInsert: UserSchema = {
       ...userData,
-      id: userData.id,
+      id: userData.id || 0,
       tenantId: userData.tenantId,
       permissions: userData.permissions || [],
       isLoggedIn: true,
       lastLoginAt: new Date(),
       refreshToken: refreshToken,
+      accessToken: accessToken,
     };
 
     await this.db.insert(users).values(userToInsert).onConflictDoUpdate({

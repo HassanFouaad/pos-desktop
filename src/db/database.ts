@@ -5,7 +5,7 @@ import { live } from "@electric-sql/pglite/live";
 import { PGliteWorker } from "@electric-sql/pglite/worker";
 import dayjs from "dayjs";
 import { config } from "../config";
-import { getLocalStorage } from "../utils/storage";
+
 const database = await PGliteWorker.create(
   new Worker(new URL("./my-pglite-worker.js", import.meta.url), {
     type: "module",
@@ -19,9 +19,10 @@ const database = await PGliteWorker.create(
     },
   }
 );
+
 await database.waitReady;
 
-const startSync = async (persistanceId: string = "default") => {
+const startSync = async (token: string, persistanceId: string = "default") => {
   try {
     const res = await (
       database as any as PGliteWithSync
@@ -32,7 +33,7 @@ const startSync = async (persistanceId: string = "default") => {
             url: config.ELECTRIC_URL + "/stores",
             params: { table: "stores" },
             headers: {
-              "x-sync-token": getLocalStorage("accessToken") ?? "",
+              "x-sync-token": token ?? "",
             },
           },
           table: "stores",
@@ -43,7 +44,7 @@ const startSync = async (persistanceId: string = "default") => {
             url: config.ELECTRIC_URL + "/categories",
             table: "categories",
             headers: {
-              "x-sync-token": getLocalStorage("accessToken") ?? "",
+              "x-sync-token": token ?? "",
             },
           },
           shapeKey: "categories",
@@ -55,7 +56,7 @@ const startSync = async (persistanceId: string = "default") => {
             url: config.ELECTRIC_URL + "/products",
             table: "products",
             headers: {
-              "x-sync-token": getLocalStorage("accessToken") ?? "",
+              "x-sync-token": token ?? "",
             },
           },
           table: "products",
@@ -68,7 +69,7 @@ const startSync = async (persistanceId: string = "default") => {
             url: config.ELECTRIC_URL + "/product_variants",
             table: "product_variants",
             headers: {
-              "x-sync-token": getLocalStorage("accessToken") ?? "",
+              "x-sync-token": token ?? "",
             },
           },
           table: "product_variants",
@@ -80,7 +81,7 @@ const startSync = async (persistanceId: string = "default") => {
             url: config.ELECTRIC_URL + "/inventory",
             params: { table: "inventory" },
             headers: {
-              "x-sync-token": getLocalStorage("accessToken") ?? "",
+              "x-sync-token": token ?? "",
             },
           },
           table: "inventory",
@@ -91,7 +92,7 @@ const startSync = async (persistanceId: string = "default") => {
             url: config.ELECTRIC_URL + "/customers",
             params: { table: "customers" },
             headers: {
-              "x-sync-token": getLocalStorage("accessToken") ?? "",
+              "x-sync-token": token ?? "",
             },
           },
           table: "customers",
@@ -102,7 +103,7 @@ const startSync = async (persistanceId: string = "default") => {
             url: config.ELECTRIC_URL + "/store_prices",
             params: { table: "store_prices" },
             headers: {
-              "x-sync-token": getLocalStorage("accessToken") ?? "",
+              "x-sync-token": token ?? "",
             },
           },
           table: "store_prices",

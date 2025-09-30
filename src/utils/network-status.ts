@@ -10,33 +10,16 @@
 
 export class NetworkStatusService {
   private static instance: NetworkStatusService;
-  private isOnline: boolean = navigator.onLine;
+  private isOnline: boolean = true;
   private listeners: ((online: boolean) => void)[] = [];
-  private checkEndpoint: string = "";
 
   private constructor() {
     window?.addEventListener("online", this.handleOnlineChange.bind(this));
     window?.addEventListener("offline", this.handleOnlineChange.bind(this));
-
-    // Additional check for Tauri environment
-    if (this.isTauriEnvironment()) {
-      this.setupTauriListeners();
-    }
-  }
-
-  private isTauriEnvironment(): boolean {
-    return (
-      typeof window !== "undefined" ||
-      (window as any)?.["__TAURI__"] !== undefined
-    );
-  }
-
-  private setupTauriListeners() {
-    // Tauri-specific network event listeners if needed
-    // Currently using browser's online/offline events which work in Tauri
   }
 
   private handleOnlineChange() {
+    console.log("Online Status Determination started");
     const wasOnline = this.isOnline;
     this.isOnline = navigator.onLine;
 
@@ -50,13 +33,6 @@ export class NetworkStatusService {
       NetworkStatusService.instance = new NetworkStatusService();
     }
     return NetworkStatusService.instance;
-  }
-
-  /**
-   * Set the endpoint URL to use for active connectivity checking
-   */
-  public setCheckEndpoint(url: string): void {
-    this.checkEndpoint = url;
   }
 
   /**
@@ -88,20 +64,7 @@ export class NetworkStatusService {
     }
 
     try {
-      const endpoint = this.checkEndpoint || "/api/health";
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-
-      const response = await fetch(endpoint, {
-        method: "HEAD",
-        cache: "no-cache",
-        headers: { "Cache-Control": "no-cache" },
-        mode: "no-cors",
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeout);
-      return response.ok;
+      return true;
     } catch (error) {
       console.error("Connectivity check failed:", error);
       return false;
@@ -109,5 +72,12 @@ export class NetworkStatusService {
   }
 }
 
+window.addEventListener("offline", (e) => {
+  console.log("offline");
+});
+
+window.addEventListener("online", (e) => {
+  console.log("online");
+});
 // Export singleton instance
 export const networkStatus = NetworkStatusService.getInstance();

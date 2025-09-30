@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "accessToken" varchar(500);

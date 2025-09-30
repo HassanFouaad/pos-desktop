@@ -1,7 +1,12 @@
-import { ilike, or } from "drizzle-orm";
+import { desc, eq, ilike, or } from "drizzle-orm";
+import { v4 } from "uuid";
 import { DrizzleDb, drizzleDb } from "../../../db/drizzle";
-import { customers } from "../../../db/schemas";
-import { SyncOperation, syncService } from "../../../db/sync/sync.service";
+import { customers, pendingCustomers } from "../../../db/schemas";
+import {
+  SyncOperation,
+  syncService,
+  SyncStatus,
+} from "../../../db/sync/sync.service";
 import { usersRepository } from "../../users/repositories/users.repository";
 import { CustomerDTO } from "../types/customer.dto";
 
@@ -17,7 +22,19 @@ export class CustomersRepository {
     limit: number,
     offset: number
   ): Promise<CustomerDTO[]> {
-    const query = this.db.select().from(customers).limit(limit).offset(offset);
+    const query = this.db
+      .select()
+      .from(customers)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(customers.createdAt));
+
+    const pendingQuery = this.db
+      .select()
+      .from(pendingCustomers)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(pendingCustomers.createdAt));
 
     if (searchTerm) {
       query.where(
@@ -26,9 +43,19 @@ export class CustomersRepository {
           ilike(customers.phone, `%${searchTerm}%`)
         )
       );
+      pendingQuery.where(
+        or(
+          ilike(pendingCustomers.name, `%${searchTerm}%`),
+          ilike(pendingCustomers.phone, `%${searchTerm}%`)
+        )
+      );
     }
+    const [customersData, pendingCustomersData] = await Promise.all([
+      query.execute(),
+      pendingQuery.execute(),
+    ]);
 
-    return query.execute();
+    return [...pendingCustomersData, ...customersData];
   }
 
   async createCustomer(customerData: {
@@ -45,13 +72,35 @@ export class CustomersRepository {
       updatedAt: new Date(),
     };
 
+    const localId = v4();
+    await this.db
+      .insert(pendingCustomers)
+      .values({
+        ...payload,
+        syncStatus: SyncStatus.PENDING,
+        localId,
+      })
+      .execute();
+
     // Track the change directly in the changes table
     await syncService.trackChange(
       "customer",
       0, // Using 0 as a placeholder since we don't have an ID yet
       SyncOperation.INSERT,
-      payload
+      payload,
+      localId
     );
+  }
+
+  async changePendingCustomerStatus(
+    localId: string,
+    status: Exclude<SyncStatus, SyncStatus.RETRY>
+  ): Promise<void> {
+    await this.db
+      .update(pendingCustomers)
+      .set({ syncStatus: status })
+      .where(eq(pendingCustomers.localId, localId))
+      .execute();
   }
 
   // These methods are no longer needed as we're using changes table directly

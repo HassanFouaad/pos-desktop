@@ -6,20 +6,14 @@ import {
   Routes,
   useNavigate,
 } from "react-router-dom";
-// Import the sync service and related handlers
-import { syncService } from "./db/sync/sync.service";
-// Import handlers to ensure they're registered
 import { GridDashboard } from "./components/dashboard/GridDashboard";
 import { GridLayout } from "./components/layout/GridLayout";
 import { FloatingNavigation } from "./components/navigation/FloatingNavigation";
-import { ThemeProviderWrapper } from "./components/theme/ThemeProviderWrapper";
-import { ThemeProvider } from "./context/ThemeContext";
 import { ProtectedRoute } from "./features/auth/components/ProtectedRoute";
+import PublicRoute from "./features/auth/components/PublicRoute";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import CustomersPage from "./features/customers/pages";
 // Import customer handler to ensure it's registered with the sync service
-import { PGliteProvider } from "@electric-sql/pglite-react";
-import { database } from "./db/database";
 import "./features/customers/services/customer-sync-handler";
 import ProductsPage from "./features/products/pages";
 import { initAuth } from "./store/authSlice";
@@ -53,152 +47,143 @@ function App() {
 
   useEffect(() => {
     dispatch(initAuth());
-
-    // Cleanup function to stop the sync service when the app unmounts
-    return () => {
-      syncService.stop();
-    };
   }, [dispatch]);
 
   return (
-    <ThemeProvider>
-      <ThemeProviderWrapper>
-        <PGliteProvider db={database}>
-          <Router>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route element={<ProtectedRoute />}>
-                <Route
-                  path="/"
-                  element={
-                    <GridLayout title="Modern POS">
-                      <DashboardWithNav />
-                      <FloatingNavigation />
-                    </GridLayout>
-                  }
-                />
+    <Router>
+      <Routes>
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<LoginPage />} />
+        </Route>
 
-                {/* Sales Module */}
-                <Route
-                  path="/sales/*"
-                  element={
-                    <GridLayout title="Sales">
-                      <Grid>
-                        <ModulePlaceholder title="Sales" />
-                      </Grid>
-                      <FloatingNavigation showBackButton />
-                    </GridLayout>
-                  }
-                />
+        <Route element={<ProtectedRoute />}>
+          <Route
+            path="/"
+            element={
+              <GridLayout title="Modern POS">
+                <DashboardWithNav />
+                <FloatingNavigation />
+              </GridLayout>
+            }
+          />
 
-                {/* Customers Module */}
-                <Route
-                  path="/customers"
-                  element={
-                    <GridLayout title="Customers">
-                      <CustomersPage />
+          {/* Sales Module */}
+          <Route
+            path="/sales/*"
+            element={
+              <GridLayout title="Sales">
+                <Grid>
+                  <ModulePlaceholder title="Sales" />
+                </Grid>
+                <FloatingNavigation showBackButton />
+              </GridLayout>
+            }
+          />
 
-                      <FloatingNavigation showBackButton />
-                    </GridLayout>
-                  }
-                />
+          {/* Customers Module */}
+          <Route
+            path="/customers"
+            element={
+              <GridLayout title="Customers">
+                <CustomersPage />
+                <FloatingNavigation showBackButton />
+              </GridLayout>
+            }
+          />
 
-                {/* Inventory/Products Module */}
-                <Route
-                  path="/products"
-                  element={
-                    <GridLayout title="Products">
-                      <Grid>
-                        <ProductsPage />
-                      </Grid>
-                      <FloatingNavigation showBackButton />
-                    </GridLayout>
-                  }
-                />
+          {/* Inventory/Products Module */}
+          <Route
+            path="/products"
+            element={
+              <GridLayout title="Products">
+                <Grid>
+                  <ProductsPage />
+                </Grid>
+                <FloatingNavigation showBackButton />
+              </GridLayout>
+            }
+          />
 
-                {/* Orders Module */}
-                <Route
-                  path="/orders"
-                  element={
-                    <GridLayout title="Orders">
-                      <Grid>
-                        <ModulePlaceholder title="Orders" />
-                      </Grid>
-                      <FloatingNavigation showBackButton />
-                    </GridLayout>
-                  }
-                />
+          {/* Orders Module */}
+          <Route
+            path="/orders"
+            element={
+              <GridLayout title="Orders">
+                <Grid>
+                  <ModulePlaceholder title="Orders" />
+                </Grid>
+                <FloatingNavigation showBackButton />
+              </GridLayout>
+            }
+          />
 
-                {/* Payments Module */}
-                <Route
-                  path="/payments"
-                  element={
-                    <GridLayout title="Payments">
-                      <Grid>
-                        <ModulePlaceholder title="Payments" />
-                      </Grid>
-                      <FloatingNavigation showBackButton />
-                    </GridLayout>
-                  }
-                />
+          {/* Payments Module */}
+          <Route
+            path="/payments"
+            element={
+              <GridLayout title="Payments">
+                <Grid>
+                  <ModulePlaceholder title="Payments" />
+                </Grid>
+                <FloatingNavigation showBackButton />
+              </GridLayout>
+            }
+          />
 
-                {/* Receipts Module */}
-                <Route
-                  path="/receipts"
-                  element={
-                    <GridLayout title="Receipts">
-                      <Grid>
-                        <ModulePlaceholder title="Receipts" />
-                      </Grid>
-                      <FloatingNavigation showBackButton />
-                    </GridLayout>
-                  }
-                />
+          {/* Receipts Module */}
+          <Route
+            path="/receipts"
+            element={
+              <GridLayout title="Receipts">
+                <Grid>
+                  <ModulePlaceholder title="Receipts" />
+                </Grid>
+                <FloatingNavigation showBackButton />
+              </GridLayout>
+            }
+          />
 
-                {/* Reports Module */}
-                <Route
-                  path="/reports"
-                  element={
-                    <GridLayout title="Reports">
-                      <Grid>
-                        <ModulePlaceholder title="Reports" />
-                      </Grid>
-                      <FloatingNavigation showBackButton />
-                    </GridLayout>
-                  }
-                />
+          {/* Reports Module */}
+          <Route
+            path="/reports"
+            element={
+              <GridLayout title="Reports">
+                <Grid>
+                  <ModulePlaceholder title="Reports" />
+                </Grid>
+                <FloatingNavigation showBackButton />
+              </GridLayout>
+            }
+          />
 
-                {/* Settings Module */}
-                <Route
-                  path="/settings"
-                  element={
-                    <GridLayout title="Settings">
-                      <Grid>
-                        <ModulePlaceholder title="Settings" />
-                      </Grid>
-                      <FloatingNavigation showBackButton />
-                    </GridLayout>
-                  }
-                />
+          {/* Settings Module */}
+          <Route
+            path="/settings"
+            element={
+              <GridLayout title="Settings">
+                <Grid>
+                  <ModulePlaceholder title="Settings" />
+                </Grid>
+                <FloatingNavigation showBackButton />
+              </GridLayout>
+            }
+          />
 
-                {/* More Module */}
-                <Route
-                  path="/more"
-                  element={
-                    <GridLayout title="More Options">
-                      <Grid>
-                        <ModulePlaceholder title="More Options" />
-                      </Grid>
-                      <FloatingNavigation showBackButton />
-                    </GridLayout>
-                  }
-                />
-              </Route>
-            </Routes>
-          </Router>
-        </PGliteProvider>
-      </ThemeProviderWrapper>
-    </ThemeProvider>
+          {/* More Module */}
+          <Route
+            path="/more"
+            element={
+              <GridLayout title="More Options">
+                <Grid>
+                  <ModulePlaceholder title="More Options" />
+                </Grid>
+                <FloatingNavigation showBackButton />
+              </GridLayout>
+            }
+          />
+        </Route>
+      </Routes>
+    </Router>
   );
 }
 

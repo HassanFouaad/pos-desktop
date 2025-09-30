@@ -1,0 +1,1 @@
+ALTER TABLE "pending_customers" ADD COLUMN "localId" varchar(255);

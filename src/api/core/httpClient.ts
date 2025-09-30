@@ -1,6 +1,4 @@
 import { fetch } from "@tauri-apps/plugin-http";
-import { store } from "../../store";
-import { logout } from "../../store/authSlice";
 import {
   getLocalStorage,
   removeLocalStorage,
@@ -88,7 +86,6 @@ class TauriHttpClient {
   async refreshToken(): Promise<string | null> {
     // Skip refresh token attempt if offline
     if (!this.isOnline()) {
-      console.log("Skipping token refresh - browser is offline");
       return null;
     }
 
@@ -140,8 +137,6 @@ class TauriHttpClient {
       removeLocalStorage("accessToken");
       removeLocalStorage("refreshToken");
 
-      store.dispatch(logout());
-
       return null;
     } finally {
       this.isRefreshing = false;
@@ -159,6 +154,14 @@ class TauriHttpClient {
     isRetry = false
   ): Promise<ApiResponse<T>> {
     const config = getConfig();
+
+    if (typeof error === "string") {
+      error = {
+        status: 0,
+        code: "NETWORK_ERROR",
+        message: "Network error. Please check your internet connection.",
+      };
+    }
 
     if (error.status === config.statusCodes.unauthorized && !isRetry) {
       // Check if this is a protected route that needs refresh
@@ -197,7 +200,7 @@ class TauriHttpClient {
       success: false,
       data: null as unknown as T,
       error: {
-        code: String(error.status || "UNKNOWN"),
+        code: String(error.code || "UNKNOWN"),
         message: error?.message || "An unexpected error occurred",
         details: error,
       },
@@ -224,8 +227,10 @@ class TauriHttpClient {
         return this.processResponse<T>(responseData);
       }
 
+      console.log("response", response);
       const errorJSON = await response.json();
       const errorData = errorJSON?.error || {};
+      console.log("errorData", errorData);
       ((errorData as any) || {}).status = response?.status;
       throw errorData;
     } catch (error) {

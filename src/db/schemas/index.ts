@@ -22,6 +22,9 @@ export const users = pgTable("users", {
   isLoggedIn: boolean("isLoggedIn").default(false),
   lastLoginAt: timestamp("lastLoginAt", { withTimezone: true }),
   refreshToken: varchar("refreshToken", { length: 255 }),
+  hashedPassword: varchar("hashedPassword", { length: 255 }),
+  username: varchar("username", { length: 255 }),
+  accessToken: varchar("accessToken", { length: 500 }),
 });
 
 export const stores = pgTable("stores", {
@@ -158,6 +161,7 @@ export const pendingCustomers = pgTable("pending_customers", {
   createdAt: timestamp("createdAt", { withTimezone: true }),
   updatedAt: timestamp("updatedAt", { withTimezone: true }),
   syncStatus: syncStatusEnum("syncStatus").default("pending"),
+  localId: varchar("localId", { length: 255 }),
 });
 
 import { index, jsonb } from "drizzle-orm/pg-core";

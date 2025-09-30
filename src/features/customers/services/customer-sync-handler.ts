@@ -3,8 +3,10 @@ import {
   SyncHandler,
   SyncOperation,
   syncService,
+  SyncStatus,
 } from "../../../db/sync/sync.service";
 import { createCustomer } from "../api/customers";
+import { customersRepository } from "../repositories/customers.repository";
 
 /**
  * CustomerSyncHandler - Handles synchronization of customer data with the server
@@ -15,7 +17,6 @@ export class CustomerSyncHandler implements SyncHandler {
   entityType = "customer";
 
   constructor() {
-    // Register this handler with the sync service
     syncService.registerHandler(this);
   }
 
@@ -58,6 +59,10 @@ export class CustomerSyncHandler implements SyncHandler {
       // Send to the API
       await createCustomer(customerData);
 
+      customersRepository.changePendingCustomerStatus(
+        change.payload.localId,
+        SyncStatus.SUCCESS
+      );
       // No need to update any status since we're using changes table directly
       return "accepted";
     } catch (error) {
@@ -88,9 +93,7 @@ export class CustomerSyncHandler implements SyncHandler {
   ): Promise<"accepted" | "rejected" | "retry"> {
     // Implement delete logic when needed
     // For now, we'll just mark it as accepted
-    console.log(
-      "Customer delete operation not yet implemented, marking as accepted"
-    );
+
     return "accepted";
   }
 

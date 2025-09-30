@@ -2,10 +2,8 @@ import { Category } from "@mui/icons-material";
 import { CircularProgress, Grid } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { GridCard } from "../../../components/common/GridCard";
-import {
-  CategoryDTO,
-  productsRepository,
-} from "../repositories/products.repository";
+import { productsRepository } from "../repositories/products.repository";
+import { CategoryDTO } from "../types/category.dto";
 import { ProductSearch } from "./ProductSearch";
 
 interface CategorySelectionProps {

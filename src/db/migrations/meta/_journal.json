@@ -22,6 +22,27 @@
       "when": 1758927862693,
       "tag": "0002_unknown_puma",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1759181941767,
+      "tag": "0003_wakeful_namora",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1759258092369,
+      "tag": "0004_lying_masque",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1759258906429,
+      "tag": "0005_typical_thunderbolt_ross",
+      "breakpoints": true
     }
   ]
 }

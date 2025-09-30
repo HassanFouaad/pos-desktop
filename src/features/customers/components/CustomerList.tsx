@@ -41,7 +41,7 @@ export const CustomerList = () => {
       setCustomers((prev) =>
         offset === 0 ? fetchedCustomers : [...prev, ...fetchedCustomers]
       );
-      setHasMore(fetchedCustomers.length === LIMIT);
+      setHasMore(fetchedCustomers.length !== 0);
     } catch (err) {
       setError("Failed to load customers.");
       console.error(err);
