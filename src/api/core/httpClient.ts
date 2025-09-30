@@ -1,4 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
+import { networkStatus } from "../../utils/network-status";
 import { getLocalStorage, setLocalStorage } from "../../utils/storage";
 import { endpoints, getConfig } from "./config";
 import { ApiResponse } from "./types";
@@ -70,10 +71,11 @@ class TauriHttpClient {
   }
 
   /**
-   * Check if browser is online
+   * Check if app has network connectivity
+   * Uses the more reliable NetworkStatusService instead of navigator.onLine
    */
   private isOnline(): boolean {
-    return typeof navigator !== "undefined" && navigator.onLine;
+    return networkStatus.isNetworkOnline();
   }
 
   /**
@@ -177,12 +179,20 @@ class TauriHttpClient {
           }
         }
       }
-    } else if (typeof error === "string") {
+    } else if (
+      typeof error === "string" ||
+      error.name === "AbortError" ||
+      error.message?.includes("fetch")
+    ) {
+      // Handle various forms of network errors
       error = {
         status: 0,
         code: "NETWORK_ERROR",
         message: "Network error. Please check your internet connection.",
       };
+
+      // Update network status service since we've detected a network issue
+      networkStatus.forceConnectivityCheck();
     }
 
     // Handle the error if we can't recover
@@ -208,26 +218,56 @@ class TauriHttpClient {
     try {
       const fullUrl = url.startsWith("http") ? url : `${this.baseUrl}${url}`;
 
+      // Add AbortController with timeout for request cancellation
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+
       const response = await fetch(fullUrl, {
         ...options,
+        signal: controller.signal,
         connectTimeout: 60000,
       });
 
+      // Clear the abort timeout
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const responseData = await response.json();
+
+        // If we successfully made a request, ensure network status is updated to online
+        if (!isRetry) {
+          networkStatus.forceConnectivityCheck();
+        }
+
         return this.processResponse<T>(responseData);
       }
 
-      console.log("response No JSON", response);
+      // Handle error response
+      let errorData: any;
+      try {
+        const errorJSON = await response.json();
+        errorData = errorJSON?.error || {};
+      } catch (parseError) {
+        // If response is not JSON, create a basic error object
+        errorData = {
+          code: "RESPONSE_PARSE_ERROR",
+          message: "Failed to parse error response",
+        };
+      }
 
-      const errorJSON = await response.json();
-      console.log("errorJSON", errorJSON);
-      const errorData = errorJSON?.error || {};
-      console.log("errorData", errorData);
-      ((errorData as any) || {}).status = response?.status;
+      // Add HTTP status to error data
+      errorData.status = response?.status;
       throw errorData;
     } catch (error) {
-      console.log("EEEEEEE", error);
+      // If this is an abort error from our timeout, standardize the error
+      if (error instanceof Error && error.name === "AbortError") {
+        error = {
+          code: "REQUEST_TIMEOUT",
+          message: "Request timed out",
+          status: 0,
+        };
+      }
+
       return this.handleApiError<T>(error, url, options, isRetry);
     }
   }

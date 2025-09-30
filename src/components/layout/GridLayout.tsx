@@ -1,5 +1,6 @@
 import { Container, Grid, Typography } from "@mui/material";
 import { ReactNode } from "react";
+import { NetworkStatusIndicator } from "../common/NetworkStatusIndicator";
 
 export interface GridLayoutProps {
   children: ReactNode;
@@ -28,8 +29,11 @@ export const GridLayout = ({
         overflow: "hidden",
         width: 1,
         py: 2,
+        position: "relative", // For absolute positioning of the NetworkStatusIndicator
       }}
     >
+      {/* Network Status Indicator */}
+      <NetworkStatusIndicator position={{ top: 8, right: 8 }} />
       <Grid container sx={{ height: 1, width: 1 }}>
         <Grid
           size={{ xs: 12 }}

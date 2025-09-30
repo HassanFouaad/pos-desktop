@@ -1,0 +1,151 @@
+---
+alwaysApply: true
+---
+
+
+ 📂 src
+├── 📄 App.css
+├── 📄 App.tsx
+└── 📂 api/
+│  └── 📂 core/
+│    ├── 📄 config.ts
+│    ├── 📄 httpClient.ts
+│    ├── 📄 types.ts
+│  ├── 📄 index.ts
+└── 📂 assets/
+│  ├── 📄 react.svg
+└── 📂 components/
+│  └── 📂 common/
+│    ├── 📄 GridCard.tsx
+│    ├── 📄 TouchButton.tsx
+│    ├── 📄 TouchKeyboard.tsx
+│  └── 📂 dashboard/
+│    ├── 📄 GridDashboard.tsx
+│  └── 📂 layout/
+│    ├── 📄 GridLayout.tsx
+│  └── 📂 layouts/
+│  └── 📂 navigation/
+│    ├── 📄 FloatingNavigation.tsx
+│  └── 📂 theme/
+└── 📂 config/
+│  ├── 📄 index.ts
+└── 📂 context/
+└── 📂 db/
+│  ├── 📄 database.ts
+│  ├── 📄 drizzle.ts
+│  ├── 📄 live-query.ts
+│  ├── 📄 mg.ts
+│  └── 📂 migrations/
+│    ├── 📄 0000_small_callisto.sql
+│    ├── 📄 0001_smiling_peter_parker.sql
+│    ├── 📄 0002_unknown_puma.sql
+│    ├── 📄 0003_wakeful_namora.sql
+│    ├── 📄 0004_lying_masque.sql
+│    ├── 📄 0005_typical_thunderbolt_ross.sql
+│    ├── 📄 0006_shiny_frightful_four.sql
+│    ├── 📄 0007_clean_automated_janitor.sql
+│    ├── 📄 0008_gifted_lyja.sql
+│    ├── 📄 0009_gifted_hassan.sql
+│    ├── 📄 0009_jazzy_iron_patriot.sql
+│    └── 📂 meta/
+│      ├── 📄 0000_snapshot.json
+│      ├── 📄 0001_snapshot.json
+│      ├── 📄 0002_snapshot.json
+│      ├── 📄 0003_snapshot.json
+│      ├── 📄 0004_snapshot.json
+│      ├── 📄 0005_snapshot.json
+│      ├── 📄 0006_snapshot.json
+│      ├── 📄 0007_snapshot.json
+│      ├── 📄 0008_snapshot.json
+│      ├── 📄 0009_snapshot.json
+│      ├── 📄 _journal.json
+│  ├── 📄 my-pglite-worker.js
+│  └── 📂 schemas/
+│    ├── 📄 index.ts
+│  └── 📂 sync/
+│    ├── 📄 schemas.ts
+│    ├── 📄 sync.service.ts
+└── 📂 features/
+│  └── 📂 auth/
+│    └── 📂 api/
+│      ├── 📄 auth.ts
+│    └── 📂 components/
+│      ├── 📄 LoginForm.tsx
+│      ├── 📄 ProtectedRoute.tsx
+│      ├── 📄 PublicRoute.tsx
+│    └── 📂 context/
+│    └── 📂 hooks/
+│    └── 📂 pages/
+│      ├── 📄 LoginPage.tsx
+│  └── 📂 customers/
+│    └── 📂 api/
+│      ├── 📄 customers.ts
+│    └── 📂 components/
+│      ├── 📄 CreateCustomerForm.tsx
+│      ├── 📄 CustomerList.tsx
+│      ├── 📄 CustomerListItem.tsx
+│      ├── 📄 CustomerSearch.tsx
+│      ├── 📄 PhoneNumberInput.tsx
+│    └── 📂 hooks/
+│    └── 📂 pages/
+│      ├── 📄 index.tsx
+│    └── 📂 repositories/
+│      ├── 📄 customers.repository.ts
+│    └── 📂 schemas/
+│      ├── 📄 create-customer.schema.ts
+│    └── 📂 services/
+│      ├── 📄 customer-sync-handler.ts
+│    └── 📂 types/
+│      ├── 📄 customer.dto.ts
+│  └── 📂 inventory/
+│    └── 📂 components/
+│    └── 📂 hooks/
+│    └── 📂 pages/
+│    └── 📂 repositories/
+│    └── 📂 services/
+│  └── 📂 products/
+│    └── 📂 components/
+│      ├── 📄 CategorySelection.tsx
+│      ├── 📄 ProductList.tsx
+│      ├── 📄 ProductSearch.tsx
+│      ├── 📄 VariantListItem.tsx
+│    └── 📂 hooks/
+│    └── 📂 pages/
+│      ├── 📄 index.tsx
+│    └── 📂 repositories/
+│      ├── 📄 products.repository.ts
+│    └── 📂 services/
+│    └── 📂 types/
+│      ├── 📄 category.dto.ts
+│      ├── 📄 variant-detail.dto.ts
+│    └── 📂 utils/
+│      ├── 📄 pricing.ts
+│  └── 📂 sales/
+│    └── 📂 components/
+│    └── 📂 hooks/
+│    └── 📂 models/
+│    └── 📂 pages/
+│    └── 📂 repositories/
+│    └── 📂 services/
+│  └── 📂 stores/
+│    └── 📂 repositories/
+│      ├── 📄 stores.repository.ts
+│  └── 📂 users/
+│    └── 📂 repositories/
+│      ├── 📄 users.repository.ts
+└── 📂 hooks/
+│  ├── 📄 useTheme.ts
+├── 📄 main.tsx
+└── 📂 providers/
+│  ├── 📄 AppProvider.tsx
+│  └── 📂 theme/
+└── 📂 store/
+│  ├── 📄 authSlice.ts
+│  ├── 📄 globalSlice.ts
+│  ├── 📄 hooks.ts
+│  ├── 📄 index.ts
+├── 📄 theme.ts
+└── 📂 utils/
+│  ├── 📄 network-status.ts
+│  ├── 📄 storage.ts
+└── 📄 vite-env.d.ts

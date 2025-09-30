@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import httpClient from "../api";
 import { startSync } from "../db/database";
+import { LogCategory, syncLogger } from "../db/sync/logger";
 import { syncService } from "../db/sync/sync.service";
 import {
   login as apiLogin,
@@ -8,21 +9,35 @@ import {
   getMe,
   LoginCredentials,
 } from "../features/auth/api/auth";
+import { secureStorage } from "../features/auth/services/secure-storage";
 import { usersRepository } from "../features/users/repositories/users.repository";
 import { networkStatus } from "../utils/network-status";
-import {
-  getLocalStorage,
-  removeLocalStorage,
-  setLocalStorage,
-} from "../utils/storage";
+import { removeLocalStorage, setLocalStorage } from "../utils/storage";
 
-type User = any;
+/**
+ * User model interface
+ */
+interface User {
+  id: number;
+  username: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  isAdmin?: boolean;
+  storeId?: number;
+  tenantId?: number;
+  // Optional properties that may come from the database
+  hashedPassword?: string;
+  accessToken?: string;
+  refreshToken?: string;
+}
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
   initialized: boolean;
+  offlineMode: boolean;
 }
 
 const initialState: AuthState = {
@@ -30,39 +45,57 @@ const initialState: AuthState = {
   isAuthenticated: false,
   loading: true,
   initialized: false,
+  offlineMode: !navigator.onLine,
 };
 
-export const initAuth = createAsyncThunk("auth/init", async () => {
-  const currentLoggedInUser = await usersRepository.getLoggedInUser();
+export const initAuth = createAsyncThunk(
+  "auth/init",
+  async (_, { dispatch }) => {
+    const currentLoggedInUser = await usersRepository.getLoggedInUser();
 
-  let token = getLocalStorage("accessToken");
+    // Get token from secure storage instead of localStorage
+    let token = await secureStorage.getToken("accessToken");
 
-  if (!currentLoggedInUser || !token) {
-    throw new Error("Failed to fetch the user");
-  }
+    // Update offline mode status
+    const isNetworkOnline = networkStatus.isNetworkOnline();
+    dispatch(authSlice.actions.setOfflineMode(!isNetworkOnline));
 
-  const isOnline = networkStatus.isNetworkOnline();
+    if (!currentLoggedInUser || !token) {
+      throw new Error("Failed to fetch the user");
+    }
 
-  if (!isOnline) {
-    setLocalStorage("accessToken", token);
-    await startSync(token, String(currentLoggedInUser?.id));
+    if (!isNetworkOnline) {
+      // In offline mode, use the token we already have
+      await startSync(token, String(currentLoggedInUser?.id));
 
-    await syncService.start();
+      await syncService.start();
 
-    return currentLoggedInUser;
-  }
+      return currentLoggedInUser;
+    }
 
-  const newToken = await httpClient.refreshToken();
+    const newToken = await httpClient.refreshToken();
 
-  if (newToken) {
-    token = newToken;
-  }
+    if (newToken) {
+      token = newToken;
+    }
 
-  const user = await getMe();
+    const user = await getMe();
 
-  if (user.error || !user.data) {
-    if (user.error?.code !== "NETWORK_ERROR") {
-      throw user.error;
+    if (user.error || !user.data) {
+      if (user.error?.code !== "NETWORK_ERROR") {
+        throw user.error;
+      }
+
+      await startSync(token, String(currentLoggedInUser?.id));
+
+      await syncService.start();
+
+      await usersRepository.upsertUser(
+        currentLoggedInUser as Partial<AuthResponse["user"]>,
+        token
+      );
+
+      return currentLoggedInUser;
     }
 
     await startSync(token, String(currentLoggedInUser?.id));
@@ -70,30 +103,19 @@ export const initAuth = createAsyncThunk("auth/init", async () => {
     await syncService.start();
 
     await usersRepository.upsertUser(
-      currentLoggedInUser as Partial<AuthResponse["user"]>,
+      user.data as Partial<AuthResponse["user"]>,
       token
     );
-
-    return currentLoggedInUser;
+    return user.data.user;
   }
-
-  await startSync(token, String(currentLoggedInUser?.id));
-
-  await syncService.start();
-
-  await usersRepository.upsertUser(
-    user.data as Partial<AuthResponse["user"]>,
-    token
-  );
-  return user.data.user;
-});
+);
 
 export const login = createAsyncThunk(
   "auth/login",
   async (credentials: LoginCredentials) => {
-    const isOnline = navigator?.onLine;
+    const isNetworkOnline = networkStatus.isNetworkOnline();
 
-    if (!isOnline) {
+    if (!isNetworkOnline) {
       const user = await usersRepository.findUserByUsername(
         credentials.username
       );
@@ -106,8 +128,12 @@ export const login = createAsyncThunk(
         throw new Error("Invalid password");
       }
 
-      setLocalStorage("accessToken", user.accessToken);
-      setLocalStorage("refreshToken", user.refreshToken);
+      // Store tokens in secure storage
+      await secureStorage.storeToken("accessToken", user.accessToken);
+      await secureStorage.storeToken("refreshToken", user.refreshToken);
+
+      // Keep minimal token info in localStorage for quick UI rendering
+      setLocalStorage("hasToken", "true");
 
       await startSync(user.accessToken ?? "", String(user.id));
       await syncService.start();
@@ -132,8 +158,18 @@ export const login = createAsyncThunk(
       ),
     ]);
 
-    setLocalStorage("accessToken", authResponse.data.accessToken);
-    setLocalStorage("refreshToken", authResponse.data.refreshToken);
+    // Store tokens in secure storage
+    await secureStorage.storeToken(
+      "accessToken",
+      authResponse.data.accessToken
+    );
+    await secureStorage.storeToken(
+      "refreshToken",
+      authResponse.data.refreshToken
+    );
+
+    // Keep minimal token info in localStorage for quick UI rendering
+    setLocalStorage("hasToken", "true");
 
     await startSync(
       authResponse.data.accessToken ?? "",
@@ -146,20 +182,44 @@ export const login = createAsyncThunk(
 );
 
 export const logout = createAsyncThunk("auth/logout", async () => {
-  await usersRepository.logoutAllUsers();
-  removeLocalStorage("accessToken");
-  removeLocalStorage("refreshToken");
-  await syncService.stop();
+  try {
+    syncLogger.info(LogCategory.AUTH, "Logging out user");
+
+    // Clear all tokens from secure storage
+    await secureStorage.clearTokens();
+
+    // Clear flags from localStorage
+    removeLocalStorage("hasToken");
+
+    // Remove user data from repository
+    await usersRepository.logoutAllUsers();
+
+    // Stop the sync service
+    await syncService.stop();
+
+    syncLogger.info(LogCategory.AUTH, "User logged out successfully");
+  } catch (error) {
+    syncLogger.error(
+      LogCategory.AUTH,
+      "Error during logout",
+      error instanceof Error ? error : new Error(String(error))
+    );
+    throw error;
+  }
 });
 
 const authSlice = createSlice({
   name: "auth",
   initialState,
-  reducers: {},
+  reducers: {
+    // Set offline mode flag
+    setOfflineMode: (state, action) => {
+      state.offlineMode = action.payload;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(initAuth.fulfilled, (state, action) => {
-        delete action.payload.lastLoginAt;
         state.initialized = true;
         state.loading = false;
         state.isAuthenticated = true;

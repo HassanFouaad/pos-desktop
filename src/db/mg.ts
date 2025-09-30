@@ -42,6 +42,7 @@ export async function migrate(database: PgliteDatabase<any>) {
   };
 
   await db.dialect.migrate(migrations, db.session, "");
+  console.log("migrated successfully");
   migrated = true;
 }
 

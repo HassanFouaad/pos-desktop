@@ -2,7 +2,9 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "opener:default",
@@ -24,24 +26,44 @@
         },
         {
           "url": "https://www.google.com"
+        },
+        {
+          "url": "https://www.google.com/generate_204"
         }
       ]
     },
     {
       "identifier": "fs:allow-mkdir",
-      "allow": [{ "path": "$APPDATA/databases" }]
+      "allow": [
+        {
+          "path": "$APPDATA/databases"
+        }
+      ]
     },
     {
       "identifier": "fs:default",
-      "allow": [{ "path": "$APPDATA/databases/*" }]
+      "allow": [
+        {
+          "path": "$APPDATA/databases/*"
+        }
+      ]
     },
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "$APPDATA/databases/*" }]
+      "allow": [
+        {
+          "path": "$APPDATA/databases/*"
+        }
+      ]
     },
     {
       "identifier": "fs:write-files",
-      "allow": [{ "path": "$APPDATA/databases/*" }]
-    }
+      "allow": [
+        {
+          "path": "$APPDATA/databases/*"
+        }
+      ]
+    },
+    "store:default"
   ]
 }

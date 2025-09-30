@@ -195,6 +195,8 @@ export const changes = pgTable(
     syncedAt: timestamp("synced_at", { mode: "date" }),
     transactionId: uuid("transaction_id"),
     status: varchar("status", { length: 10 }).default("pending"),
+    retryCount: integer("retry_count").default(0),
+    nextRetryAt: timestamp("next_retry_at", { mode: "date" }),
   },
   (table) => {
     return {

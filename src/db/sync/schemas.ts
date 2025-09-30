@@ -24,6 +24,8 @@ export const changes = pgTable(
     syncedAt: timestamp("synced_at", { withTimezone: true }),
     transactionId: varchar("transaction_id", { length: 50 }),
     status: varchar("status", { length: 10 }).default("pending"),
+    retryCount: bigint("retry_count", { mode: "number" }).default(0),
+    nextRetryAt: timestamp("next_retry_at", { withTimezone: true }),
   },
   (table) => {
     return {

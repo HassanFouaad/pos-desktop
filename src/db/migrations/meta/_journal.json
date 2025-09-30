@@ -71,6 +71,13 @@
       "when": 1759271768465,
       "tag": "0009_jazzy_iron_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1759273635936,
+      "tag": "0010_overrated_cassandra_nova",
+      "breakpoints": true
     }
   ]
 }
