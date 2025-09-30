@@ -3,14 +3,15 @@ import { btree_gin } from "@electric-sql/pglite/contrib/btree_gin";
 import { tcn } from "@electric-sql/pglite/contrib/tcn";
 import { live } from "@electric-sql/pglite/live";
 import { PGliteWorker } from "@electric-sql/pglite/worker";
+import { fetch } from "@tauri-apps/plugin-http";
 import dayjs from "dayjs";
 import { config } from "../config";
-
 const database = await PGliteWorker.create(
   new Worker(new URL("./my-pglite-worker.js", import.meta.url), {
     type: "module",
   }),
   {
+    relaxedDurability: true,
     extensions: {
       electric: electricSync({ debug: true }),
       live,
@@ -35,6 +36,7 @@ const startSync = async (token: string, persistanceId: string = "default") => {
             headers: {
               "x-sync-token": token ?? "",
             },
+            fetchClient: fetch,
           },
           table: "stores",
           primaryKey: ["id"],
@@ -46,6 +48,7 @@ const startSync = async (token: string, persistanceId: string = "default") => {
             headers: {
               "x-sync-token": token ?? "",
             },
+            fetchClient: fetch,
           },
           shapeKey: "categories",
           table: "categories",
@@ -58,6 +61,7 @@ const startSync = async (token: string, persistanceId: string = "default") => {
             headers: {
               "x-sync-token": token ?? "",
             },
+            fetchClient: fetch,
           },
           table: "products",
           primaryKey: ["id"],
@@ -71,6 +75,7 @@ const startSync = async (token: string, persistanceId: string = "default") => {
             headers: {
               "x-sync-token": token ?? "",
             },
+            fetchClient: fetch,
           },
           table: "product_variants",
           primaryKey: ["id"],
@@ -83,6 +88,7 @@ const startSync = async (token: string, persistanceId: string = "default") => {
             headers: {
               "x-sync-token": token ?? "",
             },
+            fetchClient: fetch,
           },
           table: "inventory",
           primaryKey: ["id"],
@@ -94,6 +100,7 @@ const startSync = async (token: string, persistanceId: string = "default") => {
             headers: {
               "x-sync-token": token ?? "",
             },
+            fetchClient: fetch,
           },
           table: "customers",
           primaryKey: ["id"],
@@ -105,6 +112,7 @@ const startSync = async (token: string, persistanceId: string = "default") => {
             headers: {
               "x-sync-token": token ?? "",
             },
+            fetchClient: fetch,
           },
           table: "store_prices",
           primaryKey: ["id"],

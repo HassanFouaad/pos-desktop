@@ -124,6 +124,7 @@ export const customers = pgTable("customers", {
   notes: text("notes"),
   createdAt: timestamp("createdAt", { withTimezone: true }),
   updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  localId: varchar("localId", { length: 255 }),
 });
 
 export const storePrices = pgTable("store_prices", {

@@ -56,6 +56,7 @@ export class CustomerSyncHandler implements SyncHandler {
       // The payload contains all the customer data
       const customerData = change.payload;
 
+      delete customerData.syncStatus;
       // Send to the API
       await createCustomer(customerData);
 

@@ -16,7 +16,6 @@ import {
   setLocalStorage,
 } from "../utils/storage";
 
-// TODO: Define a proper user type
 type User = any;
 
 interface AuthState {
@@ -44,6 +43,7 @@ export const initAuth = createAsyncThunk("auth/init", async () => {
   const isOnline = networkStatus.isNetworkOnline();
 
   if (!isOnline) {
+    setLocalStorage("accessToken", token);
     await startSync(token, String(currentLoggedInUser?.id));
 
     await syncService.start();
@@ -102,6 +102,8 @@ export const login = createAsyncThunk(
       setLocalStorage("accessToken", user.accessToken);
       setLocalStorage("refreshToken", user.refreshToken);
 
+      await startSync(user.accessToken ?? "", String(user.id));
+      await syncService.start();
       return user;
     }
 
@@ -125,6 +127,12 @@ export const login = createAsyncThunk(
 
     setLocalStorage("accessToken", authResponse.data.accessToken);
     setLocalStorage("refreshToken", authResponse.data.refreshToken);
+
+    await startSync(
+      authResponse.data.accessToken ?? "",
+      String(authResponse.data.user.id)
+    );
+    await syncService.start();
 
     return authResponse.data.user;
   }

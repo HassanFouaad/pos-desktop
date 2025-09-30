@@ -36,6 +36,8 @@ export class CustomersRepository {
       .offset(offset)
       .orderBy(desc(pendingCustomers.createdAt));
 
+    pendingQuery.where(eq(pendingCustomers.syncStatus, SyncStatus.PENDING));
+
     if (searchTerm) {
       query.where(
         or(
@@ -64,21 +66,21 @@ export class CustomersRepository {
   }): Promise<void> {
     const loggedInUser = await usersRepository.getLoggedInUser();
 
+    const localId = v4();
     // Create payload for the changes table
     const payload = {
       ...customerData,
       tenantId: loggedInUser?.tenantId,
       createdAt: new Date(),
       updatedAt: new Date(),
+      localId,
     };
 
-    const localId = v4();
     await this.db
       .insert(pendingCustomers)
       .values({
         ...payload,
         syncStatus: SyncStatus.PENDING,
-        localId,
       })
       .execute();
 

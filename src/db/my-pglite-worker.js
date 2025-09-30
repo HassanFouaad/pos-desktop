@@ -18,6 +18,7 @@ worker({
                 btree_gin,
                 tcn
             },
+            relaxedDurability: true
         })
 
         console.log('database', database)
