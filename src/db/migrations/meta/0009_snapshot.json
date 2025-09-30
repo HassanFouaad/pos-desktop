@@ -1,6 +1,6 @@
 {
-  "id": "9ce0300b-cf12-4b71-9720-e10cc2c061e3",
-  "prevId": "873e5f12-b784-45a2-a4f2-d3c9a2b7f509",
+  "id": "b5a5a6ad-867c-4ab4-b4af-aca339d33c34",
+  "prevId": "4ce0300b-cf12-4b71-9720-e10cc2c061e3",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -40,13 +40,13 @@
         },
         "createdAt": {
           "name": "createdAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
         "updatedAt": {
           "name": "updatedAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -101,14 +101,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false,
           "default": "now()"
         },
         "synced_at": {
           "name": "synced_at",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -246,7 +246,7 @@
         },
         "lastVisitAt": {
           "name": "lastVisitAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -258,13 +258,13 @@
         },
         "createdAt": {
           "name": "createdAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
         "updatedAt": {
           "name": "updatedAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -343,7 +343,7 @@
         },
         "lastCountedAt": {
           "name": "lastCountedAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -361,13 +361,13 @@
         },
         "createdAt": {
           "name": "createdAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
         "updatedAt": {
           "name": "updatedAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         }
@@ -416,13 +416,13 @@
         },
         "createdAt": {
           "name": "createdAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
         "updatedAt": {
           "name": "updatedAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -515,7 +515,7 @@
         },
         "lastVisitAt": {
           "name": "lastVisitAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -527,13 +527,13 @@
         },
         "createdAt": {
           "name": "createdAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
         "updatedAt": {
           "name": "updatedAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -614,13 +614,13 @@
         },
         "createdAt": {
           "name": "createdAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
         "updatedAt": {
           "name": "updatedAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         }
@@ -705,13 +705,13 @@
         },
         "createdAt": {
           "name": "createdAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
         "updatedAt": {
           "name": "updatedAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         }
@@ -863,13 +863,13 @@
         },
         "createdAt": {
           "name": "createdAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
         "updatedAt": {
           "name": "updatedAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         }
@@ -931,7 +931,7 @@
         },
         "lastLoginAt": {
           "name": "lastLoginAt",
-          "type": "timestamp with time zone",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -973,7 +973,11 @@
     "public.sync_status": {
       "name": "sync_status",
       "schema": "public",
-      "values": ["pending", "success", "failed"]
+      "values": [
+        "pending",
+        "success",
+        "failed"
+      ]
     }
   },
   "schemas": {},

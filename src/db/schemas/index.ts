@@ -25,7 +25,7 @@ export const users = pgTable("users", {
   role: varchar("role", { length: 50 }),
   permissions: text("permissions").array(),
   isLoggedIn: boolean("isLoggedIn").default(false),
-  lastLoginAt: timestamp("lastLoginAt", { withTimezone: true }),
+  lastLoginAt: timestamp("lastLoginAt", { mode: "date" }),
   refreshToken: varchar("refreshToken", { length: 255 }),
   hashedPassword: varchar("hashedPassword", { length: 255 }),
   username: varchar("username", { length: 255 }),
@@ -48,8 +48,8 @@ export const stores = pgTable("stores", {
   currency: varchar("currency", { length: 3 }),
   taxRegion: varchar("taxRegion", { length: 255 }),
   isActive: boolean("isActive"),
-  createdAt: timestamp("createdAt", { withTimezone: true }),
-  updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { mode: "date" }),
+  updatedAt: timestamp("updatedAt", { mode: "date" }),
 });
 
 export const categories = pgTable("categories", {
@@ -58,8 +58,8 @@ export const categories = pgTable("categories", {
   name: varchar("name", { length: 255 }),
   parentCategoryId: bigint("parentCategoryId", { mode: "number" }),
   categoryType: varchar("categoryType", { length: 50 }),
-  createdAt: timestamp("createdAt", { withTimezone: true }),
-  updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { mode: "date" }),
+  updatedAt: timestamp("updatedAt", { mode: "date" }),
   localId: uuid("localId"),
 });
 
@@ -69,8 +69,8 @@ export const pendingCategories = pgTable("pending_categories", {
   name: varchar("name", { length: 255 }),
   parentCategoryId: bigint("parentCategoryId", { mode: "number" }),
   categoryType: varchar("categoryType", { length: 50 }),
-  createdAt: timestamp("createdAt", { withTimezone: true }),
-  updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { mode: "date" }),
+  updatedAt: timestamp("updatedAt", { mode: "date" }),
   syncStatus: syncStatusEnum("syncStatus").default("pending"),
   localId: uuid("localId"),
 });
@@ -87,8 +87,8 @@ export const products = pgTable("products", {
   tags: text("tags").array(),
   status: varchar("status", { length: 50 }),
   variantsCount: integer("variantsCount"),
-  createdAt: timestamp("createdAt", { withTimezone: true }),
-  updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { mode: "date" }),
+  updatedAt: timestamp("updatedAt", { mode: "date" }),
 });
 
 export const productVariants = pgTable("product_variants", {
@@ -103,8 +103,8 @@ export const productVariants = pgTable("product_variants", {
     precision: 10,
     scale: 2,
   }),
-  createdAt: timestamp("createdAt", { withTimezone: true }),
-  updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { mode: "date" }),
+  updatedAt: timestamp("updatedAt", { mode: "date" }),
 });
 
 export const inventory = pgTable("inventory", {
@@ -117,11 +117,11 @@ export const inventory = pgTable("inventory", {
   quantityAvailable: integer("quantityAvailable"),
   reorderPoint: integer("reorderPoint"),
   maxStockLevel: integer("maxStockLevel"),
-  lastCountedAt: timestamp("lastCountedAt", { withTimezone: true }),
+  lastCountedAt: timestamp("lastCountedAt", { mode: "date" }),
   costPerUnit: decimal("costPerUnit", { precision: 12, scale: 2 }),
   totalValue: decimal("totalValue", { precision: 12, scale: 2 }),
-  createdAt: timestamp("createdAt", { withTimezone: true }),
-  updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { mode: "date" }),
+  updatedAt: timestamp("updatedAt", { mode: "date" }),
 });
 
 export const customers = pgTable("customers", {
@@ -138,10 +138,10 @@ export const customers = pgTable("customers", {
     precision: 12,
     scale: 2,
   }),
-  lastVisitAt: timestamp("lastVisitAt", { withTimezone: true }),
+  lastVisitAt: timestamp("lastVisitAt", { mode: "date" }),
   notes: text("notes"),
-  createdAt: timestamp("createdAt", { withTimezone: true }),
-  updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { mode: "date" }),
+  updatedAt: timestamp("updatedAt", { mode: "date" }),
   localId: uuid("localId"),
 });
 
@@ -169,10 +169,10 @@ export const pendingCustomers = pgTable("pending_customers", {
     precision: 12,
     scale: 2,
   }),
-  lastVisitAt: timestamp("lastVisitAt", { withTimezone: true }),
+  lastVisitAt: timestamp("lastVisitAt", { mode: "date" }),
   notes: text("notes"),
-  createdAt: timestamp("createdAt", { withTimezone: true }),
-  updatedAt: timestamp("updatedAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { mode: "date" }),
+  updatedAt: timestamp("updatedAt", { mode: "date" }),
   syncStatus: syncStatusEnum("syncStatus").default("pending"),
   localId: uuid("localId"),
 });
@@ -191,8 +191,8 @@ export const changes = pgTable(
     entityId: bigint("entity_id", { mode: "number" }).notNull(),
     operation: varchar("operation", { length: 10 }).notNull(),
     payload: jsonb("payload"),
-    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-    syncedAt: timestamp("synced_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
+    syncedAt: timestamp("synced_at", { mode: "date" }),
     transactionId: uuid("transaction_id"),
     status: varchar("status", { length: 10 }).default("pending"),
   },

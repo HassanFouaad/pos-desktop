@@ -1,9 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
-import {
-  getLocalStorage,
-  removeLocalStorage,
-  setLocalStorage,
-} from "../../utils/storage";
+import { getLocalStorage, setLocalStorage } from "../../utils/storage";
 import { endpoints, getConfig } from "./config";
 import { ApiResponse } from "./types";
 
@@ -133,10 +129,6 @@ class TauriHttpClient {
         responseData?.error?.message || "Failed to refresh token"
       );
     } catch (error) {
-      // Clear tokens on refresh failure
-      removeLocalStorage("accessToken");
-      removeLocalStorage("refreshToken");
-
       return null;
     } finally {
       this.isRefreshing = false;
@@ -154,14 +146,6 @@ class TauriHttpClient {
     isRetry = false
   ): Promise<ApiResponse<T>> {
     const config = getConfig();
-
-    if (typeof error === "string") {
-      error = {
-        status: 0,
-        code: "NETWORK_ERROR",
-        message: "Network error. Please check your internet connection.",
-      };
-    }
 
     if (error.status === config.statusCodes.unauthorized && !isRetry) {
       // Check if this is a protected route that needs refresh
@@ -193,6 +177,12 @@ class TauriHttpClient {
           }
         }
       }
+    } else if (typeof error === "string") {
+      error = {
+        status: 0,
+        code: "NETWORK_ERROR",
+        message: "Network error. Please check your internet connection.",
+      };
     }
 
     // Handle the error if we can't recover
@@ -220,6 +210,7 @@ class TauriHttpClient {
 
       const response = await fetch(fullUrl, {
         ...options,
+        connectTimeout: 60000,
       });
 
       if (response.ok) {
@@ -227,13 +218,16 @@ class TauriHttpClient {
         return this.processResponse<T>(responseData);
       }
 
-      console.log("response", response);
+      console.log("response No JSON", response);
+
       const errorJSON = await response.json();
+      console.log("errorJSON", errorJSON);
       const errorData = errorJSON?.error || {};
       console.log("errorData", errorData);
       ((errorData as any) || {}).status = response?.status;
       throw errorData;
     } catch (error) {
+      console.log("EEEEEEE", error);
       return this.handleApiError<T>(error, url, options, isRetry);
     }
   }

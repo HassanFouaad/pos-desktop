@@ -34,6 +34,7 @@ const initialState: AuthState = {
 
 export const initAuth = createAsyncThunk("auth/init", async () => {
   const currentLoggedInUser = await usersRepository.getLoggedInUser();
+
   let token = getLocalStorage("accessToken");
 
   if (!currentLoggedInUser || !token) {
@@ -77,8 +78,14 @@ export const initAuth = createAsyncThunk("auth/init", async () => {
   }
 
   await startSync(token, String(currentLoggedInUser?.id));
+
   await syncService.start();
-  return user.data;
+
+  await usersRepository.upsertUser(
+    user.data as Partial<AuthResponse["user"]>,
+    token
+  );
+  return user.data.user;
 });
 
 export const login = createAsyncThunk(
@@ -152,6 +159,7 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(initAuth.fulfilled, (state, action) => {
+        delete action.payload.lastLoginAt;
         state.initialized = true;
         state.loading = false;
         state.isAuthenticated = true;
