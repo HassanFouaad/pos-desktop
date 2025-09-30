@@ -129,8 +129,8 @@ export const login = createAsyncThunk(
       }
 
       // Store tokens in secure storage
-      await secureStorage.storeToken("accessToken", user.accessToken);
-      await secureStorage.storeToken("refreshToken", user.refreshToken);
+      await secureStorage.storeToken("accessToken", user.accessToken ?? "");
+      await secureStorage.storeToken("refreshToken", user.refreshToken ?? "");
 
       // Keep minimal token info in localStorage for quick UI rendering
       setLocalStorage("hasToken", "true");
@@ -223,7 +223,7 @@ const authSlice = createSlice({
         state.initialized = true;
         state.loading = false;
         state.isAuthenticated = true;
-        state.user = action.payload;
+        state.user = action.payload as User;
       })
       .addCase(initAuth.rejected, (state) => {
         state.initialized = true;
@@ -259,7 +259,7 @@ const authSlice = createSlice({
         state.initialized = true;
         state.loading = false;
         state.isAuthenticated = true;
-        state.user = action.payload;
+        state.user = action.payload as User;
       })
       .addCase(login.rejected, (state) => {
         state.initialized = true;

@@ -5,8 +5,23 @@ CREATE TABLE "categories" (
 	"name" varchar(255),
 	"parentCategoryId" bigint,
 	"categoryType" varchar(50),
-	"createdAt" timestamp with time zone,
-	"updatedAt" timestamp with time zone
+	"createdAt" timestamp,
+	"updatedAt" timestamp,
+	"localId" uuid
+);
+--> statement-breakpoint
+CREATE TABLE "changes" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"entity_type" varchar(50) NOT NULL,
+	"entity_id" bigint NOT NULL,
+	"operation" varchar(10) NOT NULL,
+	"payload" jsonb,
+	"created_at" timestamp DEFAULT now(),
+	"synced_at" timestamp,
+	"transaction_id" uuid,
+	"status" varchar(10) DEFAULT 'pending',
+	"retry_count" integer DEFAULT 0,
+	"next_retry_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "customers" (
@@ -20,10 +35,11 @@ CREATE TABLE "customers" (
 	"totalSpent" numeric(12, 2),
 	"totalVisits" integer,
 	"averageOrderValue" numeric(12, 2),
-	"lastVisitAt" timestamp with time zone,
+	"lastVisitAt" timestamp,
 	"notes" text,
-	"createdAt" timestamp with time zone,
-	"updatedAt" timestamp with time zone
+	"createdAt" timestamp,
+	"updatedAt" timestamp,
+	"localId" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "inventory" (
@@ -36,11 +52,23 @@ CREATE TABLE "inventory" (
 	"quantityAvailable" integer,
 	"reorderPoint" integer,
 	"maxStockLevel" integer,
-	"lastCountedAt" timestamp with time zone,
+	"lastCountedAt" timestamp,
 	"costPerUnit" numeric(12, 2),
 	"totalValue" numeric(12, 2),
-	"createdAt" timestamp with time zone,
-	"updatedAt" timestamp with time zone
+	"createdAt" timestamp,
+	"updatedAt" timestamp
+);
+--> statement-breakpoint
+CREATE TABLE "pending_categories" (
+	"id" bigint PRIMARY KEY NOT NULL,
+	"tenantId" bigint,
+	"name" varchar(255),
+	"parentCategoryId" bigint,
+	"categoryType" varchar(50),
+	"createdAt" timestamp,
+	"updatedAt" timestamp,
+	"syncStatus" "sync_status" DEFAULT 'pending',
+	"localId" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "pending_customers" (
@@ -54,11 +82,12 @@ CREATE TABLE "pending_customers" (
 	"totalSpent" numeric(12, 2),
 	"totalVisits" integer,
 	"averageOrderValue" numeric(12, 2),
-	"lastVisitAt" timestamp with time zone,
+	"lastVisitAt" timestamp,
 	"notes" text,
-	"createdAt" timestamp with time zone,
-	"updatedAt" timestamp with time zone,
-	"syncStatus" "sync_status" DEFAULT 'pending'
+	"createdAt" timestamp,
+	"updatedAt" timestamp,
+	"syncStatus" "sync_status" DEFAULT 'pending',
+	"localId" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "product_variants" (
@@ -70,8 +99,8 @@ CREATE TABLE "product_variants" (
 	"sku" varchar(100),
 	"baseSellingPrice" numeric(10, 2),
 	"basePurchasePrice" numeric(10, 2),
-	"createdAt" timestamp with time zone,
-	"updatedAt" timestamp with time zone
+	"createdAt" timestamp,
+	"updatedAt" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "products" (
@@ -86,8 +115,8 @@ CREATE TABLE "products" (
 	"tags" text[],
 	"status" varchar(50),
 	"variantsCount" integer,
-	"createdAt" timestamp with time zone,
-	"updatedAt" timestamp with time zone
+	"createdAt" timestamp,
+	"updatedAt" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "store_prices" (
@@ -114,8 +143,8 @@ CREATE TABLE "stores" (
 	"currency" varchar(3),
 	"taxRegion" varchar(255),
 	"isActive" boolean,
-	"createdAt" timestamp with time zone,
-	"updatedAt" timestamp with time zone
+	"createdAt" timestamp,
+	"updatedAt" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
@@ -126,5 +155,13 @@ CREATE TABLE "users" (
 	"role" varchar(50),
 	"permissions" text[],
 	"isLoggedIn" boolean DEFAULT false,
-	"lastLoginAt" timestamp with time zone
+	"lastLoginAt" timestamp,
+	"refreshToken" varchar(255),
+	"hashedPassword" varchar(255),
+	"username" varchar(255),
+	"accessToken" varchar(500)
 );
+--> statement-breakpoint
+CREATE INDEX "idx_changes_status" ON "changes" USING btree ("status");--> statement-breakpoint
+CREATE INDEX "idx_changes_entity_type" ON "changes" USING btree ("entity_type");--> statement-breakpoint
+CREATE INDEX "idx_changes_transaction_id" ON "changes" USING btree ("transaction_id");

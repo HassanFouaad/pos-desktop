@@ -1,3 +1,4 @@
+import { Store } from "@tauri-apps/plugin-store";
 import { LogCategory, syncLogger } from "../../../db/sync/logger";
 
 /**
@@ -35,34 +36,68 @@ export interface SecureTokenStorage {
 }
 
 /**
- * Implementation of SecureTokenStorage using Tauri's secure store
- * Falls back to localStorage in development mode or if secure store is unavailable
+ * Implementation of SecureTokenStorage using Tauri's plugin-store
+ * Falls back to localStorage in development mode or if store is unavailable
  */
 class TauriSecureStorage implements SecureTokenStorage {
   private readonly IS_DEVELOPMENT = import.meta.env.DEV;
   private readonly PREFIX = "auth_token_";
+  private store: Store | null = null;
+  private storeInitialized = false;
+
+  constructor() {
+    this.initStore();
+  }
 
   /**
-   * Store a token securely using platform-specific secure storage
-   * In production, uses Tauri's secure store
+   * Initialize the Tauri store
+   */
+  private async initStore(): Promise<void> {
+    if (this.storeInitialized) return;
+
+    try {
+      // Create a new store instance for auth tokens
+      this.store = await Store.load("auth_tokens.dat");
+      this.storeInitialized = true;
+
+      syncLogger.info(LogCategory.AUTH, "Tauri store initialized successfully");
+    } catch (error) {
+      syncLogger.error(
+        LogCategory.AUTH,
+        "Failed to initialize Tauri store",
+        error instanceof Error ? error : new Error(String(error))
+      );
+      this.store = null;
+    }
+  }
+
+  /**
+   * Store a token securely using Tauri's plugin-store
    * In development, falls back to localStorage with encryption
    */
   public async storeToken(key: string, token: string): Promise<void> {
     const secureKey = this.PREFIX + key;
 
     try {
-      if (this.IS_DEVELOPMENT) {
-        // In dev mode, use simple localStorage with base64 encoding
-        // This is NOT secure, but is only for development
+      // Make sure store is initialized
+      if (!this.storeInitialized) {
+        await this.initStore();
+      }
+
+      if (this.IS_DEVELOPMENT && !this.store) {
+        // In dev mode without store, use simple localStorage with base64 encoding
         localStorage.setItem(secureKey, btoa(token));
         return;
       }
 
-      // In production, use Tauri's secure store
-      await invoke("store_secure", {
-        key: secureKey,
-        value: token,
-      });
+      if (this.store) {
+        // Use Tauri's plugin-store
+        await this.store.set(secureKey, token);
+        await this.store.save();
+        return;
+      }
+
+      throw new Error("Store not available");
     } catch (error) {
       syncLogger.error(
         LogCategory.AUTH,
@@ -82,18 +117,24 @@ class TauriSecureStorage implements SecureTokenStorage {
     const secureKey = this.PREFIX + key;
 
     try {
-      if (this.IS_DEVELOPMENT) {
-        // In dev mode, get from localStorage
+      // Make sure store is initialized
+      if (!this.storeInitialized) {
+        await this.initStore();
+      }
+
+      if (this.IS_DEVELOPMENT && !this.store) {
+        // In dev mode without store, use localStorage
         const value = localStorage.getItem(secureKey);
         return value ? atob(value) : null;
       }
 
-      // In production, use Tauri's secure store
-      const token = await invoke<string>("get_secure", {
-        key: secureKey,
-      });
+      if (this.store) {
+        // Use Tauri's plugin-store
+        const token = await this.store.get<string>(secureKey);
+        return token || null;
+      }
 
-      return token;
+      throw new Error("Store not available");
     } catch (error) {
       syncLogger.error(
         LogCategory.AUTH,
@@ -113,15 +154,24 @@ class TauriSecureStorage implements SecureTokenStorage {
     const secureKey = this.PREFIX + key;
 
     try {
-      if (this.IS_DEVELOPMENT) {
+      // Make sure store is initialized
+      if (!this.storeInitialized) {
+        await this.initStore();
+      }
+
+      if (this.IS_DEVELOPMENT && !this.store) {
         localStorage.removeItem(secureKey);
         return;
       }
 
-      // In production, use Tauri's secure store
-      await invoke("delete_secure", {
-        key: secureKey,
-      });
+      if (this.store) {
+        // Use Tauri's plugin-store
+        await this.store.delete(secureKey);
+        await this.store.save();
+        return;
+      }
+
+      throw new Error("Store not available");
     } catch (error) {
       syncLogger.error(
         LogCategory.AUTH,
@@ -138,19 +188,30 @@ class TauriSecureStorage implements SecureTokenStorage {
    * Clear all stored tokens
    */
   public async clearTokens(): Promise<void> {
-    if (this.IS_DEVELOPMENT) {
-      // In development, clear localStorage keys with our prefix
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith(this.PREFIX)) {
-          localStorage.removeItem(key);
-        }
-      });
-      return;
-    }
-
     try {
-      // In production, use Tauri's secure store clear method
-      await invoke("clear_secure");
+      // Make sure store is initialized
+      if (!this.storeInitialized) {
+        await this.initStore();
+      }
+
+      if (this.IS_DEVELOPMENT && !this.store) {
+        // In development without store, clear localStorage keys with our prefix
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith(this.PREFIX)) {
+            localStorage.removeItem(key);
+          }
+        });
+        return;
+      }
+
+      if (this.store) {
+        // Use Tauri's plugin-store - clear and save
+        await this.store.clear();
+        await this.store.save();
+        return;
+      }
+
+      throw new Error("Store not available");
     } catch (error) {
       syncLogger.error(
         LogCategory.AUTH,

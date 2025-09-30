@@ -2,7 +2,6 @@ import { PGliteProvider } from "@electric-sql/pglite-react";
 import { CssBaseline, ThemeProvider as MuiThemeProvider } from "@mui/material";
 import { ReactNode } from "react";
 import { Provider as ReduxProvider, useSelector } from "react-redux";
-import { SyncContextProvider } from "../context/SyncContext";
 import { database } from "../db/database";
 import { RootState, store } from "../store";
 import createResponsiveTheme from "../theme";
@@ -38,7 +37,7 @@ export function AppProvider({ children }: AppProviderProps) {
     <ReduxProvider store={store}>
       <ThemeWrapper>
         <PGliteProvider db={database}>
-          <SyncContextProvider>{children}</SyncContextProvider>
+          {children}
         </PGliteProvider>
       </ThemeWrapper>
     </ReduxProvider>

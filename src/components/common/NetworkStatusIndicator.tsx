@@ -14,17 +14,8 @@ import {
   useTheme,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { MetricType, syncMetrics } from "../../db/sync/metrics";
-import { networkStatus } from "../../utils/network-status";
-
-/**
- * Network status indicator states
- */
-export enum NetworkStatus {
-  ONLINE = "online",
-  OFFLINE = "offline",
-  SYNCING = "syncing",
-}
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { checkConnectivity, refreshSyncMetrics } from "../../store/syncSlice";
 
 /**
  * Props for the NetworkStatusIndicator component
@@ -54,77 +45,21 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
   showSyncDetails = true,
 }) => {
   const theme = useTheme();
-  const [status, setStatus] = useState<NetworkStatus>(
-    networkStatus.isNetworkOnline()
-      ? NetworkStatus.ONLINE
-      : NetworkStatus.OFFLINE
-  );
+  const dispatch = useAppDispatch();
+  const { status, pendingChanges, delayedChanges, processed, failed, retried } =
+    useAppSelector((state) => state.sync);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const [pendingChanges, setPendingChanges] = useState<number>(0);
-  const [syncStats, setSyncStats] = useState<{
-    processed: number;
-    failed: number;
-    retried: number;
-  }>({
-    processed: 0,
-    failed: 0,
-    retried: 0,
-  });
 
-  // Update metrics and sync status periodically
+  // Update metrics when component mounts
   useEffect(() => {
-    // Initial load
-    updateMetrics();
-
-    // Set up interval to update metrics
-    const intervalId = setInterval(() => {
-      updateMetrics();
-    }, 5000); // Update every 5 seconds
-
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // Listen for network status changes
-  useEffect(() => {
-    const unsubscribe = networkStatus.addListener((online) => {
-      setStatus(online ? NetworkStatus.ONLINE : NetworkStatus.OFFLINE);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Get metrics from sync service
-  const updateMetrics = () => {
-    const pending = syncMetrics.getGauge(MetricType.PENDING_CHANGES);
-    const delayed = syncMetrics.getGauge(MetricType.DELAYED_CHANGES);
-    const processed = syncMetrics.getCounter(MetricType.CHANGES_PROCESSED);
-    const failed = syncMetrics.getCounter(MetricType.CHANGES_FAILED);
-    const retried = syncMetrics.getCounter(MetricType.CHANGES_RETRIED);
-
-    const totalPending = pending + delayed;
-
-    // Update sync status based on pending changes
-    if (totalPending > 0 && networkStatus.isNetworkOnline()) {
-      setStatus(NetworkStatus.SYNCING);
-    } else if (networkStatus.isNetworkOnline()) {
-      setStatus(NetworkStatus.ONLINE);
-    } else {
-      setStatus(NetworkStatus.OFFLINE);
-    }
-
-    // Update state with the latest metrics
-    setPendingChanges(totalPending);
-    setSyncStats({
-      processed,
-      failed,
-      retried,
-    });
-  };
+    // Refresh metrics when component mounts
+    dispatch(refreshSyncMetrics());
+  }, [dispatch]);
 
   // Handle click to open popover
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (showSyncDetails) {
-      updateMetrics();
+      dispatch(refreshSyncMetrics());
       setAnchorEl(event.currentTarget);
     }
   };
@@ -140,26 +75,40 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
   // Determine icon and color based on status
   const getStatusConfig = () => {
     switch (status) {
-      case NetworkStatus.ONLINE:
+      case "online":
         return {
           icon: <OnlineIcon />,
           color: theme.palette.success.main,
           text: "Online",
           tooltip: "Connected to the network",
         };
-      case NetworkStatus.OFFLINE:
+      case "offline":
         return {
           icon: <OfflineIcon />,
           color: theme.palette.error.main,
           text: "Offline",
           tooltip: "No network connection",
         };
-      case NetworkStatus.SYNCING:
+      case "syncing":
         return {
           icon: <SyncingIcon className="rotate-icon" />,
           color: theme.palette.warning.main,
           text: "Syncing",
-          tooltip: `Syncing ${pendingChanges} changes`,
+          tooltip: `Syncing ${pendingChanges + delayedChanges} changes`,
+        };
+      case "error":
+        return {
+          icon: <OfflineIcon />,
+          color: theme.palette.error.main,
+          text: "Error",
+          tooltip: "Sync errors detected",
+        };
+      default:
+        return {
+          icon: <OnlineIcon />,
+          color: theme.palette.primary.main,
+          text: "Unknown",
+          tooltip: "Unknown connection status",
         };
     }
   };
@@ -177,7 +126,11 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
       >
         <Tooltip title={statusConfig.tooltip}>
           <Badge
-            badgeContent={pendingChanges > 0 ? pendingChanges : undefined}
+            badgeContent={
+              pendingChanges + delayedChanges > 0
+                ? pendingChanges + delayedChanges
+                : undefined
+            }
             color="primary"
           >
             <IconButton
@@ -235,14 +188,17 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
                 <strong>Pending Changes:</strong> {pendingChanges}
               </Typography>
               <Typography variant="body2">
-                <strong>Processed:</strong> {syncStats.processed}
+                <strong>Delayed Changes:</strong> {delayedChanges}
               </Typography>
               <Typography variant="body2">
-                <strong>Retried:</strong> {syncStats.retried}
+                <strong>Processed:</strong> {processed}
               </Typography>
-              {syncStats.failed > 0 && (
+              <Typography variant="body2">
+                <strong>Retried:</strong> {retried}
+              </Typography>
+              {failed > 0 && (
                 <Typography variant="body2" color="error">
-                  <strong>Failed:</strong> {syncStats.failed}
+                  <strong>Failed:</strong> {failed}
                 </Typography>
               )}
 
@@ -253,8 +209,8 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
               <Box sx={{ mt: 1 }}>
                 <IconButton
                   size="small"
-                  color={networkStatus.isNetworkOnline() ? "primary" : "error"}
-                  onClick={() => networkStatus.forceConnectivityCheck()}
+                  color={status === "online" ? "primary" : "error"}
+                  onClick={() => dispatch(checkConnectivity())}
                 >
                   <SyncingIcon fontSize="small" />
                 </IconButton>

@@ -5,78 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1758858502460,
-      "tag": "0000_small_callisto",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1758858587325,
-      "tag": "0001_smiling_peter_parker",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1758927862693,
-      "tag": "0002_unknown_puma",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1759181941767,
-      "tag": "0003_wakeful_namora",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1759258092369,
-      "tag": "0004_lying_masque",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1759258906429,
-      "tag": "0005_typical_thunderbolt_ross",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1759260654185,
-      "tag": "0006_shiny_frightful_four",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1759348765432,
-      "tag": "0007_clean_automated_janitor",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1759263526690,
-      "tag": "0008_gifted_lyja",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1759271768465,
-      "tag": "0009_jazzy_iron_patriot",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1759273635936,
-      "tag": "0010_overrated_cassandra_nova",
+      "when": 1759274672174,
+      "tag": "0000_clear_veda",
       "breakpoints": true
     }
   ]
