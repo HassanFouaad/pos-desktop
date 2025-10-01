@@ -1,5 +1,6 @@
 import { Store } from "@tauri-apps/plugin-store";
 import { LogCategory, syncLogger } from "../../../db/sync/logger";
+import { getLocalStorage } from "../../../utils/storage";
 
 /**
  * Secure token storage interface
@@ -124,7 +125,7 @@ class TauriSecureStorage implements SecureTokenStorage {
 
       if (this.IS_DEVELOPMENT && !this.store) {
         // In dev mode without store, use localStorage
-        const value = localStorage.getItem(secureKey);
+        const value = getLocalStorage(secureKey);
         return value ? atob(value) : null;
       }
 
@@ -256,7 +257,7 @@ class TauriSecureStorage implements SecureTokenStorage {
    */
   private getTokenWithFallback(key: string): string | null {
     try {
-      const encoded = localStorage.getItem(key + "_fallback");
+      const encoded = getLocalStorage(key + "_fallback");
       if (!encoded) return null;
 
       const deviceKey = this.getDeviceKey();

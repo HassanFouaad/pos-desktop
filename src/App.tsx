@@ -13,8 +13,6 @@ import { ProtectedRoute } from "./features/auth/components/ProtectedRoute";
 import PublicRoute from "./features/auth/components/PublicRoute";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import CustomersPage from "./features/customers/pages";
-// Import customer handler to ensure it's registered with the sync service
-import "./features/customers/services/customer-sync-handler";
 import ProductsPage from "./features/products/pages";
 import { initAuth } from "./store/authSlice";
 import { useAppDispatch } from "./store/hooks";

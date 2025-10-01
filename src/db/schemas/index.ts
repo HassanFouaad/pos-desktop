@@ -197,6 +197,7 @@ export const changes = pgTable(
     status: varchar("status", { length: 10 }).default("pending"),
     retryCount: integer("retry_count").default(0),
     nextRetryAt: timestamp("next_retry_at", { mode: "date" }),
+    priority: integer("priority").default(5), // 1 = highest, 10 = lowest
   },
   (table) => {
     return {

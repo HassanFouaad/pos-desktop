@@ -1,3 +1,5 @@
+import { sql } from "drizzle-orm";
+import { getLocalStorage, setLocalStorage } from "../../utils/storage";
 import { drizzleDb } from "../drizzle";
 import { LogCategory, syncLogger } from "./logger";
 import { SyncService } from "./sync.service";
@@ -46,9 +48,11 @@ export class SyncPersistence {
    */
   private loadState(): void {
     try {
-      const savedState = localStorage.getItem(this.LOCAL_STORAGE_KEY);
+      const savedState = getLocalStorage<typeof this.state>(
+        this.LOCAL_STORAGE_KEY
+      );
       if (savedState) {
-        this.state = JSON.parse(savedState);
+        this.state = savedState;
         syncLogger.info(LogCategory.SYNC, "Loaded persisted sync state", {
           position: this.state.lastSyncPosition,
           timestamp: new Date(this.state.lastSyncTimestamp).toISOString(),
@@ -80,7 +84,7 @@ export class SyncPersistence {
       }
       this.state.lastSyncTimestamp = Date.now();
 
-      localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(this.state));
+      setLocalStorage(this.LOCAL_STORAGE_KEY, this.state);
       syncLogger.debug(LogCategory.SYNC, "Saved sync state", {
         position: this.state.lastSyncPosition,
       });
@@ -147,7 +151,7 @@ export class SyncPersistence {
       // This ensures they will be processed again by the sync service
       if (activeChangeIds.length > 0) {
         await drizzle.execute({
-          sql: `
+          sql: sql`
             UPDATE changes 
             SET status = 'pending', retry_count = COALESCE(retry_count, 0)
             WHERE id IN (${activeChangeIds.join(",")})

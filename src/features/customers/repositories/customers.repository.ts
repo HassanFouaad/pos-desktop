@@ -2,11 +2,8 @@ import { desc, eq, ilike, or } from "drizzle-orm";
 import { v4 } from "uuid";
 import { DrizzleDb, drizzleDb } from "../../../db/drizzle";
 import { customers, pendingCustomers } from "../../../db/schemas";
-import {
-  SyncOperation,
-  syncService,
-  SyncStatus,
-} from "../../../db/sync/sync.service";
+import { syncService } from "../../../db/sync/sync.service";
+import { SyncOperation, SyncStatus } from "../../../db/sync/types";
 import { usersRepository } from "../../users/repositories/users.repository";
 import { CustomerDTO } from "../types/customer.dto";
 
@@ -96,7 +93,7 @@ export class CustomersRepository {
 
   async changePendingCustomerStatus(
     localId: string,
-    status: Exclude<SyncStatus, SyncStatus.RETRY>
+    status: Exclude<SyncStatus, SyncStatus.RETRY | SyncStatus.DELAYED>
   ): Promise<void> {
     await this.db
       .update(pendingCustomers)
@@ -104,8 +101,6 @@ export class CustomersRepository {
       .where(eq(pendingCustomers.localId, localId))
       .execute();
   }
-
-  // These methods are no longer needed as we're using changes table directly
 }
 
 export const customersRepository = new CustomersRepository();

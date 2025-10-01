@@ -1,5 +1,5 @@
 import { PGliteWithLive } from "@electric-sql/pglite/live";
-import { eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { networkStatus } from "../../utils/network-status";
 import { database } from "../database";
 import { drizzleDb } from "../drizzle";
@@ -7,40 +7,14 @@ import { changes } from "../schemas";
 import { LogCategory, syncLogger } from "./logger";
 import { MetricType, syncMetrics } from "./metrics";
 import { initSyncPersistence } from "./persistence";
-
-// Enums and Types
-export enum SyncOperation {
-  INSERT = "INSERT",
-  UPDATE = "UPDATE",
-  DELETE = "DELETE",
-}
-
-export enum SyncStatus {
-  PENDING = "pending",
-  SUCCESS = "success",
-  FAILED = "failed",
-  RETRY = "retry",
-  DELAYED = "delayed",
-}
-
-export interface SyncChange {
-  id: number;
-  entityType: string;
-  entityId: number;
-  operation: SyncOperation;
-  payload: any;
-  createdAt: Date;
-  syncedAt: Date | null;
-  transactionId: string;
-  status: SyncStatus;
-  retryCount: number;
-  nextRetryAt: Date | null;
-}
-
-export interface SyncHandler {
-  entityType: string;
-  syncChange(change: SyncChange): Promise<"accepted" | "rejected" | "retry">;
-}
+import { SyncPriority, priorityManager } from "./priority";
+import {
+  EntityType,
+  SyncChange,
+  SyncHandler,
+  SyncOperation,
+  SyncStatus,
+} from "./types";
 
 /**
  * SyncService - Core service for tracking and synchronizing changes
@@ -406,13 +380,14 @@ export class SyncService {
           changes.nextRetryAt
         } <= ${now}))`
       )
-      .orderBy(changes.id)
+      // Order by priority (lower number = higher priority) and then by ID
+      .orderBy(asc(changes.id), asc(changes.priority))
       .limit(50) // Process in batches
       .execute();
 
     const maxId =
       pendingChanges.length > 0
-        ? Math.max(...pendingChanges.map((c) => c.id))
+        ? Math.max(...pendingChanges.map((c: { id: number }) => c.id))
         : this.position;
 
     return {
@@ -646,16 +621,21 @@ export class SyncService {
    * Track a change that needs to be synchronized
    */
   public async trackChange(
-    entityType: string,
+    entityType: EntityType | string,
     entityId: number,
     operation: SyncOperation,
     payload: any,
-    transactionId?: string
+    transactionId?: string,
+    priority?: SyncPriority
   ): Promise<void> {
     const drizzle = drizzleDb.database;
     const txId =
       transactionId ||
       `tx-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+    // Determine appropriate priority if not specified
+    const changePriority =
+      priority ?? priorityManager.getPriorityForEntity(entityType, operation);
 
     await drizzle
       .insert(changes)
@@ -667,6 +647,7 @@ export class SyncService {
         createdAt: new Date(),
         transactionId: txId,
         status: SyncStatus.PENDING,
+        priority: changePriority,
       })
       .execute();
 
