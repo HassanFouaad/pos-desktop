@@ -1,5 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { MetricType, syncMetrics } from "../db/sync/metrics";
+import { and, count, eq, ne, sql } from "drizzle-orm";
+import { drizzleDb } from "../db/drizzle";
+import { changes } from "../db/schemas";
 import { syncService } from "../db/sync/sync.service";
 import { networkStatus } from "../utils/network-status";
 import { AppThunk } from "./index";
@@ -21,6 +23,7 @@ export interface SyncState {
   isOnline: boolean;
   status: SyncStatus;
   lastUpdated: number;
+  isSyncing: boolean;
 }
 
 const initialState: SyncState = {
@@ -32,6 +35,7 @@ const initialState: SyncState = {
   isOnline: networkStatus.isNetworkOnline(),
   status: networkStatus.isNetworkOnline() ? "online" : "offline",
   lastUpdated: Date.now(),
+  isSyncing: false,
 };
 
 /**
@@ -41,11 +45,12 @@ const determineSyncStatus = (
   isOnline: boolean,
   pendingCount: number,
   delayedCount: number,
-  failedCount: number
+  failedCount: number,
+  isSyncing: boolean
 ): SyncStatus => {
   if (!isOnline) return "offline";
   if (failedCount > 0) return "error";
-  if (pendingCount > 0 || delayedCount > 0) return "syncing";
+  if (isSyncing || pendingCount > 0 || delayedCount > 0) return "syncing";
   return "online";
 };
 
@@ -59,7 +64,8 @@ export const syncSlice = createSlice({
         action.payload,
         state.pendingChanges,
         state.delayedChanges,
-        state.failed
+        state.failed,
+        state.isSyncing
       );
     },
     updateSyncMetrics: (
@@ -82,17 +88,35 @@ export const syncSlice = createSlice({
       state.retried = retried;
       state.lastUpdated = Date.now();
 
+      // If there are no pending or delayed changes, set isSyncing to false
+      if (pendingChanges === 0 && delayedChanges === 0) {
+        state.isSyncing = false;
+      }
+
       state.status = determineSyncStatus(
         state.isOnline,
         pendingChanges,
         delayedChanges,
-        failed
+        failed,
+        state.isSyncing
+      );
+    },
+    setSyncingState: (state, action: PayloadAction<boolean>) => {
+      state.isSyncing = action.payload;
+
+      state.status = determineSyncStatus(
+        state.isOnline,
+        state.pendingChanges,
+        state.delayedChanges,
+        state.failed,
+        action.payload
       );
     },
   },
 });
 
-export const { updateNetworkStatus, updateSyncMetrics } = syncSlice.actions;
+export const { updateNetworkStatus, updateSyncMetrics, setSyncingState } =
+  syncSlice.actions;
 
 // Thunks
 export const initSyncMonitoring = (): AppThunk => (dispatch) => {
@@ -108,45 +132,109 @@ export const initSyncMonitoring = (): AppThunk => (dispatch) => {
   setInterval(() => {
     dispatch(refreshSyncMetrics());
   }, 5000); // Update every 5 seconds
+
+  // Listen for sync events
+  syncService.addSyncListener({
+    onSyncStart: () => dispatch(setSyncingState(true)),
+    onSyncComplete: () => {
+      dispatch(setSyncingState(false));
+      dispatch(refreshSyncMetrics());
+    },
+  });
 };
 
-export const refreshSyncMetrics = (): AppThunk => (dispatch) => {
-  const pendingChanges = syncMetrics.getGauge(MetricType.PENDING_CHANGES);
-  const delayedChanges = syncMetrics.getGauge(MetricType.DELAYED_CHANGES);
-  const processed = syncMetrics.getCounter(MetricType.CHANGES_PROCESSED);
-  const failed = syncMetrics.getCounter(MetricType.CHANGES_FAILED);
-  const retried = syncMetrics.getCounter(MetricType.CHANGES_RETRIED);
+/**
+ * Refresh sync metrics directly from the database
+ */
+export const refreshSyncMetrics = (): AppThunk => async (dispatch) => {
+  try {
+    const db = drizzleDb.database;
 
-  dispatch(
-    updateSyncMetrics({
-      pendingChanges,
-      delayedChanges,
-      processed,
-      failed,
-      retried,
-    })
-  );
+    // Get pending changes count
+    const pendingResult = await db
+      .select({ count: count() })
+      .from(changes)
+      .where(eq(changes.status, "pending"))
+      .execute();
+
+    // Get delayed changes count
+    const delayedResult = await db
+      .select({ count: count() })
+      .from(changes)
+      .where(eq(changes.status, "delayed"))
+      .execute();
+
+    // Get processed changes count (success)
+    const processedResult = await db
+      .select({ count: count() })
+      .from(changes)
+      .where(eq(changes.status, "success"))
+      .execute();
+
+    // Get failed changes count
+    const failedResult = await db
+      .select({ count: count() })
+      .from(changes)
+      .where(eq(changes.status, "failed"))
+      .execute();
+
+    // Get retried changes count (based on retry_count > 0)
+    const retriedResult = await db
+      .select({ count: count() })
+      .from(changes)
+      .where(
+        and(ne(changes.retryCount, 0), sql`${changes.retryCount} IS NOT NULL`)
+      )
+      .execute();
+
+    // Update metrics in state
+    dispatch(
+      updateSyncMetrics({
+        pendingChanges: pendingResult[0]?.count || 0,
+        delayedChanges: delayedResult[0]?.count || 0,
+        processed: processedResult[0]?.count || 0,
+        failed: failedResult[0]?.count || 0,
+        retried: retriedResult[0]?.count || 0,
+      })
+    );
+  } catch (error) {
+    console.error("Failed to refresh sync metrics:", error);
+  }
 };
 
 export const checkConnectivity = (): AppThunk => async () => {
   await networkStatus.checkConnectivity();
 };
 
-export const forceSync = (): AppThunk => async (_, getState) => {
+export const forceSync = (): AppThunk => async (dispatch, getState) => {
   const { sync } = getState();
 
-  if (sync.isOnline) {
-    await syncService.processChanges();
-  } else {
-    const isConnected = await networkStatus.checkConnectivity();
-    if (isConnected) {
+  // Set syncing state
+  dispatch(setSyncingState(true));
+
+  try {
+    if (sync.isOnline) {
       await syncService.processChanges();
+    } else {
+      const isConnected = await networkStatus.checkConnectivity();
+      if (isConnected) {
+        await syncService.processChanges();
+      }
     }
+  } finally {
+    // Refresh metrics after sync attempt
+    dispatch(refreshSyncMetrics());
   }
 };
 
-export const retryFailedChanges = (): AppThunk => async () => {
-  await syncService.retryFailedChanges();
+export const retryFailedChanges = (): AppThunk => async (dispatch) => {
+  dispatch(setSyncingState(true));
+
+  try {
+    await syncService.retryFailedChanges();
+  } finally {
+    dispatch(refreshSyncMetrics());
+  }
 };
 
 export default syncSlice.reducer;

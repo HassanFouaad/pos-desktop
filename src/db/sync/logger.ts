@@ -32,12 +32,13 @@ interface LogEntry {
 
 /**
  * SyncLogger class - provides structured logging for sync operations
+ * Optimized to reduce excessive JSON operations
  */
 export class SyncLogger {
   private static instance: SyncLogger;
   private logHistory: LogEntry[] = [];
   private readonly MAX_HISTORY = 1000; // Keep last 1000 log entries
-  private readonly MAX_DATA_SIZE = 10000; // Max characters for data
+  private readonly IS_DEV = import.meta.env.DEV;
 
   private constructor() {}
 
@@ -48,133 +49,152 @@ export class SyncLogger {
     return SyncLogger.instance;
   }
 
-  /**
-   * Log a message at DEBUG level
-   */
   public debug(category: LogCategory, message: string, data?: any): void {
-    this.log(LogLevel.DEBUG, category, message, data);
+    // Only log debug in development mode
+    if (this.IS_DEV) {
+      this.log(LogLevel.DEBUG, category, message, undefined, data);
+    }
   }
 
-  /**
-   * Log a message at INFO level
-   */
   public info(category: LogCategory, message: string, data?: any): void {
-    this.log(LogLevel.INFO, category, message, data);
+    this.log(LogLevel.INFO, category, message, undefined, data);
   }
 
-  /**
-   * Log a message at WARN level
-   */
   public warn(category: LogCategory, message: string, data?: any): void {
-    this.log(LogLevel.WARN, category, message, data);
+    this.log(LogLevel.WARN, category, message, undefined, data);
   }
 
-  /**
-   * Log a message at ERROR level
-   */
   public error(
     category: LogCategory,
     message: string,
     error?: Error,
     data?: any
   ): void {
-    this.log(LogLevel.ERROR, category, message, data, error);
+    this.log(LogLevel.ERROR, category, message, error, data);
   }
 
   /**
-   * Core logging function
+   * Core logging function - optimized to reduce JSON operations
    */
   private log(
     level: LogLevel,
     category: LogCategory,
     message: string,
-    data?: any,
-    error?: Error
+    error?: Error,
+    data?: any
   ): void {
-    // Sanitize data to prevent huge logs
-    let sanitizedData: any;
-
-    if (data) {
-      const dataStr = JSON.stringify(data);
-      if (dataStr.length > this.MAX_DATA_SIZE) {
-        sanitizedData = {
-          _truncated: true,
-          _originalSize: dataStr.length,
-          summary: dataStr.substring(0, 500) + "...",
-        };
-      } else {
-        sanitizedData = data;
-      }
+    // Skip excessive logging in production
+    if (!this.IS_DEV && level === LogLevel.DEBUG) {
+      return;
     }
 
-    // Create log entry
+    // Create log entry with minimal properties
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
       category,
       message,
-      data: sanitizedData,
-      error,
     };
 
-    // Add to history (maintaining max size)
-    this.logHistory.push(entry);
-    if (this.logHistory.length > this.MAX_HISTORY) {
-      this.logHistory.shift(); // Remove oldest entry
+    // Only process data if it exists
+    if (data) {
+      // Avoid stringifying large objects
+      if (typeof data === "object" && data !== null) {
+        // Store reference directly in dev mode
+        if (this.IS_DEV) {
+          entry.data = data;
+        } else {
+          // In production, only include essential fields
+          const essentialData: Record<string, any> = {};
+
+          // Extract only the most important fields
+          if ("id" in data) essentialData.id = data.id;
+          if ("entityId" in data) essentialData.entityId = data.entityId;
+          if ("entityType" in data) essentialData.entityType = data.entityType;
+          if ("operation" in data) essentialData.operation = data.operation;
+          if ("status" in data) essentialData.status = data.status;
+
+          entry.data =
+            Object.keys(essentialData).length > 0 ? essentialData : "[data]";
+        }
+      } else {
+        // For primitive values, store directly
+        entry.data = data;
+      }
     }
 
-    // Format for console output
-    let consoleMessage = `[${
-      entry.timestamp
-    }] [${entry.level.toUpperCase()}] [${entry.category}] ${entry.message}`;
+    // Add error if provided
+    if (error) {
+      entry.error = error;
+    }
+
+    // Add to history in dev mode only
+    if (this.IS_DEV) {
+      this.logHistory.push(entry);
+      if (this.logHistory.length > this.MAX_HISTORY) {
+        this.logHistory.shift();
+      }
+    }
+
+    // Format console message
+    const timestamp = entry.timestamp.split("T")[1].split(".")[0]; // HH:MM:SS
+    const consoleMsg = `[${timestamp}] [${category}] ${message}`;
 
     // Log to console with appropriate level
     switch (level) {
       case LogLevel.DEBUG:
-        console.debug(consoleMessage, sanitizedData || "", error || "");
+        console.debug(consoleMsg);
         break;
       case LogLevel.INFO:
-        console.info(consoleMessage, sanitizedData || "", error || "");
+        console.info(consoleMsg);
         break;
       case LogLevel.WARN:
-        console.warn(consoleMessage, sanitizedData || "", error || "");
+        console.warn(consoleMsg);
         break;
       case LogLevel.ERROR:
-        console.error(consoleMessage, sanitizedData || "", error || "");
+        console.error(consoleMsg, error || "");
         break;
     }
   }
 
   /**
-   * Get recent log history
+   * Get log history - filtered by level, category, and time
    */
   public getHistory(filter?: {
     level?: LogLevel;
     category?: LogCategory;
     since?: Date;
   }): LogEntry[] {
-    let filtered = [...this.logHistory];
-
-    if (filter) {
-      if (filter.level) {
-        filtered = filtered.filter((entry) => entry.level === filter.level);
-      }
-
-      if (filter.category) {
-        filtered = filtered.filter(
-          (entry) => entry.category === filter.category
-        );
-      }
-
-      if (filter.since) {
-        const sinceTime = filter.since.getTime();
-        filtered = filtered.filter(
-          (entry) => new Date(entry.timestamp).getTime() >= sinceTime
-        );
-      }
+    // If no history is kept in production, return empty array
+    if (!this.IS_DEV) {
+      return [];
     }
 
-    return filtered;
+    if (!filter) {
+      return [...this.logHistory];
+    }
+
+    return this.logHistory.filter((entry) => {
+      // Filter by level if specified
+      if (filter.level && entry.level !== filter.level) {
+        return false;
+      }
+
+      // Filter by category if specified
+      if (filter.category && entry.category !== filter.category) {
+        return false;
+      }
+
+      // Filter by time if specified
+      if (
+        filter.since &&
+        new Date(entry.timestamp).getTime() < filter.since.getTime()
+      ) {
+        return false;
+      }
+
+      return true;
+    });
   }
 
   /**
@@ -185,5 +205,4 @@ export class SyncLogger {
   }
 }
 
-// Export singleton instance
 export const syncLogger = SyncLogger.getInstance();

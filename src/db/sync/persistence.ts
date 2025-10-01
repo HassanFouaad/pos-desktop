@@ -1,8 +1,10 @@
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getLocalStorage, setLocalStorage } from "../../utils/storage";
 import { drizzleDb } from "../drizzle";
+import { changes } from "../schemas";
 import { LogCategory, syncLogger } from "./logger";
 import { SyncService } from "./sync.service";
+import { SyncStatus } from "./types";
 
 /**
  * Handles persistence of sync state for recovery after app crashes/restarts
@@ -27,7 +29,7 @@ export class SyncPersistence {
     activeChanges: [],
   };
 
-  private constructor(private syncService: SyncService) {
+  private constructor(_syncService: SyncService) {
     this.loadState();
   }
 
@@ -142,22 +144,22 @@ export class SyncPersistence {
     );
 
     try {
-      const drizzle = drizzleDb.database;
+      const db = drizzleDb.database;
       const activeChangeIds = this.state.activeChanges.map(
         (change) => change.id
       );
 
-      // Reset any in-progress changes to pending state
-      // This ensures they will be processed again by the sync service
+      // Reset any in-progress changes to pending state using proper drizzle query
       if (activeChangeIds.length > 0) {
-        await drizzle.execute({
-          sql: sql`
-            UPDATE changes 
-            SET status = 'pending', retry_count = COALESCE(retry_count, 0)
-            WHERE id IN (${activeChangeIds.join(",")})
-          `,
-          args: {},
-        });
+        for (const id of activeChangeIds) {
+          await db
+            .update(changes)
+            .set({
+              status: SyncStatus.PENDING,
+              retryCount: 0,
+            })
+            .where(eq(changes.id, id));
+        }
 
         syncLogger.info(
           LogCategory.SYNC,

@@ -94,6 +94,8 @@ export class NetworkStatusService {
         cache: "no-store",
       });
 
+      console.log("Connectivity probe response:", response);
+
       clearTimeout(timeoutId);
 
       if (response.ok) {

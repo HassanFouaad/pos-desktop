@@ -5,14 +5,15 @@ import { database } from "../database";
 import { drizzleDb } from "../drizzle";
 import { changes } from "../schemas";
 import { LogCategory, syncLogger } from "./logger";
-import { MetricType, syncMetrics } from "./metrics";
 import { initSyncPersistence } from "./persistence";
 import { SyncPriority, priorityManager } from "./priority";
+import { retryStrategy } from "./retry-strategy";
 import {
   EntityType,
   SyncChange,
   SyncHandler,
   SyncOperation,
+  SyncResult,
   SyncStatus,
 } from "./types";
 
@@ -26,6 +27,15 @@ import {
  * - Transaction-based grouping of changes
  * - Network status awareness
  */
+/**
+ * Sync event listener interface
+ */
+export interface SyncEventListener {
+  onSyncStart?: () => void;
+  onSyncComplete?: () => void;
+  onSyncError?: (error: Error) => void;
+}
+
 export class SyncService {
   private static instance: SyncService;
   private db: PGliteWithLive;
@@ -37,6 +47,7 @@ export class SyncService {
   private processingQueue = false;
   private hasChangesWhileProcessing = false;
   private networkUnsubscribe?: () => void;
+  private syncEventListeners: SyncEventListener[] = [];
 
   // Public methods for use in SyncContext
   public processChanges: () => Promise<void>;
@@ -95,6 +106,47 @@ export class SyncService {
   /**
    * Register a handler for a specific entity type
    */
+  /**
+   * Add a sync event listener
+   */
+  public addSyncListener(listener: SyncEventListener): () => void {
+    this.syncEventListeners.push(listener);
+
+    // Return function to remove the listener
+    return () => {
+      const index = this.syncEventListeners.indexOf(listener);
+      if (index !== -1) {
+        this.syncEventListeners.splice(index, 1);
+      }
+    };
+  }
+
+  /**
+   * Notify all listeners of a sync event
+   */
+  private notifySyncListeners(
+    event: "start" | "complete" | "error",
+    error?: Error
+  ): void {
+    this.syncEventListeners.forEach((listener) => {
+      try {
+        if (event === "start" && listener.onSyncStart) {
+          listener.onSyncStart();
+        } else if (event === "complete" && listener.onSyncComplete) {
+          listener.onSyncComplete();
+        } else if (event === "error" && listener.onSyncError && error) {
+          listener.onSyncError(error);
+        }
+      } catch (e) {
+        syncLogger.error(
+          LogCategory.SYNC,
+          "Error notifying sync listener",
+          e instanceof Error ? e : new Error(String(e))
+        );
+      }
+    });
+  }
+
   public registerHandler(handler: SyncHandler): void {
     this.handlers[handler.entityType] = handler;
     syncLogger.info(
@@ -222,8 +274,11 @@ export class SyncService {
     this.processingQueue = true;
     this.hasChangesWhileProcessing = false;
 
-    // Start timing this sync operation
-    const stopTimer = syncMetrics.startTimer(MetricType.SYNC_DURATION);
+    // Notify listeners that sync has started
+    this.notifySyncListeners("start");
+
+    // Start timing
+    const startTime = performance.now();
 
     try {
       const { changes } = await this.fetchChanges();
@@ -235,16 +290,8 @@ export class SyncService {
           { count: changes.length }
         );
 
-        // Update gauge for pending changes
-        syncMetrics.setGauge(MetricType.PENDING_CHANGES, changes.length);
-
         // Group changes by transaction
         const groupedChanges = this.groupChangesByTransaction(changes);
-
-        // Increment sync operations counter
-        syncMetrics.incrementCounter(MetricType.SYNC_OPERATIONS, 1, {
-          batchSize: changes.length,
-        });
 
         for (const [transactionId, txChanges] of Object.entries(
           groupedChanges
@@ -254,28 +301,18 @@ export class SyncService {
             txChanges
           );
 
-          if (result === "accepted") {
+          if (result === SyncResult.ACCEPTED) {
             await this.markChangesAsProcessed(txChanges.map((c) => c.id));
             this.position = Math.max(
               ...txChanges.map((c) => c.id),
               this.position
             );
 
-            // Increment processed counter
-            syncMetrics.incrementCounter(
-              MetricType.CHANGES_PROCESSED,
-              txChanges.length,
-              { status: "success" }
-            );
-          } else if (result === "rejected") {
+            // Successfully processed
+          } else if (result === SyncResult.REJECTED) {
             await this.markChangesAsFailed(txChanges.map((c) => c.id));
 
-            // Increment failed counter
-            syncMetrics.incrementCounter(
-              MetricType.CHANGES_FAILED,
-              txChanges.length,
-              { status: "rejected" }
-            );
+            // Failed to process
           }
           // For 'retry' results, nothing to do here - they are handled by scheduleRetry
         }
@@ -288,16 +325,25 @@ export class SyncService {
         "Error processing changes",
         error instanceof Error ? error : new Error(String(error))
       );
+
+      // Notify listeners of error
+      this.notifySyncListeners(
+        "error",
+        error instanceof Error ? error : new Error(String(error))
+      );
     } finally {
       this.processingQueue = false;
 
       // Record the sync duration
-      const durationMs = stopTimer();
+      const durationMs = performance.now() - startTime;
       syncLogger.debug(
         LogCategory.SYNC,
-        `Sync operation completed in ${durationMs}ms`,
-        { durationMs }
+        `Sync operation completed in ${Math.round(durationMs)}ms`,
+        { durationMs: Math.round(durationMs) }
       );
+
+      // Notify listeners that sync has completed
+      this.notifySyncListeners("complete");
 
       // If new changes came in while we were processing, process them too
       if (
@@ -316,6 +362,9 @@ export class SyncService {
   private async _retryFailedChanges(): Promise<void> {
     if (!this.isRunning || this.processingQueue) return;
 
+    // Notify listeners that sync has started
+    this.notifySyncListeners("start");
+
     try {
       const drizzle = drizzleDb.database;
 
@@ -328,6 +377,8 @@ export class SyncService {
 
       if (failedChanges.length === 0) {
         syncLogger.info(LogCategory.SYNC, "No failed changes to retry");
+        // Notify listeners that sync has completed (even with no changes)
+        this.notifySyncListeners("complete");
         return;
       }
 
@@ -350,6 +401,9 @@ export class SyncService {
       // Process changes immediately if online
       if (networkStatus.isNetworkOnline()) {
         this._processChanges();
+      } else {
+        // If not online, notify listeners that sync has completed
+        this.notifySyncListeners("complete");
       }
     } catch (error) {
       syncLogger.error(
@@ -357,6 +411,15 @@ export class SyncService {
         "Error retrying failed changes",
         error instanceof Error ? error : new Error(String(error))
       );
+
+      // Notify listeners of error
+      this.notifySyncListeners(
+        "error",
+        error instanceof Error ? error : new Error(String(error))
+      );
+
+      // Notify listeners that sync has completed despite error
+      this.notifySyncListeners("complete");
     }
   }
 
@@ -416,28 +479,13 @@ export class SyncService {
    * Calculate next retry time using exponential backoff with jitter
    */
   private calculateNextRetryTime(retryCount: number): Date {
-    // Base delay is 5 seconds
-    const baseDelayMs = 5000;
-
-    // Max delay is 1 hour
-    const maxDelayMs = 60 * 60 * 1000;
-
-    // Calculate exponential backoff: base * 2^retryCount
-    let delayMs = baseDelayMs * Math.pow(2, retryCount);
-
-    // Add jitter (±25%) to prevent retry stampedes
-    const jitterFactor = 0.25;
-    const jitterAmount = delayMs * jitterFactor;
-    delayMs = delayMs - jitterAmount + Math.random() * jitterAmount * 2;
-
-    // Cap at max delay
-    delayMs = Math.min(delayMs, maxDelayMs);
-
-    // Calculate next retry time
-    const nextRetryAt = new Date();
-    nextRetryAt.setTime(nextRetryAt.getTime() + delayMs);
-
-    return nextRetryAt;
+    // Use the retry strategy service
+    return retryStrategy.calculateNextRetryTime(retryCount, {
+      baseDelay: 5000, // 5 seconds
+      maxDelay: 3600000, // 1 hour
+      backoffFactor: 2,
+      jitterFactor: 0.25, // 25% jitter
+    });
   }
 
   /**
@@ -446,7 +494,7 @@ export class SyncService {
   private async processTransactionChanges(
     _transactionId: string, // Using underscore to indicate unused parameter
     changes: SyncChange[]
-  ): Promise<"accepted" | "rejected" | "retry"> {
+  ): Promise<SyncResult> {
     // Group changes by entity type
     const changesByEntityType = changes.reduce((acc, change) => {
       if (!acc[change.entityType]) {
@@ -467,7 +515,7 @@ export class SyncService {
           LogCategory.HANDLER,
           `No handler registered for entity type: ${entityType}`
         );
-        return "rejected";
+        return SyncResult.REJECTED;
       }
 
       try {
@@ -475,9 +523,9 @@ export class SyncService {
         for (const change of entityChanges) {
           const result = await handler.syncChange(change);
 
-          if (result !== "accepted") {
+          if (result !== SyncResult.ACCEPTED) {
             // If retry is requested, schedule retry with backoff
-            if (result === "retry") {
+            if (result === SyncResult.RETRY) {
               await this.scheduleRetry(change);
             }
             return result; // If any change fails, return early
@@ -494,11 +542,11 @@ export class SyncService {
         for (const change of entityChanges) {
           await this.scheduleRetry(change);
         }
-        return "retry";
+        return SyncResult.RETRY;
       }
     }
 
-    return "accepted";
+    return SyncResult.ACCEPTED;
   }
 
   /**
@@ -534,11 +582,7 @@ export class SyncService {
         }
       );
 
-      // Increment failed counter
-      syncMetrics.incrementCounter(MetricType.CHANGES_FAILED, 1, {
-        entityType: change.entityType,
-        reason: "max_retries_exceeded",
-      });
+      // Change has failed permanently
     } else {
       // Otherwise, schedule for retry
       await drizzle
@@ -551,22 +595,8 @@ export class SyncService {
         .where(eq(changes.id, change.id))
         .execute();
 
-      // Increment retries counter
-      syncMetrics.incrementCounter(MetricType.CHANGES_RETRIED, 1, {
-        entityType: change.entityType,
-        retryCount: retryCount,
-      });
-
-      // Record retry delay
+      // Calculate delay for logging
       const delayMs = nextRetryAt.getTime() - Date.now();
-      syncMetrics.recordTiming(MetricType.RETRY_DELAY, delayMs, {
-        entityType: change.entityType,
-        retryCount: retryCount,
-      });
-
-      // Update gauge for delayed changes
-      const delayedCount = syncMetrics.getGauge(MetricType.DELAYED_CHANGES) + 1;
-      syncMetrics.setGauge(MetricType.DELAYED_CHANGES, delayedCount);
 
       syncLogger.info(
         LogCategory.CHANGE,

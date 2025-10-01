@@ -1,12 +1,16 @@
 import {
+  Error as ErrorIcon,
   CloudOff as OfflineIcon,
   CheckCircle as OnlineIcon,
+  Refresh as RefreshIcon,
   Sync as SyncingIcon,
 } from "@mui/icons-material";
 import {
   Badge,
   Box,
-  IconButton,
+  Divider,
+  Fab,
+  Fade,
   Popover,
   Stack,
   Tooltip,
@@ -37,8 +41,8 @@ interface NetworkStatusIndicatorProps {
 }
 
 /**
- * Component that displays the current network status with an indicator
- * and provides sync status details in a popover when clicked
+ * Component that displays the current network status with a modern digital look
+ * Styled to match the FloatingNavigation component
  */
 export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
   position = { top: 16, right: 16 },
@@ -50,10 +54,17 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
     useAppSelector((state) => state.sync);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
-  // Update metrics when component mounts
+  // Update metrics when component mounts and periodically
   useEffect(() => {
-    // Refresh metrics when component mounts
+    // Immediately refresh metrics
     dispatch(refreshSyncMetrics());
+
+    // Refresh metrics every 5 seconds
+    const intervalId = setInterval(() => {
+      dispatch(refreshSyncMetrics());
+    }, 5000);
+
+    return () => clearInterval(intervalId);
   }, [dispatch]);
 
   // Handle click to open popover
@@ -69,8 +80,14 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
     setAnchorEl(null);
   };
 
+  // Force connectivity check
+  const handleForceCheck = () => {
+    dispatch(checkConnectivity());
+  };
+
   const open = Boolean(anchorEl);
   const popoverId = open ? "network-status-popover" : undefined;
+  const hasPendingChanges = pendingChanges + delayedChanges > 0;
 
   // Determine icon and color based on status
   const getStatusConfig = () => {
@@ -98,7 +115,7 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
         };
       case "error":
         return {
-          icon: <OfflineIcon />,
+          icon: <ErrorIcon />,
           color: theme.palette.error.main,
           text: "Error",
           tooltip: "Sync errors detected",
@@ -124,24 +141,32 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
           zIndex: theme.zIndex.appBar + 1,
         }}
       >
-        <Tooltip title={statusConfig.tooltip}>
+        <Tooltip title={statusConfig.tooltip} placement="left">
           <Badge
             badgeContent={
-              pendingChanges + delayedChanges > 0
-                ? pendingChanges + delayedChanges
-                : undefined
+              hasPendingChanges ? pendingChanges + delayedChanges : undefined
             }
             color="primary"
+            sx={{
+              "& .MuiBadge-badge": {
+                fontSize: "0.7rem",
+                height: "20px",
+                minWidth: "20px",
+                borderRadius: "10px",
+              },
+            }}
           >
-            <IconButton
+            <Fab
+              size="medium"
+              aria-describedby={popoverId}
               onClick={handleClick}
               sx={{
-                color: statusConfig.color,
-                bgcolor: "background.paper",
-                boxShadow: 1,
-                transition: "transform 0.2s",
+                bgcolor: statusConfig.color,
+                color: "#fff",
+                boxShadow: theme.shadows[3],
                 "&:hover": {
-                  transform: "scale(1.1)",
+                  bgcolor: statusConfig.color,
+                  opacity: 0.9,
                 },
                 "& .rotate-icon": {
                   animation: "spin 2s linear infinite",
@@ -155,10 +180,9 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
                   },
                 },
               }}
-              size="large"
             >
               {statusConfig.icon}
-            </IconButton>
+            </Fab>
           </Badge>
         </Tooltip>
       </Box>
@@ -177,47 +201,89 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
             vertical: "top",
             horizontal: "right",
           }}
+          PaperProps={{
+            elevation: 4,
+            sx: {
+              borderRadius: 2,
+              overflow: "hidden",
+              width: 280,
+            },
+          }}
         >
-          <Box sx={{ p: 2, maxWidth: 300 }}>
-            <Typography variant="h6" color={statusConfig.color} gutterBottom>
+          {/* Header */}
+          <Box
+            sx={{
+              p: 2,
+              bgcolor: statusConfig.color,
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Typography variant="subtitle1" fontWeight="bold">
               {statusConfig.text}
             </Typography>
 
-            <Stack spacing={1}>
-              <Typography variant="body2">
-                <strong>Pending Changes:</strong> {pendingChanges}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Delayed Changes:</strong> {delayedChanges}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Processed:</strong> {processed}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Retried:</strong> {retried}
-              </Typography>
-              {failed > 0 && (
-                <Typography variant="body2" color="error">
-                  <strong>Failed:</strong> {failed}
+            <Tooltip title="Check connectivity">
+              <Fab
+                size="small"
+                onClick={handleForceCheck}
+                sx={{
+                  bgcolor: "rgba(255, 255, 255, 0.2)",
+                  color: "#fff",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.3)",
+                  },
+                }}
+              >
+                <RefreshIcon fontSize="small" />
+              </Fab>
+            </Tooltip>
+          </Box>
+
+          {/* Stats */}
+          <Box sx={{ p: 2 }}>
+            <Stack spacing={1.5}>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Pending Changes
                 </Typography>
-              )}
-
-              <Typography variant="caption" color="text.secondary">
-                Last updated: {new Date().toLocaleTimeString()}
-              </Typography>
-
-              <Box sx={{ mt: 1 }}>
-                <IconButton
-                  size="small"
-                  color={status === "online" ? "primary" : "error"}
-                  onClick={() => dispatch(checkConnectivity())}
-                >
-                  <SyncingIcon fontSize="small" />
-                </IconButton>
-                <Typography variant="caption" sx={{ ml: 1 }}>
-                  Check connectivity
+                <Typography variant="h5" fontWeight="bold">
+                  {pendingChanges + delayedChanges}
                 </Typography>
               </Box>
+
+              <Divider />
+
+              <Stack direction="row" justifyContent="space-between">
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Processed
+                  </Typography>
+                  <Typography variant="h6">{processed}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Retried
+                  </Typography>
+                  <Typography variant="h6">{retried}</Typography>
+                </Box>
+              </Stack>
+
+              {failed > 0 && (
+                <Fade in={true}>
+                  <Box sx={{ mt: 1 }}>
+                    <Typography
+                      variant="caption"
+                      color="error"
+                      fontWeight="bold"
+                    >
+                      Failed Changes: {failed}
+                    </Typography>
+                  </Box>
+                </Fade>
+              )}
             </Stack>
           </Box>
         </Popover>

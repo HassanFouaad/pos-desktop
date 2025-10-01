@@ -2,7 +2,6 @@ import { and, count, eq, ne } from "drizzle-orm";
 import { drizzleDb } from "../drizzle";
 import { changes } from "../schemas";
 import { LogCategory, syncLogger } from "./logger";
-import { MetricType, syncMetrics } from "./metrics";
 import { EntityType, SyncOperation, SyncStatus } from "./types";
 
 /**
@@ -66,11 +65,7 @@ export class TransactionManager {
         { transactionId, operationCount: operations.length }
       );
 
-      // Track transaction metrics
-      syncMetrics.incrementCounter(MetricType.SYNC_OPERATIONS, 1, {
-        type: "transaction",
-        operationCount: operations.length.toString(),
-      });
+      // No metrics tracking needed
 
       return transactionId;
     } catch (error) {
