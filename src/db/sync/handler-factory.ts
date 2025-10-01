@@ -84,6 +84,22 @@ export abstract class BaseSyncHandler implements SyncHandler {
    * Determine if an error is retryable
    */
   protected isRetryableError(error: any): boolean {
+    // Client errors (400, 404) are never retryable - they indicate bad requests or missing resources
+    if (
+      error &&
+      error.status &&
+      (error.status === 400 || error.status === 404)
+    ) {
+      syncLogger.info(
+        LogCategory.HANDLER,
+        `Non-retryable error detected (${error.status}): ${
+          error.message || "Unknown error"
+        }`,
+        { error }
+      );
+      return false;
+    }
+
     // Network errors are always retryable
     if (
       error &&
@@ -109,6 +125,19 @@ export abstract class BaseSyncHandler implements SyncHandler {
       return true;
     }
 
+    // Any other client errors (4xx) are generally not retryable
+    if (error && error.status && error.status >= 400 && error.status < 500) {
+      syncLogger.info(
+        LogCategory.HANDLER,
+        `Non-retryable client error detected (${error.status}): ${
+          error.message || "Unknown error"
+        }`,
+        { error }
+      );
+      return false;
+    }
+
+    // Default to not retryable for unknown errors
     return false;
   }
 }

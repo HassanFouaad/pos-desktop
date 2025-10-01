@@ -77,6 +77,14 @@ class TauriSecureStorage implements SecureTokenStorage {
    * In development, falls back to localStorage with encryption
    */
   public async storeToken(key: string, token: string): Promise<void> {
+    if (!token) {
+      syncLogger.warn(
+        LogCategory.AUTH,
+        `Attempted to store empty token for key: ${key}`
+      );
+      return;
+    }
+
     const secureKey = this.PREFIX + key;
 
     try {

@@ -40,15 +40,69 @@ export class CustomerSyncHandler extends BaseSyncHandler {
       return SyncResult.REJECTED;
     }
 
-    // Send to server - this is the only responsibility of the handler
-    const response = await createCustomer(change.payload);
+    try {
+      // Send to server - this is the only responsibility of the handler
+      const response = await createCustomer(change.payload);
 
-    // Simple success/failure check
-    if (!response.success || !response.data) {
+      // Check for success
+      if (response.success && response.data) {
+        syncLogger.info(
+          LogCategory.HANDLER,
+          `Successfully created customer on server: ${response.data.id}`,
+          { customerId: response.data.id, localId }
+        );
+        return SyncResult.ACCEPTED;
+      }
+
+      // If we have an error response, check the status code
+      if (response.error) {
+        // Handle client errors (400, 404) - mark as rejected immediately
+        if (
+          response.error.details?.status === 400 ||
+          response.error.details?.status === 404
+        ) {
+          syncLogger.warn(
+            LogCategory.HANDLER,
+            `Customer creation rejected with ${response.error.details.status}: ${response.error.message}`,
+            { error: response.error, localId }
+          );
+          return SyncResult.REJECTED;
+        }
+
+        // For server errors or other issues, retry
+        syncLogger.warn(
+          LogCategory.HANDLER,
+          `Customer creation failed with error: ${response.error.message}`,
+          { error: response.error, localId }
+        );
+        return SyncResult.RETRY;
+      }
+
+      // Default to rejection if we can't determine what happened
+      return SyncResult.REJECTED;
+    } catch (error) {
+      // For unexpected errors, check if they're retryable
+      if (this.isRetryableError(error)) {
+        syncLogger.warn(
+          LogCategory.HANDLER,
+          `Retryable error during customer creation: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+          { error, localId }
+        );
+        return SyncResult.RETRY;
+      }
+
+      // For non-retryable errors, reject immediately
+      syncLogger.error(
+        LogCategory.HANDLER,
+        `Non-retryable error during customer creation: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       return SyncResult.REJECTED;
     }
-
-    return SyncResult.ACCEPTED;
   }
 
   /**

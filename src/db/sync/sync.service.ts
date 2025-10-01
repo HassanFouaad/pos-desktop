@@ -670,6 +670,7 @@ export class SyncService {
    * @private Internal implementation
    */
   private async _processChanges(): Promise<void> {
+    console.log("Processing changes");
     if (!this.isRunning || this.processingQueue || this.isPaused) return;
 
     // Double-check network status before processing
@@ -717,9 +718,21 @@ export class SyncService {
 
             // Successfully processed
           } else if (result === SyncResult.REJECTED) {
+            // Mark these changes as failed immediately
             await this.markChangesAsFailed(txChanges.map((c) => c.id));
 
-            // Failed to process
+            // Log the failure
+            syncLogger.info(
+              LogCategory.SYNC,
+              `Marked ${txChanges.length} changes as failed for entity type ${txChanges[0].entityType}`,
+              {
+                changeIds: txChanges.map((c) => c.id),
+                entityType: txChanges[0].entityType,
+              }
+            );
+
+            // Set this flag to true to ensure we continue processing other changes
+            this.hasChangesWhileProcessing = true;
           }
           // For 'retry' results, nothing to do here - they are handled by scheduleRetry
         }
@@ -752,12 +765,18 @@ export class SyncService {
       // Notify listeners that sync has completed
       this.notifySyncListeners("complete");
 
-      // If new changes came in while we were processing, process them too
+      // If new changes came in while we were processing or we marked changes as failed,
+      // immediately retry processing for network resilience
       if (
         this.hasChangesWhileProcessing &&
         this.isRunning &&
         networkStatus.isNetworkOnline()
       ) {
+        syncLogger.info(
+          LogCategory.SYNC,
+          "Immediately retrying sync process for network resilience"
+        );
+        // Use a minimal timeout to allow the event loop to breathe
         setTimeout(() => this._processChanges(), 100);
       }
     }

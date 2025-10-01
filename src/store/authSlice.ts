@@ -51,77 +51,138 @@ const initialState: AuthState = {
 export const initAuth = createAsyncThunk(
   "auth/init",
   async (_, { dispatch }) => {
-    const currentLoggedInUser = await usersRepository.getLoggedInUser();
+    try {
+      const currentLoggedInUser = await usersRepository.getLoggedInUser();
 
-    // Get token from secure storage instead of localStorage
-    let token = await secureStorage.getToken("accessToken");
+      // Get token from secure storage instead of localStorage
+      let token = await secureStorage.getToken("accessToken");
 
-    // Update offline mode status
-    const isNetworkOnline = networkStatus.isNetworkOnline();
-    dispatch(authSlice.actions.setOfflineMode(!isNetworkOnline));
+      // Update offline mode status
+      const isNetworkOnline = networkStatus.isNetworkOnline();
+      dispatch(authSlice.actions.setOfflineMode(!isNetworkOnline));
 
-    if (!currentLoggedInUser || !token) {
-      throw new Error("Failed to fetch the user");
-    }
+      // CRITICAL FIX: If we have a logged in user in the database, use it regardless
+      // This ensures users stay logged in when refreshing the app
+      if (currentLoggedInUser) {
+        // If we have a user but no token, try to get it from the user object
+        if (!token && currentLoggedInUser.accessToken) {
+          token = currentLoggedInUser.accessToken;
+          // Save it to secure storage for future use
+          await secureStorage.storeToken("accessToken", token);
+        }
 
-    if (!isNetworkOnline) {
-      // In offline mode, use the token we already have
-      await startSync(token, String(currentLoggedInUser?.id));
+        // If we have a user, consider them authenticated even without a token in offline mode
+        if (!isNetworkOnline || !token) {
+          syncLogger.info(
+            LogCategory.AUTH,
+            `Using cached user credentials for ${
+              currentLoggedInUser.username || currentLoggedInUser.email
+            }`,
+            { offline: !isNetworkOnline }
+          );
 
-      await syncService.start();
+          // Try to start sync if we have a token
+          if (token) {
+            try {
+              await startSync(token, String(currentLoggedInUser.id));
+              await syncService.start();
+            } catch (syncError) {
+              syncLogger.error(
+                LogCategory.AUTH,
+                "Failed to start sync service, but continuing with cached user",
+                syncError instanceof Error
+                  ? syncError
+                  : new Error(String(syncError))
+              );
+            }
+          }
 
-      delete currentLoggedInUser.hashedPassword;
-      delete currentLoggedInUser.accessToken;
-      delete currentLoggedInUser.refreshToken;
-      delete currentLoggedInUser.lastLoginAt;
+          // Return the cached user without sensitive data
+          const userToReturn = { ...currentLoggedInUser };
+          delete userToReturn.hashedPassword;
+          delete userToReturn.accessToken;
+          delete userToReturn.refreshToken;
+          delete userToReturn.lastLoginAt;
 
-      return currentLoggedInUser;
-    }
+          return userToReturn;
+        }
 
-    const newToken = await httpClient.refreshToken();
+        // If we're online and have a token, try to refresh it
+        if (isNetworkOnline && token) {
+          try {
+            const newToken = await httpClient.refreshToken();
+            if (newToken) {
+              token = newToken;
+            }
 
-    if (newToken) {
-      token = newToken;
-    }
+            // Try to get updated user data
+            const user = await getMe();
 
-    const user = await getMe();
+            if (!user.error && user.data) {
+              // Successfully got updated user data
+              await startSync(token, String(currentLoggedInUser.id));
+              await syncService.start();
 
-    if (user.error || !user.data) {
-      if (user.error?.code !== "NETWORK_ERROR") {
-        throw user.error;
+              await usersRepository.upsertUser(
+                user.data as Partial<AuthResponse["user"]>,
+                token
+              );
+
+              const userToReturn = { ...user.data.user };
+              delete userToReturn.hashedPassword;
+              delete userToReturn.accessToken;
+              delete userToReturn.refreshToken;
+              delete userToReturn.lastLoginAt;
+
+              return userToReturn;
+            }
+          } catch (refreshError) {
+            // If refresh fails, fall back to cached user
+            syncLogger.warn(
+              LogCategory.AUTH,
+              "Failed to refresh token, using cached user",
+              refreshError instanceof Error
+                ? refreshError
+                : new Error(String(refreshError))
+            );
+          }
+
+          // If we get here, either the API call failed or refresh failed
+          // Start sync with existing token and use cached user
+          try {
+            await startSync(token, String(currentLoggedInUser.id));
+            await syncService.start();
+          } catch (syncError) {
+            syncLogger.error(
+              LogCategory.AUTH,
+              "Failed to start sync service, but continuing with cached user",
+              syncError instanceof Error
+                ? syncError
+                : new Error(String(syncError))
+            );
+          }
+
+          // Return the cached user without sensitive data
+          const userToReturn = { ...currentLoggedInUser };
+          delete userToReturn.hashedPassword;
+          delete userToReturn.accessToken;
+          delete userToReturn.refreshToken;
+          delete userToReturn.lastLoginAt;
+
+          return userToReturn;
+        }
       }
 
-      await startSync(token, String(currentLoggedInUser?.id));
-
-      await syncService.start();
-
-      await usersRepository.upsertUser(
-        currentLoggedInUser as Partial<AuthResponse["user"]>,
-        token
+      // If we get here, we don't have a logged in user
+      throw new Error("No logged in user found");
+    } catch (error) {
+      syncLogger.error(
+        LogCategory.AUTH,
+        "Auth initialization failed",
+        error instanceof Error ? error : new Error(String(error))
       );
-      delete currentLoggedInUser.hashedPassword;
-      delete currentLoggedInUser.accessToken;
-      delete currentLoggedInUser.refreshToken;
-      delete currentLoggedInUser.lastLoginAt;
-
-      return currentLoggedInUser;
+      throw error;
     }
-
-    await startSync(token, String(currentLoggedInUser?.id));
-
-    await syncService.start();
-
-    await usersRepository.upsertUser(
-      user.data as Partial<AuthResponse["user"]>,
-      token
-    );
-
-    delete user.data.user.hashedPassword;
-    delete user.data.user.accessToken;
-    delete user.data.user.refreshToken;
-    delete user.data.user.lastLoginAt;
-
-    return user.data.user;
   }
 );
 
