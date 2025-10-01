@@ -23,7 +23,7 @@ export class NetworkStatusService {
   private probeInterval?: number;
   private lastProbeTime: number = 0;
   private consecutiveFailures: number = 0;
-  private readonly PROBE_URL = "https://www.google.com/generate_204";
+  private readonly PROBE_URL = "http://localhost:3000/api/health";
   private readonly MIN_PROBE_INTERVAL_MS = 15000;
   private readonly MAX_CONSECUTIVE_FAILURES = 3;
 

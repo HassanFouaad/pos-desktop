@@ -2,6 +2,7 @@ import {
   Error as ErrorIcon,
   CloudOff as OfflineIcon,
   CheckCircle as OnlineIcon,
+  Pause as PausedIcon,
   Refresh as RefreshIcon,
   Sync as SyncingIcon,
 } from "@mui/icons-material";
@@ -19,7 +20,11 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { checkConnectivity, refreshSyncMetrics } from "../../store/syncSlice";
+import {
+  checkConnectivity,
+  refreshSyncMetrics,
+  retryFailedChanges,
+} from "../../store/syncSlice";
 
 /**
  * Props for the NetworkStatusIndicator component
@@ -50,8 +55,15 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
 }) => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
-  const { status, pendingChanges, delayedChanges, processed, failed, retried } =
-    useAppSelector((state) => state.sync);
+  const {
+    status,
+    pendingChanges,
+    delayedChanges,
+    processed,
+    failed,
+    retried,
+    offlineSince,
+  } = useAppSelector((state) => state.sync);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   // Update metrics when component mounts and periodically
@@ -104,7 +116,9 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
           icon: <OfflineIcon />,
           color: theme.palette.error.main,
           text: "Offline",
-          tooltip: "No network connection",
+          tooltip: offlineSince
+            ? `Offline for ${formatOfflineDuration(offlineSince)}`
+            : "No network connection",
         };
       case "syncing":
         return {
@@ -113,12 +127,19 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
           text: "Syncing",
           tooltip: `Syncing ${pendingChanges + delayedChanges} changes`,
         };
+      case "paused":
+        return {
+          icon: <PausedIcon />,
+          color: theme.palette.info.main,
+          text: "Paused",
+          tooltip: "Sync service is paused",
+        };
       case "error":
         return {
           icon: <ErrorIcon />,
           color: theme.palette.error.main,
           text: "Error",
-          tooltip: "Sync errors detected",
+          tooltip: `${failed} failed changes`,
         };
       default:
         return {
@@ -128,6 +149,39 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
           tooltip: "Unknown connection status",
         };
     }
+  };
+
+  // Format the offline duration in a human-readable format
+  const formatOfflineDuration = (timestamp: number): string => {
+    const now = Date.now();
+    const diffSeconds = Math.floor((now - timestamp) / 1000);
+
+    if (diffSeconds < 60) {
+      return `${diffSeconds} seconds`;
+    }
+
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) {
+      return `${diffMinutes} minute${diffMinutes !== 1 ? "s" : ""}`;
+    }
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) {
+      return `${diffHours} hour${diffHours !== 1 ? "s" : ""}`;
+    }
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 30) {
+      return `${diffDays} day${diffDays !== 1 ? "s" : ""}`;
+    }
+
+    const diffMonths = Math.floor(diffDays / 30);
+    if (diffMonths < 12) {
+      return `${diffMonths} month${diffMonths !== 1 ? "s" : ""}`;
+    }
+
+    const diffYears = Math.floor(diffMonths / 12);
+    return `${diffYears} year${diffYears !== 1 ? "s" : ""}`;
   };
 
   const statusConfig = getStatusConfig();
@@ -163,7 +217,6 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
               sx={{
                 bgcolor: statusConfig.color,
                 color: "#fff",
-                boxShadow: theme.shadows[3],
                 "&:hover": {
                   bgcolor: statusConfig.color,
                   opacity: 0.9,
@@ -202,12 +255,13 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
             horizontal: "right",
           }}
           PaperProps={{
-            elevation: 4,
             sx: {
               borderRadius: 2,
               overflow: "hidden",
               width: 280,
+              bgcolor: "background.default",
             },
+            elevation: 0,
           }}
         >
           {/* Header */}
@@ -281,8 +335,32 @@ export const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
                     >
                       Failed Changes: {failed}
                     </Typography>
+                    <Box sx={{ mt: 1 }}>
+                      <Tooltip title="Retry failed changes">
+                        <Fab
+                          size="small"
+                          color="error"
+                          onClick={() => dispatch(retryFailedChanges())}
+                          sx={{ mr: 1 }}
+                        >
+                          <RefreshIcon fontSize="small" />
+                        </Fab>
+                      </Tooltip>
+                    </Box>
                   </Box>
                 </Fade>
+              )}
+
+              {/* Offline duration */}
+              {offlineSince && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Offline Duration
+                  </Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {formatOfflineDuration(offlineSince)}
+                  </Typography>
+                </Box>
               )}
             </Stack>
           </Box>

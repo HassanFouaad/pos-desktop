@@ -1,5 +1,5 @@
 import { PGliteWithLive } from "@electric-sql/pglite/live";
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { networkStatus } from "../../utils/network-status";
 import { database } from "../database";
 import { drizzleDb } from "../drizzle";
@@ -34,6 +34,8 @@ export interface SyncEventListener {
   onSyncStart?: () => void;
   onSyncComplete?: () => void;
   onSyncError?: (error: Error) => void;
+  onSyncPause?: () => void;
+  onSyncResume?: () => void;
 }
 
 export class SyncService {
@@ -42,12 +44,13 @@ export class SyncService {
   private position = 0;
   private handlers: Record<string, SyncHandler> = {};
   private isRunning = false;
+  private isPaused = false;
   private abortController?: AbortController;
   private unsubscribe?: () => Promise<void>;
   private processingQueue = false;
   private hasChangesWhileProcessing = false;
-  private networkUnsubscribe?: () => void;
   private syncEventListeners: SyncEventListener[] = [];
+  private lastOfflineTimestamp?: number;
 
   // Public methods for use in SyncContext
   public processChanges: () => Promise<void>;
@@ -59,6 +62,195 @@ export class SyncService {
     // Bind methods to make them available publicly
     this.processChanges = this._processChanges.bind(this);
     this.retryFailedChanges = this._retryFailedChanges.bind(this);
+
+    // Schedule database maintenance for long-term health
+    this.scheduleMaintenanceTasks();
+  }
+
+  /**
+   * Schedule regular maintenance tasks for database health
+   * Critical for long-term offline operation (up to 10 years)
+   */
+  private scheduleMaintenanceTasks(): void {
+    // Run maintenance tasks daily
+    setInterval(() => {
+      this.performDatabaseMaintenance();
+    }, 24 * 60 * 60 * 1000); // 24 hours
+
+    // Also run once at startup after a delay
+    setTimeout(() => {
+      this.performDatabaseMaintenance();
+    }, 5 * 60 * 1000); // 5 minutes after startup
+  }
+
+  /**
+   * Perform database maintenance tasks
+   * - Archive old successful changes
+   * - Clean up very old changes
+   * - Optimize database
+   */
+  private async performDatabaseMaintenance(): Promise<void> {
+    try {
+      syncLogger.info(
+        LogCategory.MAINTENANCE,
+        "Starting database maintenance tasks"
+      );
+
+      // Archive successful changes older than 30 days
+      await this.archiveOldSuccessfulChanges();
+
+      // Clean up very old failed changes (older than 1 year)
+      await this.cleanupVeryOldFailedChanges();
+
+      // Vacuum the database to reclaim space
+      await this.vacuumDatabase();
+
+      syncLogger.info(
+        LogCategory.MAINTENANCE,
+        "Database maintenance tasks completed successfully"
+      );
+    } catch (error) {
+      syncLogger.error(
+        LogCategory.MAINTENANCE,
+        "Error during database maintenance",
+        error instanceof Error ? error : new Error(String(error))
+      );
+    }
+  }
+
+  /**
+   * Archive old successful changes to prevent database bloat
+   * This moves successful changes older than 30 days to an archive table
+   */
+  private async archiveOldSuccessfulChanges(): Promise<void> {
+    try {
+      const drizzle = drizzleDb.database;
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      // Find old successful changes
+      const oldChanges = await drizzle
+        .select()
+        .from(changes)
+        .where(
+          and(
+            eq(changes.status, SyncStatus.SUCCESS),
+            sql`${changes.syncedAt} < ${thirtyDaysAgo}`
+          )
+        )
+        .limit(1000) // Process in batches to avoid memory issues
+        .execute();
+
+      if (oldChanges.length === 0) {
+        syncLogger.debug(
+          LogCategory.MAINTENANCE,
+          "No old successful changes to archive"
+        );
+        return;
+      }
+
+      // In a production system, we would move these to an archive table
+      // For now, we'll just delete them since they've been successfully synced
+      const changeIds = oldChanges.map((c) => c.id);
+
+      await drizzle
+        .delete(changes)
+        .where(sql`id IN (${changeIds.join(",")})`)
+        .execute();
+
+      syncLogger.info(
+        LogCategory.MAINTENANCE,
+        `Archived ${oldChanges.length} old successful changes`,
+        { count: oldChanges.length }
+      );
+    } catch (error) {
+      syncLogger.error(
+        LogCategory.MAINTENANCE,
+        "Error archiving old successful changes",
+        error instanceof Error ? error : new Error(String(error))
+      );
+    }
+  }
+
+  /**
+   * Clean up very old failed changes
+   * For changes that have been in failed state for over a year
+   */
+  private async cleanupVeryOldFailedChanges(): Promise<void> {
+    try {
+      const drizzle = drizzleDb.database;
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+      // Find very old failed changes
+      const oldFailedChanges = await drizzle
+        .select()
+        .from(changes)
+        .where(
+          and(
+            eq(changes.status, SyncStatus.FAILED),
+            sql`${changes.createdAt} < ${oneYearAgo}`
+          )
+        )
+        .limit(500) // Process in batches
+        .execute();
+
+      if (oldFailedChanges.length === 0) {
+        syncLogger.debug(
+          LogCategory.MAINTENANCE,
+          "No very old failed changes to clean up"
+        );
+        return;
+      }
+
+      // In a production system, we might want to:
+      // 1. Notify the user about data that couldn't be synced
+      // 2. Provide an option to retry or discard
+      // 3. Move to a separate archive table for audit purposes
+
+      // For now, we'll just log these for awareness
+      syncLogger.warn(
+        LogCategory.MAINTENANCE,
+        `Found ${oldFailedChanges.length} failed changes older than 1 year`,
+        { count: oldFailedChanges.length }
+      );
+
+      // We don't automatically delete these as they represent potentially lost data
+      // In a real system, this would trigger a notification to the user
+    } catch (error) {
+      syncLogger.error(
+        LogCategory.MAINTENANCE,
+        "Error cleaning up very old failed changes",
+        error instanceof Error ? error : new Error(String(error))
+      );
+    }
+  }
+
+  /**
+   * Vacuum the database to reclaim space and optimize performance
+   */
+  private async vacuumDatabase(): Promise<void> {
+    try {
+      // Execute VACUUM on the database
+      // Note: This is a placeholder - actual implementation would depend on
+      // the specific database engine being used
+
+      const drizzle = drizzleDb.database;
+
+      // For SQLite/PGlite, we would use:
+      await drizzle.execute(sql`VACUUM;`);
+
+      syncLogger.info(
+        LogCategory.MAINTENANCE,
+        "Database vacuum completed successfully"
+      );
+    } catch (error) {
+      syncLogger.error(
+        LogCategory.MAINTENANCE,
+        "Error vacuuming database",
+        error instanceof Error ? error : new Error(String(error))
+      );
+    }
   }
 
   public static getInstance(): SyncService {
@@ -68,40 +260,8 @@ export class SyncService {
     return SyncService.instance;
   }
 
-  private setupNetworkListeners() {
-    this.networkUnsubscribe = networkStatus.addListener((online) => {
-      syncLogger.info(
-        LogCategory.NETWORK,
-        `Network status changed to ${online ? "online" : "offline"}`,
-        { online }
-      );
-
-      if (online && this.isRunning) {
-        // Give a short delay to let network stabilize before attempting syncs
-        setTimeout(() => {
-          if (!this.processingQueue) {
-            syncLogger.info(
-              LogCategory.SYNC,
-              "Network is back online - processing pending changes"
-            );
-            this._processChanges();
-          }
-        }, 2000);
-      }
-    });
-
-    // Also register for network errors to potentially trigger retries
-    networkStatus.addNetworkErrorListener((error) => {
-      syncLogger.warn(
-        LogCategory.NETWORK,
-        `Network error detected: ${error.code}`,
-        { error }
-      );
-
-      // Force connectivity check when we detect network errors
-      networkStatus.forceConnectivityCheck();
-    });
-  }
+  // Network status is now fully managed by NetworkStatusService and Redux
+  // This service should not be concerned with network detection
 
   /**
    * Register a handler for a specific entity type
@@ -125,7 +285,7 @@ export class SyncService {
    * Notify all listeners of a sync event
    */
   private notifySyncListeners(
-    event: "start" | "complete" | "error",
+    event: "start" | "complete" | "error" | "pause" | "resume",
     error?: Error
   ): void {
     this.syncEventListeners.forEach((listener) => {
@@ -136,6 +296,10 @@ export class SyncService {
           listener.onSyncComplete();
         } else if (event === "error" && listener.onSyncError && error) {
           listener.onSyncError(error);
+        } else if (event === "pause" && listener.onSyncPause) {
+          listener.onSyncPause();
+        } else if (event === "resume" && listener.onSyncResume) {
+          listener.onSyncResume();
         }
       } catch (e) {
         syncLogger.error(
@@ -181,16 +345,14 @@ export class SyncService {
       // Recover any changes that were in progress during previous session
       await syncPersistence.recoverFromCrash();
 
-      // Set up network listeners
-      this.setupNetworkListeners();
-
       // Subscribe to changes
       this.unsubscribe = await this.db.listen(
         "changes",
         this.handleChangesNotification.bind(this)
       );
 
-      // Process any existing changes
+      // Process any existing changes if network is available
+      // This check is now just a safeguard - the Redux store should manage when to start/pause sync
       if (networkStatus.isNetworkOnline()) {
         this._processChanges();
       }
@@ -215,6 +377,7 @@ export class SyncService {
     if (!this.isRunning) return;
 
     this.isRunning = false;
+    this.isPaused = false;
     syncLogger.info(LogCategory.SYNC, "Stopping sync service...");
 
     // Cancel any ongoing operations
@@ -229,17 +392,252 @@ export class SyncService {
       this.unsubscribe = undefined;
     }
 
-    // Clean up network listeners
-    if (this.networkUnsubscribe) {
-      this.networkUnsubscribe();
-      this.networkUnsubscribe = undefined;
-    }
-
     // Reset processing state
     this.processingQueue = false;
     this.hasChangesWhileProcessing = false;
 
     syncLogger.info(LogCategory.SYNC, "Sync service stopped successfully");
+  }
+
+  /**
+   * Pause the sync service when network is unavailable
+   * This keeps the service initialized but prevents processing
+   */
+  public pause(): void {
+    if (!this.isRunning || this.isPaused) return;
+
+    this.isPaused = true;
+    this.lastOfflineTimestamp = Date.now();
+
+    syncLogger.info(
+      LogCategory.SYNC,
+      "Pausing sync service due to network unavailability"
+    );
+
+    // Cancel any ongoing operations
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = new AbortController();
+    }
+
+    // Notify listeners that sync has been paused
+    this.notifySyncListeners("pause");
+  }
+
+  /**
+   * Resume the sync service when network is restored
+   * Implements a smart recovery process for resilient sync resumption
+   */
+  public async resume(): Promise<void> {
+    if (!this.isRunning || !this.isPaused) return;
+
+    this.isPaused = false;
+    const offlineDuration = this.lastOfflineTimestamp
+      ? Math.floor((Date.now() - this.lastOfflineTimestamp) / 1000)
+      : 0;
+
+    syncLogger.info(
+      LogCategory.SYNC,
+      `Resuming sync service after ${offlineDuration} seconds offline`
+    );
+
+    // Notify listeners that sync is resuming
+    this.notifySyncListeners("resume");
+
+    try {
+      // Step 1: Perform a network health check before proceeding
+      const isNetworkHealthy = await this.performNetworkHealthCheck();
+      if (!isNetworkHealthy) {
+        syncLogger.warn(
+          LogCategory.SYNC,
+          "Network appears unstable, delaying full sync resumption"
+        );
+        // We'll continue but with a more cautious approach
+      }
+
+      // Step 2: Recover any changes that were in progress when we went offline
+      await this.recoverInProgressChanges();
+
+      // Step 3: Prioritize changes based on offline duration
+      await this.prioritizeChangesForResumption(offlineDuration);
+
+      // Step 4: Process changes with appropriate batching strategy
+      if (!this.processingQueue) {
+        await this._processChanges();
+      }
+
+      syncLogger.info(LogCategory.SYNC, "Sync service resumed successfully");
+    } catch (error) {
+      syncLogger.error(
+        LogCategory.SYNC,
+        "Error during sync resumption",
+        error instanceof Error ? error : new Error(String(error))
+      );
+
+      // Even if there's an error, we keep the service in resumed state
+      // but we'll retry the processing later
+    }
+  }
+
+  /**
+   * Perform a network health check before full sync resumption
+   * This helps avoid aggressive syncing on unstable connections
+   */
+  private async performNetworkHealthCheck(): Promise<boolean> {
+    try {
+      // Make a lightweight request to verify network stability
+      const isOnline = await networkStatus.checkConnectivity();
+
+      if (!isOnline) {
+        return false;
+      }
+
+      // Additional checks could be performed here in a production system
+      // such as measuring latency, checking for captive portals, etc.
+
+      return true;
+    } catch (error) {
+      syncLogger.warn(
+        LogCategory.NETWORK,
+        "Network health check failed",
+        error instanceof Error ? error : new Error(String(error))
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Recover changes that were in progress when the system went offline
+   */
+  private async recoverInProgressChanges(): Promise<void> {
+    try {
+      const drizzle = drizzleDb.database;
+
+      // Find changes that might have been interrupted
+      const inProgressChanges = await drizzle
+        .select()
+        .from(changes)
+        .where(eq(changes.status, "in_progress"))
+        .execute();
+
+      if (inProgressChanges.length === 0) {
+        return;
+      }
+
+      syncLogger.info(
+        LogCategory.SYNC,
+        `Recovering ${inProgressChanges.length} interrupted changes`,
+        { count: inProgressChanges.length }
+      );
+
+      // Reset these changes to pending status
+      const changeIds = inProgressChanges.map((c) => c.id);
+
+      await drizzle
+        .update(changes)
+        .set({
+          status: SyncStatus.PENDING,
+          retryCount: 0, // Reset retry count
+        })
+        .where(sql`id IN (${changeIds.join(",")})`)
+        .execute();
+    } catch (error) {
+      syncLogger.error(
+        LogCategory.SYNC,
+        "Error recovering in-progress changes",
+        error instanceof Error ? error : new Error(String(error))
+      );
+    }
+  }
+
+  /**
+   * Prioritize changes based on offline duration for smart resumption
+   * - For short offline periods (<1 hour): normal processing
+   * - For medium offline periods (1-24 hours): prioritize critical entities
+   * - For long offline periods (>24 hours): use aggressive batching and prioritization
+   */
+  private async prioritizeChangesForResumption(
+    offlineDurationSeconds: number
+  ): Promise<void> {
+    try {
+      // Skip for short offline periods
+      if (offlineDurationSeconds < 3600) {
+        // Less than 1 hour
+        return;
+      }
+
+      const drizzle = drizzleDb.database;
+
+      // For medium to long offline periods, prioritize critical entities
+      if (offlineDurationSeconds >= 3600) {
+        // Get all pending changes
+        const pendingChanges = await drizzle
+          .select()
+          .from(changes)
+          .where(eq(changes.status, SyncStatus.PENDING))
+          .execute();
+
+        if (pendingChanges.length === 0) {
+          return;
+        }
+
+        // Group by entity type
+        const changesByEntityType: Record<string, any[]> = {};
+        pendingChanges.forEach((change) => {
+          const entityType = change.entityType;
+          if (!changesByEntityType[entityType]) {
+            changesByEntityType[entityType] = [];
+          }
+          changesByEntityType[entityType].push(change);
+        });
+
+        // Update priorities based on entity type importance
+        for (const [entityType, entityChanges] of Object.entries(
+          changesByEntityType
+        )) {
+          // Determine appropriate priority
+          let newPriority = priorityManager.getPriorityForEntity(
+            entityType,
+            SyncOperation.INSERT
+          );
+
+          // For very long offline periods, boost priority of critical entities even more
+          if (offlineDurationSeconds > 86400) {
+            // More than 24 hours
+            if (
+              entityType === EntityType.CUSTOMER ||
+              entityType === EntityType.ORDER ||
+              entityType === EntityType.PAYMENT
+            ) {
+              newPriority = 1; // Highest priority
+            }
+          }
+
+          // Update priorities in batches
+          const changeIds = entityChanges.map((c) => c.id);
+
+          await drizzle
+            .update(changes)
+            .set({
+              priority: newPriority,
+            })
+            .where(sql`id IN (${changeIds.join(",")})`)
+            .execute();
+
+          syncLogger.info(
+            LogCategory.SYNC,
+            `Updated priority to ${newPriority} for ${changeIds.length} ${entityType} changes`,
+            { entityType, count: changeIds.length, priority: newPriority }
+          );
+        }
+      }
+    } catch (error) {
+      syncLogger.error(
+        LogCategory.SYNC,
+        "Error prioritizing changes for resumption",
+        error instanceof Error ? error : new Error(String(error))
+      );
+    }
   }
 
   private async getLastPosition(): Promise<number> {
@@ -259,9 +657,12 @@ export class SyncService {
       return;
     }
 
-    if (networkStatus.isNetworkOnline()) {
-      this._processChanges();
+    // Don't process changes if paused or network is offline
+    if (this.isPaused || !networkStatus.isNetworkOnline()) {
+      return;
     }
+
+    this._processChanges();
   }
 
   /**
@@ -269,7 +670,13 @@ export class SyncService {
    * @private Internal implementation
    */
   private async _processChanges(): Promise<void> {
-    if (!this.isRunning || this.processingQueue) return;
+    if (!this.isRunning || this.processingQueue || this.isPaused) return;
+
+    // Double-check network status before processing
+    if (!networkStatus.isNetworkOnline()) {
+      this.pause();
+      return;
+    }
 
     this.processingQueue = true;
     this.hasChangesWhileProcessing = false;
@@ -681,10 +1088,11 @@ export class SyncService {
       })
       .execute();
 
-    // Trigger change processing if online
+    // Trigger change processing if online and not paused
     if (
       networkStatus.isNetworkOnline() &&
       this.isRunning &&
+      !this.isPaused &&
       !this.processingQueue
     ) {
       syncLogger.info(

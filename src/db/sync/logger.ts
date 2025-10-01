@@ -19,6 +19,7 @@ export enum LogCategory {
   HANDLER = "handler",
   DATABASE = "database",
   AUTH = "auth",
+  MAINTENANCE = "maintenance",
 }
 
 interface LogEntry {

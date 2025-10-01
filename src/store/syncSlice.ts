@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { and, count, eq, ne, sql } from "drizzle-orm";
 import { drizzleDb } from "../db/drizzle";
 import { changes } from "../db/schemas";
+import { LogCategory, syncLogger } from "../db/sync/logger";
 import { syncService } from "../db/sync/sync.service";
 import { networkStatus } from "../utils/network-status";
 import { AppThunk } from "./index";
@@ -9,7 +10,7 @@ import { AppThunk } from "./index";
 /**
  * Sync status type
  */
-export type SyncStatus = "online" | "offline" | "syncing" | "error";
+export type SyncStatus = "online" | "offline" | "syncing" | "error" | "paused";
 
 /**
  * Sync metrics interface
@@ -24,6 +25,8 @@ export interface SyncState {
   status: SyncStatus;
   lastUpdated: number;
   isSyncing: boolean;
+  isPaused: boolean;
+  offlineSince?: number;
 }
 
 const initialState: SyncState = {
@@ -36,6 +39,8 @@ const initialState: SyncState = {
   status: networkStatus.isNetworkOnline() ? "online" : "offline",
   lastUpdated: Date.now(),
   isSyncing: false,
+  isPaused: false,
+  offlineSince: undefined,
 };
 
 /**
@@ -46,9 +51,11 @@ const determineSyncStatus = (
   pendingCount: number,
   delayedCount: number,
   failedCount: number,
-  isSyncing: boolean
+  isSyncing: boolean,
+  isPaused: boolean
 ): SyncStatus => {
   if (!isOnline) return "offline";
+  if (isPaused) return "paused";
   if (failedCount > 0) return "error";
   if (isSyncing || pendingCount > 0 || delayedCount > 0) return "syncing";
   return "online";
@@ -59,13 +66,23 @@ export const syncSlice = createSlice({
   initialState,
   reducers: {
     updateNetworkStatus: (state, action: PayloadAction<boolean>) => {
+      const wasOnline = state.isOnline;
       state.isOnline = action.payload;
+
+      // Track when we went offline
+      if (wasOnline && !action.payload) {
+        state.offlineSince = Date.now();
+      } else if (!wasOnline && action.payload) {
+        state.offlineSince = undefined;
+      }
+
       state.status = determineSyncStatus(
         action.payload,
         state.pendingChanges,
         state.delayedChanges,
         state.failed,
-        state.isSyncing
+        state.isSyncing,
+        state.isPaused
       );
     },
     updateSyncMetrics: (
@@ -98,7 +115,8 @@ export const syncSlice = createSlice({
         pendingChanges,
         delayedChanges,
         failed,
-        state.isSyncing
+        state.isSyncing,
+        state.isPaused
       );
     },
     setSyncingState: (state, action: PayloadAction<boolean>) => {
@@ -109,20 +127,64 @@ export const syncSlice = createSlice({
         state.pendingChanges,
         state.delayedChanges,
         state.failed,
+        action.payload,
+        state.isPaused
+      );
+    },
+    setPausedState: (state, action: PayloadAction<boolean>) => {
+      state.isPaused = action.payload;
+
+      state.status = determineSyncStatus(
+        state.isOnline,
+        state.pendingChanges,
+        state.delayedChanges,
+        state.failed,
+        state.isSyncing,
         action.payload
       );
     },
   },
 });
 
-export const { updateNetworkStatus, updateSyncMetrics, setSyncingState } =
-  syncSlice.actions;
+export const {
+  updateNetworkStatus,
+  updateSyncMetrics,
+  setSyncingState,
+  setPausedState,
+} = syncSlice.actions;
 
 // Thunks
-export const initSyncMonitoring = (): AppThunk => (dispatch) => {
+export const initSyncMonitoring = (): AppThunk => (dispatch, getState) => {
   // Set up network status listener
   networkStatus.addListener((online) => {
     dispatch(updateNetworkStatus(online));
+
+    // When network status changes, manage sync service lifecycle
+    const state = getState();
+
+    if (online) {
+      // Network is back online
+      syncLogger.info(
+        LogCategory.NETWORK,
+        "Network is back online, resuming sync service"
+      );
+
+      // If service was paused due to network, resume it
+      if (state.sync.isPaused) {
+        syncService.resume();
+        dispatch(setPausedState(false));
+      }
+    } else {
+      // Network is offline
+      syncLogger.info(
+        LogCategory.NETWORK,
+        "Network is offline, pausing sync service"
+      );
+
+      // Pause the sync service
+      syncService.pause();
+      dispatch(setPausedState(true));
+    }
   });
 
   // Initial metrics update
@@ -138,6 +200,11 @@ export const initSyncMonitoring = (): AppThunk => (dispatch) => {
     onSyncStart: () => dispatch(setSyncingState(true)),
     onSyncComplete: () => {
       dispatch(setSyncingState(false));
+      dispatch(refreshSyncMetrics());
+    },
+    onSyncPause: () => dispatch(setPausedState(true)),
+    onSyncResume: () => {
+      dispatch(setPausedState(false));
       dispatch(refreshSyncMetrics());
     },
   });

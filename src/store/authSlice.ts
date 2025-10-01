@@ -70,6 +70,11 @@ export const initAuth = createAsyncThunk(
 
       await syncService.start();
 
+      delete currentLoggedInUser.hashedPassword;
+      delete currentLoggedInUser.accessToken;
+      delete currentLoggedInUser.refreshToken;
+      delete currentLoggedInUser.lastLoginAt;
+
       return currentLoggedInUser;
     }
 
@@ -94,6 +99,10 @@ export const initAuth = createAsyncThunk(
         currentLoggedInUser as Partial<AuthResponse["user"]>,
         token
       );
+      delete currentLoggedInUser.hashedPassword;
+      delete currentLoggedInUser.accessToken;
+      delete currentLoggedInUser.refreshToken;
+      delete currentLoggedInUser.lastLoginAt;
 
       return currentLoggedInUser;
     }
@@ -106,6 +115,12 @@ export const initAuth = createAsyncThunk(
       user.data as Partial<AuthResponse["user"]>,
       token
     );
+
+    delete user.data.user.hashedPassword;
+    delete user.data.user.accessToken;
+    delete user.data.user.refreshToken;
+    delete user.data.user.lastLoginAt;
+
     return user.data.user;
   }
 );
