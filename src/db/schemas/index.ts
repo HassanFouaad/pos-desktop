@@ -1,5 +1,4 @@
 import {
-  bigint,
   boolean,
   date,
   decimal,
@@ -18,8 +17,8 @@ export const syncStatusEnum = pgEnum("sync_status", [
   "failed",
 ]);
 export const users = pgTable("users", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
-  tenantId: bigint("tenantId", { mode: "number" }),
+  id: uuid("id").primaryKey(),
+  tenantId: uuid("tenantId"),
   email: varchar("email", { length: 255 }),
   name: varchar("name", { length: 255 }),
   role: varchar("role", { length: 50 }),
@@ -29,12 +28,12 @@ export const users = pgTable("users", {
   refreshToken: varchar("refreshToken", { length: 255 }),
   hashedPassword: varchar("hashedPassword", { length: 255 }),
   username: varchar("username", { length: 255 }),
-  accessToken: varchar("accessToken", { length: 500 }),
+  accessToken: varchar("accessToken", { length: 100000 }),
 });
 
 export const stores = pgTable("stores", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
-  tenantId: bigint("tenantId", { mode: "number" }),
+  id: uuid("id").primaryKey(),
+  tenantId: uuid("tenantId"),
   code: varchar("code", { length: 10 }),
   name: varchar("name", { length: 255 }),
   addressLine1: varchar("addressLine1", { length: 255 }),
@@ -53,10 +52,10 @@ export const stores = pgTable("stores", {
 });
 
 export const categories = pgTable("categories", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
-  tenantId: bigint("tenantId", { mode: "number" }),
+  id: uuid("id").primaryKey(),
+  tenantId: uuid("tenantId"),
   name: varchar("name", { length: 255 }),
-  parentCategoryId: bigint("parentCategoryId", { mode: "number" }),
+  parentCategoryId: uuid("parentCategoryId"),
   categoryType: varchar("categoryType", { length: 50 }),
   createdAt: timestamp("createdAt", { mode: "date" }),
   updatedAt: timestamp("updatedAt", { mode: "date" }),
@@ -64,10 +63,10 @@ export const categories = pgTable("categories", {
 });
 
 export const pendingCategories = pgTable("pending_categories", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
-  tenantId: bigint("tenantId", { mode: "number" }),
+  id: uuid("id").primaryKey(),
+  tenantId: uuid("tenantId"),
   name: varchar("name", { length: 255 }),
-  parentCategoryId: bigint("parentCategoryId", { mode: "number" }),
+  parentCategoryId: uuid("parentCategoryId"),
   categoryType: varchar("categoryType", { length: 50 }),
   createdAt: timestamp("createdAt", { mode: "date" }),
   updatedAt: timestamp("updatedAt", { mode: "date" }),
@@ -76,9 +75,9 @@ export const pendingCategories = pgTable("pending_categories", {
 });
 
 export const products = pgTable("products", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
-  tenantId: bigint("tenantId", { mode: "number" }),
-  categoryId: bigint("categoryId", { mode: "number" }),
+  id: uuid("id").primaryKey(),
+  tenantId: uuid("tenantId"),
+  categoryId: uuid("categoryId"),
   taxCategory: varchar("taxCategory", { length: 50 }),
   taxRate: decimal("taxRate", { precision: 12, scale: 2 }),
   taxIncluded: boolean("taxIncluded"),
@@ -92,9 +91,9 @@ export const products = pgTable("products", {
 });
 
 export const productVariants = pgTable("product_variants", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
-  productId: bigint("productId", { mode: "number" }),
-  tenantId: bigint("tenantId", { mode: "number" }),
+  id: uuid("id").primaryKey(),
+  productId: uuid("productId"),
+  tenantId: uuid("tenantId"),
   name: varchar("name", { length: 100 }),
   unitOfMeasure: varchar("unitOfMeasure", { length: 50 }),
   sku: varchar("sku", { length: 100 }),
@@ -105,13 +104,14 @@ export const productVariants = pgTable("product_variants", {
   }),
   createdAt: timestamp("createdAt", { mode: "date" }),
   updatedAt: timestamp("updatedAt", { mode: "date" }),
+  latestPriceSnapshotId: uuid("latestPriceSnapshotId"),
 });
 
 export const inventory = pgTable("inventory", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
-  tenantId: bigint("tenantId", { mode: "number" }),
-  storeId: bigint("storeId", { mode: "number" }),
-  variantId: bigint("variantId", { mode: "number" }),
+  id: uuid("id").primaryKey(),
+  tenantId: uuid("tenantId"),
+  storeId: uuid("storeId"),
+  variantId: uuid("variantId"),
   quantityOnHand: integer("quantityOnHand"),
   quantityCommitted: integer("quantityCommitted"),
   quantityAvailable: integer("quantityAvailable"),
@@ -125,8 +125,8 @@ export const inventory = pgTable("inventory", {
 });
 
 export const customers = pgTable("customers", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
-  tenantId: bigint("tenantId", { mode: "number" }),
+  id: uuid("id").primaryKey(),
+  tenantId: uuid("tenantId"),
   name: varchar("name", { length: 255 }),
   phone: varchar("phone", { length: 50 }),
   dateOfBirth: date("dateOfBirth"),
@@ -143,38 +143,17 @@ export const customers = pgTable("customers", {
   createdAt: timestamp("createdAt", { mode: "date" }),
   updatedAt: timestamp("updatedAt", { mode: "date" }),
   localId: uuid("localId"),
+  syncStatus: syncStatusEnum("syncStatus").default("pending"),
 });
 
 export const storePrices = pgTable("store_prices", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
-  tenantId: bigint("tenantId", { mode: "number" }),
-  variantId: bigint("variantId", { mode: "number" }),
-  storeId: bigint("storeId", { mode: "number" }),
+  id: uuid("id").primaryKey(),
+  tenantId: uuid("tenantId"),
+  variantId: uuid("variantId"),
+  storeId: uuid("storeId"),
   price: decimal("price", { precision: 12, scale: 2 }),
-});
-
-// This table is deprecated and no longer in use. Customer data is now stored directly in the changes table.
-// Keeping this for backward compatibility until a future migration can remove it.
-export const pendingCustomers = pgTable("pending_customers", {
-  id: serial("id").primaryKey(),
-  tenantId: bigint("tenantId", { mode: "number" }),
-  name: varchar("name", { length: 255 }),
-  phone: varchar("phone", { length: 50 }).notNull(),
-  dateOfBirth: date("dateOfBirth"),
-  loyaltyNumber: varchar("loyaltyNumber", { length: 100 }),
-  loyaltyPoints: integer("loyaltyPoints"),
-  totalSpent: decimal("totalSpent", { precision: 12, scale: 2 }),
-  totalVisits: integer("totalVisits"),
-  averageOrderValue: decimal("averageOrderValue", {
-    precision: 12,
-    scale: 2,
-  }),
-  lastVisitAt: timestamp("lastVisitAt", { mode: "date" }),
-  notes: text("notes"),
   createdAt: timestamp("createdAt", { mode: "date" }),
   updatedAt: timestamp("updatedAt", { mode: "date" }),
-  syncStatus: syncStatusEnum("syncStatus").default("pending"),
-  localId: uuid("localId"),
 });
 
 import { index, jsonb } from "drizzle-orm/pg-core";
@@ -188,7 +167,7 @@ export const changes = pgTable(
   {
     id: serial("id").primaryKey(),
     entityType: varchar("entity_type", { length: 50 }).notNull(),
-    entityId: bigint("entity_id", { mode: "number" }).notNull(),
+    entityId: uuid("entity_id").notNull(),
     operation: varchar("operation", { length: 10 }).notNull(),
     payload: jsonb("payload"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
@@ -218,6 +197,5 @@ export const DatabaseSchema = {
   inventory,
   customers,
   storePrices,
-  pendingCustomers,
   changes,
 };

@@ -1,5 +1,5 @@
 {
-  "id": "79d14a54-8f10-45de-83ab-14e4d5646989",
+  "id": "b5fe1aca-3e94-4d78-a9a8-86bcd8055af6",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -10,13 +10,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -28,7 +28,7 @@
         },
         "parentCategoryId": {
           "name": "parentCategoryId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -83,7 +83,7 @@
         },
         "entity_id": {
           "name": "entity_id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -137,6 +137,13 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "priority": {
+          "name": "priority",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 5
         }
       },
       "indexes": {
@@ -199,13 +206,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -286,6 +293,14 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
+        },
+        "syncStatus": {
+          "name": "syncStatus",
+          "type": "sync_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'pending'"
         }
       },
       "indexes": {},
@@ -302,25 +317,25 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "storeId": {
           "name": "storeId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "variantId": {
           "name": "variantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -399,13 +414,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -417,7 +432,7 @@
         },
         "parentCategoryId": {
           "name": "parentCategoryId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -468,13 +483,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -579,19 +594,19 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "productId": {
           "name": "productId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -636,6 +651,12 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "latestPriceSnapshotId": {
+          "name": "latestPriceSnapshotId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -652,19 +673,19 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "categoryId": {
           "name": "categoryId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -743,31 +764,43 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "variantId": {
           "name": "variantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "storeId": {
           "name": "storeId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "price": {
           "name": "price",
           "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         }
@@ -786,13 +819,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -901,13 +934,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -968,7 +1001,7 @@
         },
         "accessToken": {
           "name": "accessToken",
-          "type": "varchar(500)",
+          "type": "varchar(100000)",
           "primaryKey": false,
           "notNull": false
         }

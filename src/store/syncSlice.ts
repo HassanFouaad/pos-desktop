@@ -56,7 +56,7 @@ const determineSyncStatus = (
 ): SyncStatus => {
   if (!isOnline) return "offline";
   if (isPaused) return "paused";
-  if (failedCount > 0) return "error";
+
   if (isSyncing || pendingCount > 0 || delayedCount > 0) return "syncing";
   return "online";
 };

@@ -59,7 +59,9 @@ export class CustomerSyncHandler extends BaseSyncHandler {
         // Handle client errors (400, 404) - mark as rejected immediately
         if (
           response.error.details?.status === 400 ||
-          response.error.details?.status === 404
+          response.error.details?.status === 404 ||
+          response.error.details?.status === 409 ||
+          response.error.details?.status === 422
         ) {
           syncLogger.warn(
             LogCategory.HANDLER,
@@ -99,7 +101,7 @@ export class CustomerSyncHandler extends BaseSyncHandler {
         `Non-retryable error during customer creation: ${
           error instanceof Error ? error.message : String(error)
         }`,
-        error instanceof Error ? error : new Error(String(error))
+        error as Error
       );
       return SyncResult.REJECTED;
     }

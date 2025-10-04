@@ -1,6 +1,6 @@
 {
-  "id": "6733330a-aaee-41f8-a242-03bdcf175f5b",
-  "prevId": "79d14a54-8f10-45de-83ab-14e4d5646989",
+  "id": "3479da7b-eefa-4d75-adff-c9d7a180eb4c",
+  "prevId": "b5fe1aca-3e94-4d78-a9a8-86bcd8055af6",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -10,13 +10,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -28,7 +28,7 @@
         },
         "parentCategoryId": {
           "name": "parentCategoryId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -83,7 +83,7 @@
         },
         "entity_id": {
           "name": "entity_id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -158,9 +158,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "idx_changes_entity_type": {
           "name": "idx_changes_entity_type",
@@ -173,9 +173,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         },
         "idx_changes_transaction_id": {
           "name": "idx_changes_transaction_id",
@@ -188,9 +188,9 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {},
@@ -206,13 +206,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -293,6 +293,14 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
+        },
+        "syncStatus": {
+          "name": "syncStatus",
+          "type": "sync_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'pending'"
         }
       },
       "indexes": {},
@@ -309,25 +317,25 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "storeId": {
           "name": "storeId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "variantId": {
           "name": "variantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -406,13 +414,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -424,7 +432,7 @@
         },
         "parentCategoryId": {
           "name": "parentCategoryId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -475,13 +483,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -586,19 +594,19 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "productId": {
           "name": "productId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -643,6 +651,12 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "latestPriceSnapshotId": {
+          "name": "latestPriceSnapshotId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -659,19 +673,19 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "categoryId": {
           "name": "categoryId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -750,31 +764,43 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "variantId": {
           "name": "variantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "storeId": {
           "name": "storeId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "price": {
           "name": "price",
           "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         }
@@ -793,13 +819,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -908,13 +934,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -975,7 +1001,7 @@
         },
         "accessToken": {
           "name": "accessToken",
-          "type": "varchar(500)",
+          "type": "varchar(100000)",
           "primaryKey": false,
           "notNull": false
         }
@@ -1001,10 +1027,10 @@
     }
   },
   "schemas": {},
+  "views": {},
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

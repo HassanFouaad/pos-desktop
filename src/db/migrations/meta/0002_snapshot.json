@@ -1,6 +1,6 @@
 {
-  "id": "9a55c5d3-6f3e-4c6d-b28f-f29c7ac9f1b9",
-  "prevId": "6733330a-aaee-41f8-a242-03bdcf175f5b",
+  "id": "b6c72c33-1506-481f-b0bf-a114db04968c",
+  "prevId": "3479da7b-eefa-4d75-adff-c9d7a180eb4c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -10,13 +10,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -28,7 +28,7 @@
         },
         "parentCategoryId": {
           "name": "parentCategoryId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -83,7 +83,7 @@
         },
         "entity_id": {
           "name": "entity_id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -206,13 +206,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -293,6 +293,14 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
+        },
+        "syncStatus": {
+          "name": "syncStatus",
+          "type": "sync_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'pending'"
         }
       },
       "indexes": {},
@@ -309,25 +317,25 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "storeId": {
           "name": "storeId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "variantId": {
           "name": "variantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -406,13 +414,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -424,7 +432,7 @@
         },
         "parentCategoryId": {
           "name": "parentCategoryId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -469,136 +477,25 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.pending_customers": {
-      "name": "pending_customers",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "tenantId": {
-          "name": "tenantId",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "phone": {
-          "name": "phone",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "dateOfBirth": {
-          "name": "dateOfBirth",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "loyaltyNumber": {
-          "name": "loyaltyNumber",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "loyaltyPoints": {
-          "name": "loyaltyPoints",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "totalSpent": {
-          "name": "totalSpent",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "totalVisits": {
-          "name": "totalVisits",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "averageOrderValue": {
-          "name": "averageOrderValue",
-          "type": "numeric(12, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "lastVisitAt": {
-          "name": "lastVisitAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "syncStatus": {
-          "name": "syncStatus",
-          "type": "sync_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'pending'"
-        },
-        "localId": {
-          "name": "localId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.product_variants": {
       "name": "product_variants",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "productId": {
           "name": "productId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -643,6 +540,12 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "latestPriceSnapshotId": {
+          "name": "latestPriceSnapshotId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -659,19 +562,19 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "categoryId": {
           "name": "categoryId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -750,31 +653,43 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "variantId": {
           "name": "variantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "storeId": {
           "name": "storeId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
         "price": {
           "name": "price",
           "type": "numeric(12, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         }
@@ -793,13 +708,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -908,13 +823,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": true,
           "notNull": true
         },
         "tenantId": {
           "name": "tenantId",
-          "type": "bigint",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": false
         },
@@ -975,7 +890,7 @@
         },
         "accessToken": {
           "name": "accessToken",
-          "type": "varchar(500)",
+          "type": "varchar(100000)",
           "primaryKey": false,
           "notNull": false
         }
@@ -993,7 +908,11 @@
     "public.sync_status": {
       "name": "sync_status",
       "schema": "public",
-      "values": ["pending", "success", "failed"]
+      "values": [
+        "pending",
+        "success",
+        "failed"
+      ]
     }
   },
   "schemas": {},

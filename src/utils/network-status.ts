@@ -1,13 +1,3 @@
-/**
- * NetworkStatusService - Service for detecting and monitoring network status in a Tauri desktop environment
- *
- * Features:
- * - Uses standard navigator.onLine with enhanced reliability
- * - Supports event listeners for network status changes
- * - Provides active connectivity checking
- * - Includes Tauri-specific environment detection
- */
-
 import { fetch } from "@tauri-apps/plugin-http";
 
 export type NetworkErrorCallback = (error: {
@@ -17,26 +7,17 @@ export type NetworkErrorCallback = (error: {
 
 export class NetworkStatusService {
   private static instance: NetworkStatusService;
-  private isOnline: boolean = true;
+  private isOnline: boolean = false;
   private listeners: ((online: boolean) => void)[] = [];
   private networkErrorListeners: NetworkErrorCallback[] = [];
   private probeInterval?: number;
-  private lastProbeTime: number = 0;
+  private lastProbeTime: number = Date.now() - 15001;
   private consecutiveFailures: number = 0;
   private readonly PROBE_URL = "http://localhost:3000/api/health";
   private readonly MIN_PROBE_INTERVAL_MS = 15000;
   private readonly MAX_CONSECUTIVE_FAILURES = 3;
 
   private constructor() {
-    window?.addEventListener(
-      "online",
-      this.handleBrowserOnlineEvent.bind(this)
-    );
-    window?.addEventListener(
-      "offline",
-      this.handleBrowserOfflineEvent.bind(this)
-    );
-
     // Start the connectivity probe on init
     this.setupConnectivityProbe();
   }
@@ -78,6 +59,7 @@ export class NetworkStatusService {
   private async verifyConnectivity() {
     // Avoid excessive probing
     const now = Date.now();
+
     if (now - this.lastProbeTime < this.MIN_PROBE_INTERVAL_MS) {
       return;
     }

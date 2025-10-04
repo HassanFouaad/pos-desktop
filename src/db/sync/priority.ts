@@ -37,7 +37,7 @@ export class PriorityManager {
    * @param priority The priority level to set
    */
   public async setPriority(
-    changeId: number,
+    changeId: string,
     priority: SyncPriority
   ): Promise<void> {
     const db = drizzleDb.database;

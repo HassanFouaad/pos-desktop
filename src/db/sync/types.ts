@@ -44,7 +44,7 @@ export enum EntityType {
 export interface SyncChange {
   id: number;
   entityType: string;
-  entityId: number;
+  entityId: string;
   operation: SyncOperation;
   payload: any;
   createdAt: Date;

@@ -18,14 +18,14 @@ import { removeLocalStorage, setLocalStorage } from "../utils/storage";
  * User model interface
  */
 interface User {
-  id: number;
+  id: string;
   username: string;
   email?: string;
   firstName?: string;
   lastName?: string;
   isAdmin?: boolean;
-  storeId?: number;
-  tenantId?: number;
+  storeId?: string;
+  tenantId?: string;
   // Optional properties that may come from the database
   hashedPassword?: string;
   accessToken?: string;
@@ -125,7 +125,8 @@ export const initAuth = createAsyncThunk(
 
               await usersRepository.upsertUser(
                 user.data as Partial<AuthResponse["user"]>,
-                token
+                token,
+                currentLoggedInUser?.refreshToken ?? undefined
               );
 
               const userToReturn = { ...user.data.user };

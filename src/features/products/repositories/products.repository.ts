@@ -34,8 +34,8 @@ export class ProductsRepository {
    * @param searchTerm An optional search term to filter by variant, SKU, or product name.
    */
   async getVariantsByCategory(
-    categoryId: number,
-    storeId: number,
+    categoryId: string,
+    storeId: string,
     searchTerm: string | undefined,
     limit: number,
     offset: number

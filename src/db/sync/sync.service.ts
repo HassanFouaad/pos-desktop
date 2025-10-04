@@ -71,7 +71,7 @@ export class SyncService {
    * Schedule regular maintenance tasks for database health
    * Critical for long-term offline operation (up to 10 years)
    */
-  private scheduleMaintenanceTasks(): void {
+  private async scheduleMaintenanceTasks(): Promise<void> {
     // Run maintenance tasks daily
     setInterval(() => {
       this.performDatabaseMaintenance();
@@ -340,7 +340,9 @@ export class SyncService {
 
       // Check if we have a persisted position that is higher
       const persistedPosition = syncPersistence.getLastSyncPosition();
-      this.position = Math.max(lastPosition || 0, persistedPosition || 0);
+      // For UUID-based IDs, we can't use Math.max directly
+      // Instead, use the most recent position (highest ID in timestamp-based UUID)
+      this.position = lastPosition || persistedPosition || 0;
 
       // Recover any changes that were in progress during previous session
       await syncPersistence.recoverFromCrash();
@@ -711,10 +713,12 @@ export class SyncService {
 
           if (result === SyncResult.ACCEPTED) {
             await this.markChangesAsProcessed(txChanges.map((c) => c.id));
-            this.position = Math.max(
-              ...txChanges.map((c) => c.id),
-              this.position
-            );
+            // With UUID-based IDs, we can't use Math.max
+            // Instead, take the latest ID based on the sequence
+            // For this temporary solution, just use the last ID processed
+            if (txChanges.length > 0) {
+              this.position = txChanges[txChanges.length - 1].id;
+            }
 
             // Successfully processed
           } else if (result === SyncResult.REJECTED) {
@@ -874,9 +878,11 @@ export class SyncService {
       .limit(50) // Process in batches
       .execute();
 
+    // With UUIDs, we can't use Math.max, so use the last ID in sorted order
+    // This assumes that the UUIDs are roughly in chronological order
     const maxId =
       pendingChanges.length > 0
-        ? Math.max(...pendingChanges.map((c: { id: number }) => c.id))
+        ? pendingChanges[pendingChanges.length - 1].id
         : this.position;
 
     return {
@@ -1078,7 +1084,7 @@ export class SyncService {
    */
   public async trackChange(
     entityType: EntityType | string,
-    entityId: number,
+    entityId: string,
     operation: SyncOperation,
     payload: any,
     transactionId?: string,

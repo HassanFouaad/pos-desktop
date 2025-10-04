@@ -25,7 +25,7 @@ class UsersRepository {
   ): Promise<void> {
     const userToInsert: UserSchema = {
       ...userData,
-      id: userData.id || 0,
+      id: userData.id || "",
       tenantId: userData.tenantId,
       permissions: userData.permissions || [],
       isLoggedIn: true,
@@ -69,7 +69,7 @@ class UsersRepository {
   /**
    * Marks a specific user as logged in and all others as logged out.
    */
-  async setLoggedInUser(userId: number): Promise<void> {
+  async setLoggedInUser(userId: string): Promise<void> {
     // Use a transaction to ensure atomicity
     await this.db.transaction(async (tx) => {
       await tx.update(users).set({ isLoggedIn: false });

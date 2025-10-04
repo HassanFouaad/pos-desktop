@@ -28,7 +28,7 @@ export interface TouchKeyboardProps {
 export const TouchKeyboard = ({
   onKeyPress,
   onEnter,
-  onClose,
+  // onClose, // Removed unused property
   initialValue = "",
   mode = "text",
 }: TouchKeyboardProps) => {

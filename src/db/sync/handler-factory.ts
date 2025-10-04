@@ -202,8 +202,8 @@ export class SyncHandlerFactory {
     entityType: EntityType | string,
     apiClient: {
       create: (data: any) => Promise<any>;
-      update: (id: number, data: any) => Promise<any>;
-      delete: (id: number) => Promise<any>;
+      update: (id: string, data: any) => Promise<any>;
+      delete: (id: string) => Promise<any>;
     }
   ): SyncHandler {
     return new GenericSyncHandler(entityType, apiClient);
@@ -218,8 +218,8 @@ class GenericSyncHandler extends BaseSyncHandler {
     public entityType: EntityType | string,
     private apiClient: {
       create: (data: any) => Promise<any>;
-      update: (id: number, data: any) => Promise<any>;
-      delete: (id: number) => Promise<any>;
+      update: (id: string, data: any) => Promise<any>;
+      delete: (id: string) => Promise<any>;
     }
   ) {
     super();

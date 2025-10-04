@@ -1,1 +1,0 @@
-ALTER TABLE "changes" ADD COLUMN "priority" integer DEFAULT 5;

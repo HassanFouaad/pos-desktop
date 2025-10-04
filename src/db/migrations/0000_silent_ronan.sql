@@ -1,9 +1,9 @@
 CREATE TYPE "public"."sync_status" AS ENUM('pending', 'success', 'failed');--> statement-breakpoint
 CREATE TABLE "categories" (
-	"id" bigint PRIMARY KEY NOT NULL,
-	"tenantId" bigint,
+	"id" uuid PRIMARY KEY NOT NULL,
+	"tenantId" uuid,
 	"name" varchar(255),
-	"parentCategoryId" bigint,
+	"parentCategoryId" uuid,
 	"categoryType" varchar(50),
 	"createdAt" timestamp,
 	"updatedAt" timestamp,
@@ -13,7 +13,7 @@ CREATE TABLE "categories" (
 CREATE TABLE "changes" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"entity_type" varchar(50) NOT NULL,
-	"entity_id" bigint NOT NULL,
+	"entity_id" uuid NOT NULL,
 	"operation" varchar(10) NOT NULL,
 	"payload" jsonb,
 	"created_at" timestamp DEFAULT now(),
@@ -21,12 +21,13 @@ CREATE TABLE "changes" (
 	"transaction_id" uuid,
 	"status" varchar(10) DEFAULT 'pending',
 	"retry_count" integer DEFAULT 0,
-	"next_retry_at" timestamp
+	"next_retry_at" timestamp,
+	"priority" integer DEFAULT 5
 );
 --> statement-breakpoint
 CREATE TABLE "customers" (
-	"id" bigint PRIMARY KEY NOT NULL,
-	"tenantId" bigint,
+	"id" uuid PRIMARY KEY NOT NULL,
+	"tenantId" uuid,
 	"name" varchar(255),
 	"phone" varchar(50),
 	"dateOfBirth" date,
@@ -39,14 +40,15 @@ CREATE TABLE "customers" (
 	"notes" text,
 	"createdAt" timestamp,
 	"updatedAt" timestamp,
-	"localId" uuid
+	"localId" uuid,
+	"syncStatus" "sync_status" DEFAULT 'pending'
 );
 --> statement-breakpoint
 CREATE TABLE "inventory" (
-	"id" bigint PRIMARY KEY NOT NULL,
-	"tenantId" bigint,
-	"storeId" bigint,
-	"variantId" bigint,
+	"id" uuid PRIMARY KEY NOT NULL,
+	"tenantId" uuid,
+	"storeId" uuid,
+	"variantId" uuid,
 	"quantityOnHand" integer,
 	"quantityCommitted" integer,
 	"quantityAvailable" integer,
@@ -60,10 +62,10 @@ CREATE TABLE "inventory" (
 );
 --> statement-breakpoint
 CREATE TABLE "pending_categories" (
-	"id" bigint PRIMARY KEY NOT NULL,
-	"tenantId" bigint,
+	"id" uuid PRIMARY KEY NOT NULL,
+	"tenantId" uuid,
 	"name" varchar(255),
-	"parentCategoryId" bigint,
+	"parentCategoryId" uuid,
 	"categoryType" varchar(50),
 	"createdAt" timestamp,
 	"updatedAt" timestamp,
@@ -72,8 +74,8 @@ CREATE TABLE "pending_categories" (
 );
 --> statement-breakpoint
 CREATE TABLE "pending_customers" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"tenantId" bigint,
+	"id" uuid PRIMARY KEY NOT NULL,
+	"tenantId" uuid,
 	"name" varchar(255),
 	"phone" varchar(50) NOT NULL,
 	"dateOfBirth" date,
@@ -91,22 +93,23 @@ CREATE TABLE "pending_customers" (
 );
 --> statement-breakpoint
 CREATE TABLE "product_variants" (
-	"id" bigint PRIMARY KEY NOT NULL,
-	"productId" bigint,
-	"tenantId" bigint,
+	"id" uuid PRIMARY KEY NOT NULL,
+	"productId" uuid,
+	"tenantId" uuid,
 	"name" varchar(100),
 	"unitOfMeasure" varchar(50),
 	"sku" varchar(100),
 	"baseSellingPrice" numeric(10, 2),
 	"basePurchasePrice" numeric(10, 2),
 	"createdAt" timestamp,
-	"updatedAt" timestamp
+	"updatedAt" timestamp,
+	"latestPriceSnapshotId" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "products" (
-	"id" bigint PRIMARY KEY NOT NULL,
-	"tenantId" bigint,
-	"categoryId" bigint,
+	"id" uuid PRIMARY KEY NOT NULL,
+	"tenantId" uuid,
+	"categoryId" uuid,
 	"taxCategory" varchar(50),
 	"taxRate" numeric(12, 2),
 	"taxIncluded" boolean,
@@ -120,16 +123,18 @@ CREATE TABLE "products" (
 );
 --> statement-breakpoint
 CREATE TABLE "store_prices" (
-	"id" bigint PRIMARY KEY NOT NULL,
-	"tenantId" bigint,
-	"variantId" bigint,
-	"storeId" bigint,
-	"price" numeric(12, 2)
+	"id" uuid PRIMARY KEY NOT NULL,
+	"tenantId" uuid,
+	"variantId" uuid,
+	"storeId" uuid,
+	"price" numeric(12, 2),
+	"createdAt" timestamp,
+	"updatedAt" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "stores" (
-	"id" bigint PRIMARY KEY NOT NULL,
-	"tenantId" bigint,
+	"id" uuid PRIMARY KEY NOT NULL,
+	"tenantId" uuid,
 	"code" varchar(10),
 	"name" varchar(255),
 	"addressLine1" varchar(255),
@@ -148,8 +153,8 @@ CREATE TABLE "stores" (
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
-	"id" bigint PRIMARY KEY NOT NULL,
-	"tenantId" bigint,
+	"id" uuid PRIMARY KEY NOT NULL,
+	"tenantId" uuid,
 	"email" varchar(255),
 	"name" varchar(255),
 	"role" varchar(50),
@@ -159,7 +164,7 @@ CREATE TABLE "users" (
 	"refreshToken" varchar(255),
 	"hashedPassword" varchar(255),
 	"username" varchar(255),
-	"accessToken" varchar(500)
+	"accessToken" varchar(100000)
 );
 --> statement-breakpoint
 CREATE INDEX "idx_changes_status" ON "changes" USING btree ("status");--> statement-breakpoint

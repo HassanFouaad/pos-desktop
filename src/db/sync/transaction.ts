@@ -1,4 +1,5 @@
 import { and, count, eq, ne } from "drizzle-orm";
+import { v4 } from "uuid";
 import { drizzleDb } from "../drizzle";
 import { changes } from "../schemas";
 import { LogCategory, syncLogger } from "./logger";
@@ -31,7 +32,7 @@ export class TransactionManager {
   public async createTransaction(
     operations: Array<{
       entityType: EntityType | string;
-      entityId: number;
+      entityId: string;
       operation: SyncOperation;
       payload: any;
     }>
@@ -40,7 +41,7 @@ export class TransactionManager {
       throw new Error("Cannot create empty transaction");
     }
 
-    const transactionId = crypto.randomUUID();
+    const transactionId = v4();
     const db = drizzleDb.database;
 
     try {

@@ -1,4 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
+import { secureStorage } from "../../features/auth/services/secure-storage";
 import { networkStatus } from "../../utils/network-status";
 import { getLocalStorage, setLocalStorage } from "../../utils/storage";
 import { endpoints, getConfig } from "./config";
@@ -95,10 +96,10 @@ class TauriHttpClient {
     this.isRefreshing = true;
 
     try {
-      const refreshToken = getLocalStorage("refreshToken");
+      const refreshToken = await secureStorage.getToken("refreshToken");
 
       if (!refreshToken) {
-        throw new Error("No refresh token available");
+        throw new Error("Unauthorized");
       }
 
       const response = await fetch(
@@ -125,13 +126,17 @@ class TauriHttpClient {
 
       const responseData = await response.json();
 
-      if (!responseData) return null;
+      if (response.status === 401 || responseData?.error?.code === "ERR_401") {
+        throw new Error("Unauthorized");
+      }
 
-      throw new Error(
-        responseData?.error?.message || "Failed to refresh token"
-      );
-    } catch (error) {
       return null;
+    } catch (error: any) {
+      if (error?.message !== "Unauthorized") {
+        return null;
+      }
+
+      throw error;
     } finally {
       this.isRefreshing = false;
       this.refreshPromise = null;
@@ -161,6 +166,7 @@ class TauriHttpClient {
         const newToken = await this.refreshToken();
 
         if (newToken) {
+          await secureStorage.storeToken("accessToken", newToken);
           // Retry the original request with the new token
           const newHeaders = options.headers ? { ...options.headers } : {};
           newHeaders["Authorization"] = `Bearer ${newToken}`;
