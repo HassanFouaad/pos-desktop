@@ -1,5 +1,4 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import httpClient from "../api";
 import { drizzleDb } from "../db";
 import { users } from "../db/schemas";
 import {
@@ -8,7 +7,10 @@ import {
   getMe,
   LoginCredentials,
 } from "../features/auth/api/auth";
-import { secureStorage } from "../features/auth/services/secure-storage";
+import {
+  secureStorage,
+  TokenType,
+} from "../features/auth/services/secure-storage";
 import { usersRepository } from "../features/users/repositories/users.repository";
 import { removeLocalStorage, setLocalStorage } from "../utils/storage";
 
@@ -56,8 +58,8 @@ export const initAuth = createAsyncThunk(
       const currentLoggedInUser = await usersRepository.getLoggedInUser();
 
       console.log("currentLoggedInUser", currentLoggedInUser);
-      // Get token from secure storage instead of localStorage
-      let token = await secureStorage.getToken("accessToken");
+      // Get USER token from secure storage (not POS token)
+      let token = await secureStorage.getToken("accessToken", TokenType.USER);
 
       // Update offline mode status
       const isNetworkOnline = true;
@@ -70,7 +72,7 @@ export const initAuth = createAsyncThunk(
         if (!token && currentLoggedInUser.accessToken) {
           token = currentLoggedInUser.accessToken;
           // Save it to secure storage for future use
-          await secureStorage.storeToken("accessToken", token);
+          await secureStorage.storeToken("accessToken", token, TokenType.USER);
         }
 
         // If we have a user, consider them authenticated even without a token in offline mode
@@ -85,15 +87,10 @@ export const initAuth = createAsyncThunk(
           return userToReturn;
         }
 
-        // If we're online and have a token, try to refresh it
+        // If we're online and have a token, try to get updated user data
         if (isNetworkOnline && token) {
           try {
-            const newToken = await httpClient.refreshToken();
-            if (newToken) {
-              token = newToken;
-            }
-
-            // Try to get updated user data
+            // HttpClient will automatically refresh the token if needed on 401
             const user = await getMe();
 
             if (!user.error && user.data) {
@@ -111,7 +108,10 @@ export const initAuth = createAsyncThunk(
 
               return userToReturn;
             }
-          } catch (refreshError) {}
+          } catch (refreshError) {
+            // If getMe fails, continue to use cached user
+            console.warn("Failed to refresh user data:", refreshError);
+          }
 
           // Return the cached user without sensitive data
           const userToReturn = { ...currentLoggedInUser };
@@ -150,9 +150,17 @@ export const login = createAsyncThunk(
         throw new Error("Invalid password");
       }
 
-      // Store tokens in secure storage
-      await secureStorage.storeToken("accessToken", user.accessToken ?? "");
-      await secureStorage.storeToken("refreshToken", user.refreshToken ?? "");
+      // Store USER tokens in secure storage
+      await secureStorage.storeToken(
+        "accessToken",
+        user.accessToken ?? "",
+        TokenType.USER
+      );
+      await secureStorage.storeToken(
+        "refreshToken",
+        user.refreshToken ?? "",
+        TokenType.USER
+      );
 
       // Keep minimal token info in localStorage for quick UI rendering
       setLocalStorage("hasToken", "true");
@@ -177,14 +185,16 @@ export const login = createAsyncThunk(
 
     await usersRepository.setLoggedInUser(authResponse.data.user.id);
 
-    // Store tokens in secure storage
+    // Store USER tokens in secure storage
     await secureStorage.storeToken(
       "accessToken",
-      authResponse.data.accessToken
+      authResponse.data.accessToken,
+      TokenType.USER
     );
     await secureStorage.storeToken(
       "refreshToken",
-      authResponse.data.refreshToken
+      authResponse.data.refreshToken,
+      TokenType.USER
     );
 
     // Keep minimal token info in localStorage for quick UI rendering
@@ -198,8 +208,8 @@ export const logout = createAsyncThunk("auth/logout", async () => {
   try {
     console.info("Logging out user");
 
-    // Clear all tokens from secure storage
-    await secureStorage.clearTokens();
+    // Clear only USER tokens from secure storage (keep POS tokens for device pairing)
+    await secureStorage.clearTokens(TokenType.USER);
 
     // Clear flags from localStorage
     removeLocalStorage("hasToken");

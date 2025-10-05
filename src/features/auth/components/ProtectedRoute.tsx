@@ -6,11 +6,21 @@ export const ProtectedRoute = () => {
   const { isAuthenticated, initialized } = useAppSelector(
     (state) => state.auth
   );
+  const { isPaired, pairingCheckComplete } = useAppSelector(
+    (state) => state.global.pairing
+  );
 
-  if (!initialized) return null;
+  // Wait for both auth and pairing checks to complete
+  if (!initialized || !pairingCheckComplete) return null;
 
-  if (!isAuthenticated && initialized) {
-    return <Navigate to="/login" replace />;
+  // If device is not paired, redirect to pairing page
+  if (!isPaired) {
+    return <Navigate to="/pair" replace />;
+  }
+
+  // If device is paired but user is not authenticated, redirect to pre-login
+  if (isPaired && !isAuthenticated) {
+    return <Navigate to="/pre-login" replace />;
   }
 
   return <Outlet />;

@@ -1,5 +1,5 @@
 import { appDataDir } from "@tauri-apps/api/path";
-import { Stronghold } from "@tauri-apps/plugin-stronghold";
+import { Client, Stronghold } from "@tauri-apps/plugin-stronghold";
 import { config } from "../../../config";
 
 /**
@@ -59,11 +59,11 @@ export interface SecureTokenStorage {
  */
 class TauriStrongholdStorage implements SecureTokenStorage {
   private stronghold: Stronghold | null = null;
+  private client: Client | null = null;
   private strongholdInitialized = false;
-  private readonly VAULT_PASSWORD = config.VAULT_PASSWORD; // In production, use a more secure key derivation
+  private readonly VAULT_PASSWORD = config.VAULT_PASSWORD;
   private readonly VAULT_FILENAME = config.VAULT_FILENAME;
-  private readonly POS_CLIENT_NAME = config.POS_CLIENT_NAME;
-  private readonly USER_CLIENT_NAME = config.USER_CLIENT_NAME;
+  private readonly CLIENT_NAME = config.AUTH_CLIENT_NAME;
 
   /**
    * Initialize the Stronghold vault
@@ -75,28 +75,33 @@ class TauriStrongholdStorage implements SecureTokenStorage {
 
     try {
       const appData = await appDataDir();
-      const vaultPath = `${appData}/${this.VAULT_FILENAME}`;
-
+      // Normalize path separator (appDataDir may or may not end with separator)
+      const separator =
+        appData.endsWith("/") || appData.endsWith("\\") ? "" : "/";
+      const vaultPath = `${appData}${separator}${this.VAULT_FILENAME}`;
       console.info("Initializing Stronghold vault at:", vaultPath);
 
-      // Load or create the stronghold
+      // Create a fresh stronghold
       this.stronghold = await Stronghold.load(vaultPath, this.VAULT_PASSWORD);
       this.strongholdInitialized = true;
-
-      console.info("Stronghold vault initialized successfully");
+      console.info("Stronghold vault loaded successfully");
     } catch (error) {
-      console.error(
-        "Failed to initialize Stronghold vault",
-        error instanceof Error ? error : new Error(String(error))
-      );
-      throw new Error("Failed to initialize secure storage");
+      console.error("Failed to initialize Stronghold vault:", error);
+      throw error;
     }
   }
 
   /**
-   * Get or create a client for the specified token type
+   * Get or create the Stronghold client
+   * Uses a single client for all token types with key prefixes
    */
-  private async getClient(type: TokenType) {
+  private async getClient(): Promise<Client> {
+    // Return cached client if available
+    if (this.client) {
+      return this.client;
+    }
+
+    // Initialize stronghold if needed
     if (!this.stronghold) {
       await this.initStronghold();
     }
@@ -105,16 +110,22 @@ class TauriStrongholdStorage implements SecureTokenStorage {
       throw new Error("Stronghold not initialized");
     }
 
-    const clientName =
-      type === TokenType.POS ? this.POS_CLIENT_NAME : this.USER_CLIENT_NAME;
-
     try {
       // Try to load existing client
-      return await this.stronghold.loadClient(clientName);
+      this.client = await this.stronghold.loadClient(this.CLIENT_NAME);
     } catch {
       // Client doesn't exist, create it
-      return await this.stronghold.createClient(clientName);
+      this.client = await this.stronghold.createClient(this.CLIENT_NAME);
     }
+
+    return this.client;
+  }
+
+  /**
+   * Generate storage key with type prefix
+   */
+  private getStorageKey(key: string, type: TokenType): string {
+    return `${type}_${key}`;
   }
 
   /**
@@ -131,18 +142,19 @@ class TauriStrongholdStorage implements SecureTokenStorage {
     }
 
     try {
-      const client = await this.getClient(type);
+      const client = await this.getClient();
       const store = client.getStore();
+      const storageKey = this.getStorageKey(key, type);
 
       // Convert string to Uint8Array for storage
       const data = Array.from(new TextEncoder().encode(token));
 
-      await store.insert(key, data);
+      await store.insert(storageKey, data);
 
       // Save the stronghold after inserting
       if (this.stronghold) {
         await this.stronghold.save();
-        console.info(`Token stored successfully: ${type}_${key}`);
+        console.info(`Token stored successfully: ${storageKey}`);
       }
     } catch (error) {
       console.error(
@@ -158,10 +170,11 @@ class TauriStrongholdStorage implements SecureTokenStorage {
    */
   public async getToken(key: string, type: TokenType): Promise<string | null> {
     try {
-      const client = await this.getClient(type);
+      const client = await this.getClient();
       const store = client.getStore();
+      const storageKey = this.getStorageKey(key, type);
 
-      const data = await store.get(key);
+      const data = await store.get(storageKey);
 
       if (!data || data.length === 0) {
         return null;
@@ -184,15 +197,16 @@ class TauriStrongholdStorage implements SecureTokenStorage {
    */
   public async deleteToken(key: string, type: TokenType): Promise<void> {
     try {
-      const client = await this.getClient(type);
+      const client = await this.getClient();
       const store = client.getStore();
+      const storageKey = this.getStorageKey(key, type);
 
-      await store.remove(key);
+      await store.remove(storageKey);
 
       // Save the stronghold after removing
       if (this.stronghold) {
         await this.stronghold.save();
-        console.info(`Token deleted successfully: ${type}_${key}`);
+        console.info(`Token deleted successfully: ${storageKey}`);
       }
     } catch (error) {
       console.error(
@@ -208,12 +222,45 @@ class TauriStrongholdStorage implements SecureTokenStorage {
    */
   public async clearTokens(type: ClearTokenType): Promise<void> {
     try {
+      const client = await this.getClient();
+      const store = client.getStore();
+
+      // List of known token keys
+      const tokenKeys = [
+        "accessToken",
+        "refreshToken",
+        "deviceInfo",
+        "pairingData",
+      ];
+
       if (type === "all") {
         // Clear both POS and user tokens
-        await this.clearClientTokens(TokenType.POS);
-        await this.clearClientTokens(TokenType.USER);
+        for (const key of tokenKeys) {
+          try {
+            await store.remove(this.getStorageKey(key, TokenType.POS));
+          } catch {
+            // Ignore errors for keys that don't exist
+          }
+          try {
+            await store.remove(this.getStorageKey(key, TokenType.USER));
+          } catch {
+            // Ignore errors for keys that don't exist
+          }
+        }
       } else {
-        await this.clearClientTokens(type);
+        // Clear tokens for specific type
+        for (const key of tokenKeys) {
+          try {
+            await store.remove(this.getStorageKey(key, type));
+          } catch {
+            // Ignore errors for keys that don't exist
+          }
+        }
+      }
+
+      // Save the stronghold after clearing
+      if (this.stronghold) {
+        await this.stronghold.save();
       }
 
       console.info(`Cleared tokens for type: ${type}`);
@@ -223,44 +270,6 @@ class TauriStrongholdStorage implements SecureTokenStorage {
         error instanceof Error ? error : new Error(String(error))
       );
       throw new Error(`Failed to clear tokens: ${type}`);
-    }
-  }
-
-  /**
-   * Clear all tokens for a specific client
-   */
-  private async clearClientTokens(type: TokenType): Promise<void> {
-    try {
-      const client = await this.getClient(type);
-      const store = client.getStore();
-
-      // Stronghold doesn't have a clear all method, so we need to remove keys individually
-      // We'll maintain a list of known keys
-      const keysToRemove = [
-        "accessToken",
-        "refreshToken",
-        "deviceInfo",
-        "pairingData",
-      ];
-
-      for (const key of keysToRemove) {
-        try {
-          await store.remove(key);
-        } catch {
-          // Ignore errors for keys that don't exist
-        }
-      }
-
-      // Save the stronghold after clearing
-      if (this.stronghold) {
-        await this.stronghold.save();
-      }
-    } catch (error) {
-      console.error(
-        `Failed to clear client tokens for type: ${type}`,
-        error instanceof Error ? error : new Error(String(error))
-      );
-      throw error;
     }
   }
 }

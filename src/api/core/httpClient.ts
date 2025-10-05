@@ -146,8 +146,8 @@ class TauriHttpClient {
       }
 
       return null;
-    } catch (error: unknown) {
-      if (error instanceof Error && error.message !== "Unauthorized") {
+    } catch (error: any) {
+      if (error?.message !== "Unauthorized") {
         return null;
       }
 
@@ -195,7 +195,6 @@ class TauriHttpClient {
             // Refresh user token
             newToken = await this.refreshUserToken();
           } else {
-            // Refresh POS token
             newToken = await refreshPosToken();
           }
 

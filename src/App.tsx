@@ -12,9 +12,12 @@ import { FloatingNavigation } from "./components/navigation/FloatingNavigation";
 import { ProtectedRoute } from "./features/auth/components/ProtectedRoute";
 import PublicRoute from "./features/auth/components/PublicRoute";
 import { LoginPage } from "./features/auth/pages/LoginPage";
+import { PairDevicePage } from "./features/auth/pages/PairDevicePage";
+import { PreLoginPage } from "./features/auth/pages/PreLoginPage";
 import CustomersPage from "./features/customers/pages";
 import ProductsPage from "./features/products/pages";
 import { initAuth } from "./store/authSlice";
+import { checkPairingStatus } from "./store/globalSlice";
 import { useAppDispatch } from "./store/hooks";
 // Dashboard wrapper with navigation
 const DashboardWithNav = () => {
@@ -43,12 +46,18 @@ function App() {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
+    // Check pairing status first, then init auth
+    dispatch(checkPairingStatus());
     dispatch(initAuth());
   }, [dispatch]);
 
   return (
     <Router>
       <Routes>
+        {/* Public routes - no authentication required */}
+        <Route path="/pair" element={<PairDevicePage />} />
+        <Route path="/pre-login" element={<PreLoginPage />} />
+
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
         </Route>

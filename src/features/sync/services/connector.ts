@@ -2,12 +2,19 @@ import {
   AbstractPowerSyncDatabase,
   PowerSyncBackendConnector,
 } from "@powersync/web";
+import { getPosAccessToken } from "../../auth/api/pos-auth";
 import { getSyncData } from "../api";
 
 export default class BackendConnector implements PowerSyncBackendConnector {
   constructor() {}
 
   async fetchCredentials() {
+    const posToken = await getPosAccessToken();
+
+    if (!posToken) {
+      throw new Error("No POS token found");
+    }
+
     const syncToken = await getSyncData();
 
     if (!syncToken.data?.token || !syncToken.data?.endpoint) {
