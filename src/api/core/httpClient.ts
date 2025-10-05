@@ -1,6 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
 import { secureStorage } from "../../features/auth/services/secure-storage";
-import { networkStatus } from "../../utils/network-status";
 import { getLocalStorage, setLocalStorage } from "../../utils/storage";
 import { endpoints, getConfig } from "./config";
 import { ApiResponse } from "./types";
@@ -72,22 +71,9 @@ class TauriHttpClient {
   }
 
   /**
-   * Check if app has network connectivity
-   * Uses the more reliable NetworkStatusService instead of navigator.onLine
-   */
-  private isOnline(): boolean {
-    return networkStatus.isNetworkOnline();
-  }
-
-  /**
    * Handle refresh token logic - skips if offline
    */
   async refreshToken(): Promise<string | null> {
-    // Skip refresh token attempt if offline
-    if (!this.isOnline()) {
-      return null;
-    }
-
     if (this.isRefreshing) {
       // If already refreshing, return the existing promise
       return this.refreshPromise;
@@ -196,9 +182,6 @@ class TauriHttpClient {
         code: "NETWORK_ERROR",
         message: "Network error. Please check your internet connection.",
       };
-
-      // Update network status service since we've detected a network issue
-      networkStatus.forceConnectivityCheck();
     }
 
     // Handle the error if we can't recover
@@ -239,12 +222,6 @@ class TauriHttpClient {
 
       if (response.ok) {
         const responseData = await response.json();
-
-        // If we successfully made a request, ensure network status is updated to online
-        if (!isRetry) {
-          networkStatus.forceConnectivityCheck();
-        }
-
         return this.processResponse<T>(responseData);
       }
 

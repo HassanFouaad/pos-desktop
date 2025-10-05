@@ -1,193 +1,129 @@
-import {
-  boolean,
-  date,
-  decimal,
-  integer,
-  pgEnum,
-  pgTable,
-  serial,
-  text,
-  timestamp,
-  uuid,
-  varchar,
-} from "drizzle-orm/pg-core";
-export const syncStatusEnum = pgEnum("sync_status", [
-  "pending",
-  "success",
-  "failed",
-]);
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey(),
-  tenantId: uuid("tenantId"),
-  email: varchar("email", { length: 255 }),
-  name: varchar("name", { length: 255 }),
-  role: varchar("role", { length: 50 }),
-  permissions: text("permissions").array(),
-  isLoggedIn: boolean("isLoggedIn").default(false),
-  lastLoginAt: timestamp("lastLoginAt", { mode: "date" }),
-  refreshToken: varchar("refreshToken", { length: 255 }),
-  hashedPassword: varchar("hashedPassword", { length: 255 }),
-  username: varchar("username", { length: 255 }),
-  accessToken: varchar("accessToken", { length: 100000 }),
+import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+
+// SQLite doesn't support enums directly, use text with check constraints
+export type SyncStatus = "pending" | "success" | "failed";
+export const users = sqliteTable("users", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenantId"),
+  email: text("email"),
+  name: text("name"),
+  role: text("role"),
+  permissions: text("permissions", { mode: "json" }), // Store arrays as JSON in SQLite
+  isLoggedIn: integer("isLoggedIn", { mode: "boolean" }).default(false), // SQLite booleans are stored as integers
+  lastLoginAt: integer("lastLoginAt", { mode: "timestamp" }), // SQLite timestamps as integers
+  refreshToken: text("refreshToken"),
+  hashedPassword: text("hashedPassword"),
+  username: text("username"),
+  accessToken: text("accessToken"),
 });
 
-export const stores = pgTable("stores", {
-  id: uuid("id").primaryKey(),
-  tenantId: uuid("tenantId"),
-  code: varchar("code", { length: 10 }),
-  name: varchar("name", { length: 255 }),
-  addressLine1: varchar("addressLine1", { length: 255 }),
-  addressLine2: varchar("addressLine2", { length: 255 }),
-  city: varchar("city", { length: 100 }),
-  state: varchar("state", { length: 100 }),
-  postalCode: varchar("postalCode", { length: 20 }),
-  country: varchar("country", { length: 100 }),
-  contactEmail: varchar("contactEmail", { length: 255 }),
-  contactPhone: varchar("contactPhone", { length: 50 }),
-  currency: varchar("currency", { length: 3 }),
-  taxRegion: varchar("taxRegion", { length: 255 }),
-  isActive: boolean("isActive"),
-  createdAt: timestamp("createdAt", { mode: "date" }),
-  updatedAt: timestamp("updatedAt", { mode: "date" }),
+export const stores = sqliteTable("stores", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenantId"),
+  code: text("code"),
+  name: text("name"),
+  addressLine1: text("addressLine1"),
+  addressLine2: text("addressLine2"),
+  city: text("city"),
+  state: text("state"),
+  postalCode: text("postalCode"),
+  country: text("country"),
+  contactEmail: text("contactEmail"),
+  contactPhone: text("contactPhone"),
+  currency: text("currency"),
+  taxRegion: text("taxRegion"),
+  isActive: integer("isActive", { mode: "boolean" }),
+  createdAt: integer("createdAt", { mode: "timestamp" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }),
 });
 
-export const categories = pgTable("categories", {
-  id: uuid("id").primaryKey(),
-  tenantId: uuid("tenantId"),
-  name: varchar("name", { length: 255 }),
-  parentCategoryId: uuid("parentCategoryId"),
-  categoryType: varchar("categoryType", { length: 50 }),
-  createdAt: timestamp("createdAt", { mode: "date" }),
-  updatedAt: timestamp("updatedAt", { mode: "date" }),
-  localId: uuid("localId"),
+export const categories = sqliteTable("categories", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenantId"),
+  name: text("name"),
+  parentCategoryId: text("parentCategoryId"),
+  categoryType: text("categoryType"),
+  createdAt: integer("createdAt", { mode: "timestamp" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+  localId: text("localId"),
 });
 
-export const pendingCategories = pgTable("pending_categories", {
-  id: uuid("id").primaryKey(),
-  tenantId: uuid("tenantId"),
-  name: varchar("name", { length: 255 }),
-  parentCategoryId: uuid("parentCategoryId"),
-  categoryType: varchar("categoryType", { length: 50 }),
-  createdAt: timestamp("createdAt", { mode: "date" }),
-  updatedAt: timestamp("updatedAt", { mode: "date" }),
-  syncStatus: syncStatusEnum("syncStatus").default("pending"),
-  localId: uuid("localId"),
-});
-
-export const products = pgTable("products", {
-  id: uuid("id").primaryKey(),
-  tenantId: uuid("tenantId"),
-  categoryId: uuid("categoryId"),
-  taxCategory: varchar("taxCategory", { length: 50 }),
-  taxRate: decimal("taxRate", { precision: 12, scale: 2 }),
-  taxIncluded: boolean("taxIncluded"),
-  name: varchar("name", { length: 255 }),
+export const products = sqliteTable("products", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenantId"),
+  categoryId: text("categoryId"),
+  taxCategory: text("taxCategory"),
+  taxRate: real("taxRate"), // SQLite uses REAL for floating point
+  taxIncluded: integer("taxIncluded", { mode: "boolean" }),
+  name: text("name"),
   description: text("description"),
-  tags: text("tags").array(),
-  status: varchar("status", { length: 50 }),
+  tags: text("tags", { mode: "json" }), // Store arrays as JSON in SQLite
+  status: text("status"),
   variantsCount: integer("variantsCount"),
-  createdAt: timestamp("createdAt", { mode: "date" }),
-  updatedAt: timestamp("updatedAt", { mode: "date" }),
+  createdAt: integer("createdAt", { mode: "timestamp" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }),
 });
 
-export const productVariants = pgTable("product_variants", {
-  id: uuid("id").primaryKey(),
-  productId: uuid("productId"),
-  tenantId: uuid("tenantId"),
-  name: varchar("name", { length: 100 }),
-  unitOfMeasure: varchar("unitOfMeasure", { length: 50 }),
-  sku: varchar("sku", { length: 100 }),
-  baseSellingPrice: decimal("baseSellingPrice", { precision: 10, scale: 2 }),
-  basePurchasePrice: decimal("basePurchasePrice", {
-    precision: 10,
-    scale: 2,
-  }),
-  createdAt: timestamp("createdAt", { mode: "date" }),
-  updatedAt: timestamp("updatedAt", { mode: "date" }),
-  latestPriceSnapshotId: uuid("latestPriceSnapshotId"),
+export const productVariants = sqliteTable("product_variants", {
+  id: text("id").primaryKey(),
+  productId: text("productId"),
+  tenantId: text("tenantId"),
+  name: text("name"),
+  unitOfMeasure: text("unitOfMeasure"),
+  sku: text("sku"),
+  baseSellingPrice: real("baseSellingPrice"),
+  basePurchasePrice: real("basePurchasePrice"),
+  createdAt: integer("createdAt", { mode: "timestamp" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+  latestPriceSnapshotId: text("latestPriceSnapshotId"),
 });
 
-export const inventory = pgTable("inventory", {
-  id: uuid("id").primaryKey(),
-  tenantId: uuid("tenantId"),
-  storeId: uuid("storeId"),
-  variantId: uuid("variantId"),
+export const inventory = sqliteTable("inventory", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenantId"),
+  storeId: text("storeId"),
+  variantId: text("variantId"),
   quantityOnHand: integer("quantityOnHand"),
   quantityCommitted: integer("quantityCommitted"),
   quantityAvailable: integer("quantityAvailable"),
   reorderPoint: integer("reorderPoint"),
   maxStockLevel: integer("maxStockLevel"),
-  lastCountedAt: timestamp("lastCountedAt", { mode: "date" }),
-  costPerUnit: decimal("costPerUnit", { precision: 12, scale: 2 }),
-  totalValue: decimal("totalValue", { precision: 12, scale: 2 }),
-  createdAt: timestamp("createdAt", { mode: "date" }),
-  updatedAt: timestamp("updatedAt", { mode: "date" }),
+  lastCountedAt: integer("lastCountedAt", { mode: "timestamp" }),
+  costPerUnit: real("costPerUnit"),
+  totalValue: real("totalValue"),
+  createdAt: integer("createdAt", { mode: "timestamp" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }),
 });
 
-export const customers = pgTable("customers", {
-  id: uuid("id").primaryKey(),
-  tenantId: uuid("tenantId"),
-  name: varchar("name", { length: 255 }),
-  phone: varchar("phone", { length: 50 }),
-  dateOfBirth: date("dateOfBirth"),
-  loyaltyNumber: varchar("loyaltyNumber", { length: 100 }),
+export const customers = sqliteTable("customers", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenantId"),
+  name: text("name"),
+  phone: text("phone"),
+  dateOfBirth: integer("dateOfBirth", { mode: "timestamp" }), // Store as timestamp
+  loyaltyNumber: text("loyaltyNumber"),
   loyaltyPoints: integer("loyaltyPoints"),
-  totalSpent: decimal("totalSpent", { precision: 12, scale: 2 }),
+  totalSpent: real("totalSpent"),
   totalVisits: integer("totalVisits"),
-  averageOrderValue: decimal("averageOrderValue", {
-    precision: 12,
-    scale: 2,
-  }),
-  lastVisitAt: timestamp("lastVisitAt", { mode: "date" }),
+  averageOrderValue: real("averageOrderValue"),
+  lastVisitAt: integer("lastVisitAt", { mode: "timestamp" }),
   notes: text("notes"),
-  createdAt: timestamp("createdAt", { mode: "date" }),
-  updatedAt: timestamp("updatedAt", { mode: "date" }),
-  localId: uuid("localId"),
-  syncStatus: syncStatusEnum("syncStatus").default("pending"),
+  createdAt: integer("createdAt", { mode: "timestamp" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+  localId: text("localId"),
+  syncStatus: text("syncStatus").$type<SyncStatus>().default("pending"),
 });
 
-export const storePrices = pgTable("store_prices", {
-  id: uuid("id").primaryKey(),
-  tenantId: uuid("tenantId"),
-  variantId: uuid("variantId"),
-  storeId: uuid("storeId"),
-  price: decimal("price", { precision: 12, scale: 2 }),
-  createdAt: timestamp("createdAt", { mode: "date" }),
-  updatedAt: timestamp("updatedAt", { mode: "date" }),
+export const storePrices = sqliteTable("store_prices", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenantId"),
+  variantId: text("variantId"),
+  storeId: text("storeId"),
+  price: real("price"),
+  createdAt: integer("createdAt", { mode: "timestamp" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }),
 });
 
-import { index, jsonb } from "drizzle-orm/pg-core";
-
-/**
- * Changes table for tracking sync operations
- * Used to record changes that need to be synchronized with the server
- */
-export const changes = pgTable(
-  "changes",
-  {
-    id: serial("id").primaryKey(),
-    entityType: varchar("entity_type", { length: 50 }).notNull(),
-    entityId: uuid("entity_id").notNull(),
-    operation: varchar("operation", { length: 10 }).notNull(),
-    payload: jsonb("payload"),
-    createdAt: timestamp("created_at", { mode: "date" }).defaultNow(),
-    syncedAt: timestamp("synced_at", { mode: "date" }),
-    transactionId: uuid("transaction_id"),
-    status: varchar("status", { length: 10 }).default("pending"),
-    retryCount: integer("retry_count").default(0),
-    nextRetryAt: timestamp("next_retry_at", { mode: "date" }),
-    priority: integer("priority").default(5), // 1 = highest, 10 = lowest
-  },
-  (table) => {
-    return {
-      statusIdx: index("idx_changes_status").on(table.status),
-      entityTypeIdx: index("idx_changes_entity_type").on(table.entityType),
-      transactionIdIdx: index("idx_changes_transaction_id").on(
-        table.transactionId
-      ),
-    };
-  }
-);
 export const DatabaseSchema = {
   users,
   stores,
@@ -197,5 +133,4 @@ export const DatabaseSchema = {
   inventory,
   customers,
   storePrices,
-  changes,
 };

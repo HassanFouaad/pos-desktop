@@ -36,5 +36,8 @@ export const endpoints = {
   customers: {
     create: "/v1/pos/customers",
   },
-  // Add other endpoints as needed
+
+  sync: {
+    token: "/v1/pos/sync/token",
+  },
 };

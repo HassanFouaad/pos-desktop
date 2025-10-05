@@ -1,17 +1,15 @@
 import { desc, ilike, or } from "drizzle-orm";
 import { v4 } from "uuid";
-import { DrizzleDb, drizzleDb } from "../../../db/drizzle";
+import { drizzleDb } from "../../../db";
 import { customers } from "../../../db/schemas";
-import { syncService } from "../../../db/sync/sync.service";
-import { SyncOperation, SyncStatus } from "../../../db/sync/types";
 import { usersRepository } from "../../users/repositories/users.repository";
 import { CustomerDTO } from "../types/customer.dto";
 
 export class CustomersRepository {
-  private db: DrizzleDb["database"];
+  private db: typeof drizzleDb;
 
   constructor() {
-    this.db = drizzleDb.database;
+    this.db = drizzleDb;
   }
 
   async getCustomers(
@@ -36,6 +34,7 @@ export class CustomersRepository {
     }
     const [customersData] = await Promise.all([query.execute()]);
 
+    console.log("customersData", customersData);
     return customersData;
   }
 
@@ -60,18 +59,8 @@ export class CustomersRepository {
       .insert(customers)
       .values({
         ...payload,
-        syncStatus: SyncStatus.PENDING,
       })
       .execute();
-
-    // Track the change directly in the changes table
-    await syncService.trackChange(
-      "customer",
-      localId, // Using empty string as a placeholder since we don't have an ID yet
-      SyncOperation.INSERT,
-      payload,
-      localId
-    );
   }
 }
 

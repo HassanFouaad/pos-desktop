@@ -1,4 +1,3 @@
-import { Repl } from "@electric-sql/pglite-repl";
 import { Grid } from "@mui/material";
 import { useEffect } from "react";
 import {
@@ -10,7 +9,6 @@ import {
 import { GridDashboard } from "./components/dashboard/GridDashboard";
 import { GridLayout } from "./components/layout/GridLayout";
 import { FloatingNavigation } from "./components/navigation/FloatingNavigation";
-import { database } from "./db/database";
 import { ProtectedRoute } from "./features/auth/components/ProtectedRoute";
 import PublicRoute from "./features/auth/components/PublicRoute";
 import { LoginPage } from "./features/auth/pages/LoginPage";
@@ -73,7 +71,6 @@ function App() {
               <GridLayout title="Sales">
                 <Grid>
                   <ModulePlaceholder title="Sales" />
-                  <Repl pg={database} />
                 </Grid>
                 <FloatingNavigation showBackButton />
               </GridLayout>

@@ -1,13 +1,13 @@
-import { drizzleDb, DrizzleDb } from "../../../db/drizzle";
+import { drizzleDb } from "../../../db";
 import { stores } from "../../../db/schemas";
 
 export type StoreDTO = typeof stores.$inferSelect;
 
 export class StoresRepository {
-  private db: DrizzleDb["database"];
+  private db: typeof drizzleDb;
 
   constructor() {
-    this.db = drizzleDb.database;
+    this.db = drizzleDb;
   }
 
   /**

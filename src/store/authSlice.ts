@@ -1,8 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import httpClient from "../api";
-import { startSync } from "../db/database";
-import { LogCategory, syncLogger } from "../db/sync/logger";
-import { syncService } from "../db/sync/sync.service";
+import { drizzleDb } from "../db";
+import { users } from "../db/schemas";
 import {
   login as apiLogin,
   AuthResponse,
@@ -11,7 +10,6 @@ import {
 } from "../features/auth/api/auth";
 import { secureStorage } from "../features/auth/services/secure-storage";
 import { usersRepository } from "../features/users/repositories/users.repository";
-import { networkStatus } from "../utils/network-status";
 import { removeLocalStorage, setLocalStorage } from "../utils/storage";
 
 /**
@@ -52,13 +50,17 @@ export const initAuth = createAsyncThunk(
   "auth/init",
   async (_, { dispatch }) => {
     try {
+      console.log("initAuth");
+      const allUsers = await drizzleDb.select().from(users);
+      console.log("allUsers", allUsers);
       const currentLoggedInUser = await usersRepository.getLoggedInUser();
 
+      console.log("currentLoggedInUser", currentLoggedInUser);
       // Get token from secure storage instead of localStorage
       let token = await secureStorage.getToken("accessToken");
 
       // Update offline mode status
-      const isNetworkOnline = networkStatus.isNetworkOnline();
+      const isNetworkOnline = true;
       dispatch(authSlice.actions.setOfflineMode(!isNetworkOnline));
 
       // CRITICAL FIX: If we have a logged in user in the database, use it regardless
@@ -73,30 +75,6 @@ export const initAuth = createAsyncThunk(
 
         // If we have a user, consider them authenticated even without a token in offline mode
         if (!isNetworkOnline || !token) {
-          syncLogger.info(
-            LogCategory.AUTH,
-            `Using cached user credentials for ${
-              currentLoggedInUser.username || currentLoggedInUser.email
-            }`,
-            { offline: !isNetworkOnline }
-          );
-
-          // Try to start sync if we have a token
-          if (token) {
-            try {
-              await startSync(token, String(currentLoggedInUser.id));
-              await syncService.start();
-            } catch (syncError) {
-              syncLogger.error(
-                LogCategory.AUTH,
-                "Failed to start sync service, but continuing with cached user",
-                syncError instanceof Error
-                  ? syncError
-                  : new Error(String(syncError))
-              );
-            }
-          }
-
           // Return the cached user without sensitive data
           const userToReturn = { ...currentLoggedInUser };
           delete userToReturn.hashedPassword;
@@ -119,10 +97,6 @@ export const initAuth = createAsyncThunk(
             const user = await getMe();
 
             if (!user.error && user.data) {
-              // Successfully got updated user data
-              await startSync(token, String(currentLoggedInUser.id));
-              await syncService.start();
-
               await usersRepository.upsertUser(
                 user.data as Partial<AuthResponse["user"]>,
                 token,
@@ -137,31 +111,7 @@ export const initAuth = createAsyncThunk(
 
               return userToReturn;
             }
-          } catch (refreshError) {
-            // If refresh fails, fall back to cached user
-            syncLogger.warn(
-              LogCategory.AUTH,
-              "Failed to refresh token, using cached user",
-              refreshError instanceof Error
-                ? refreshError
-                : new Error(String(refreshError))
-            );
-          }
-
-          // If we get here, either the API call failed or refresh failed
-          // Start sync with existing token and use cached user
-          try {
-            await startSync(token, String(currentLoggedInUser.id));
-            await syncService.start();
-          } catch (syncError) {
-            syncLogger.error(
-              LogCategory.AUTH,
-              "Failed to start sync service, but continuing with cached user",
-              syncError instanceof Error
-                ? syncError
-                : new Error(String(syncError))
-            );
-          }
+          } catch (refreshError) {}
 
           // Return the cached user without sensitive data
           const userToReturn = { ...currentLoggedInUser };
@@ -177,11 +127,6 @@ export const initAuth = createAsyncThunk(
       // If we get here, we don't have a logged in user
       throw new Error("No logged in user found");
     } catch (error) {
-      syncLogger.error(
-        LogCategory.AUTH,
-        "Auth initialization failed",
-        error instanceof Error ? error : new Error(String(error))
-      );
       throw error;
     }
   }
@@ -190,7 +135,7 @@ export const initAuth = createAsyncThunk(
 export const login = createAsyncThunk(
   "auth/login",
   async (credentials: LoginCredentials) => {
-    const isNetworkOnline = networkStatus.isNetworkOnline();
+    const isNetworkOnline = true;
 
     if (!isNetworkOnline) {
       const user = await usersRepository.findUserByUsername(
@@ -212,8 +157,6 @@ export const login = createAsyncThunk(
       // Keep minimal token info in localStorage for quick UI rendering
       setLocalStorage("hasToken", "true");
 
-      await startSync(user.accessToken ?? "", String(user.id));
-      await syncService.start();
       return user;
     }
 
@@ -223,17 +166,16 @@ export const login = createAsyncThunk(
       throw authResponse.error;
     }
 
-    await Promise.all([
-      usersRepository.setLoggedInUser(authResponse.data.user.id),
-      usersRepository.upsertUser(
-        {
-          ...authResponse.data.user,
-          hashedPassword: credentials.password,
-        },
-        authResponse.data.accessToken,
-        authResponse.data.refreshToken
-      ),
-    ]);
+    await usersRepository.upsertUser(
+      {
+        ...authResponse.data.user,
+        hashedPassword: credentials.password,
+      },
+      authResponse.data.accessToken,
+      authResponse.data.refreshToken
+    );
+
+    await usersRepository.setLoggedInUser(authResponse.data.user.id);
 
     // Store tokens in secure storage
     await secureStorage.storeToken(
@@ -248,19 +190,13 @@ export const login = createAsyncThunk(
     // Keep minimal token info in localStorage for quick UI rendering
     setLocalStorage("hasToken", "true");
 
-    await startSync(
-      authResponse.data.accessToken ?? "",
-      String(authResponse.data.user.id)
-    );
-    await syncService.start();
-
     return authResponse.data.user;
   }
 );
 
 export const logout = createAsyncThunk("auth/logout", async () => {
   try {
-    syncLogger.info(LogCategory.AUTH, "Logging out user");
+    console.info("Logging out user");
 
     // Clear all tokens from secure storage
     await secureStorage.clearTokens();
@@ -271,16 +207,9 @@ export const logout = createAsyncThunk("auth/logout", async () => {
     // Remove user data from repository
     await usersRepository.logoutAllUsers();
 
-    // Stop the sync service
-    await syncService.stop();
-
-    syncLogger.info(LogCategory.AUTH, "User logged out successfully");
+    console.info("User logged out successfully");
   } catch (error) {
-    syncLogger.error(
-      LogCategory.AUTH,
-      "Error during logout",
-      error instanceof Error ? error : new Error(String(error))
-    );
+    console.error("Error during logout", error);
     throw error;
   }
 });

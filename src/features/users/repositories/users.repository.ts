@@ -1,17 +1,15 @@
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/pglite";
-import { drizzleDb } from "../../../db/drizzle";
-import { DatabaseSchema, users } from "../../../db/schemas";
+import { drizzleDb } from "../../../db";
+import { users } from "../../../db/schemas";
 import { AuthResponse } from "../../auth/api/auth";
 
 type UserSchema = typeof users.$inferInsert;
 
 class UsersRepository {
-  private db: ReturnType<typeof drizzle<typeof DatabaseSchema>> =
-    drizzleDb.database;
+  private db: typeof drizzleDb = drizzleDb;
 
   constructor() {
-    this.db = drizzleDb.database;
+    this.db = drizzleDb;
   }
 
   /**
@@ -34,10 +32,22 @@ class UsersRepository {
       accessToken: accessToken,
     };
 
-    await this.db.insert(users).values(userToInsert).onConflictDoUpdate({
-      target: users.id,
-      set: userToInsert,
-    });
+    const foundUser = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.id, userToInsert.id))
+      .limit(1)
+      .execute();
+
+    if (foundUser?.[0]) {
+      await this.db
+        .update(users)
+        .set(userToInsert)
+        .where(eq(users.id, userToInsert.id))
+        .execute();
+    } else {
+      await this.db.insert(users).values(userToInsert).execute();
+    }
   }
 
   /**

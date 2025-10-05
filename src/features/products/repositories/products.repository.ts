@@ -1,5 +1,5 @@
 import { and, eq, ilike, or } from "drizzle-orm";
-import { DrizzleDb, drizzleDb } from "../../../db/drizzle";
+import { drizzleDb } from "../../../db";
 import {
   categories,
   inventory,
@@ -11,10 +11,10 @@ import type { CategoryDTO } from "../types/category.dto";
 import type { VariantDetailDTO } from "../types/variant-detail.dto";
 
 export class ProductsRepository {
-  private db: DrizzleDb["database"];
+  private db: typeof drizzleDb;
 
   constructor() {
-    this.db = drizzleDb.database;
+    this.db = drizzleDb;
   }
 
   async getCategories(searchTerm?: string): Promise<CategoryDTO[]> {

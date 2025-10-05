@@ -1,5 +1,4 @@
 import { Store } from "@tauri-apps/plugin-store";
-import { LogCategory, syncLogger } from "../../../db/sync/logger";
 import { getLocalStorage } from "../../../utils/storage";
 
 /**
@@ -61,10 +60,9 @@ class TauriSecureStorage implements SecureTokenStorage {
       this.store = await Store.load("auth_tokens.dat");
       this.storeInitialized = true;
 
-      syncLogger.info(LogCategory.AUTH, "Tauri store initialized successfully");
+      console.info("Tauri store initialized successfully");
     } catch (error) {
-      syncLogger.error(
-        LogCategory.AUTH,
+      console.error(
         "Failed to initialize Tauri store",
         error instanceof Error ? error : new Error(String(error))
       );
@@ -78,10 +76,6 @@ class TauriSecureStorage implements SecureTokenStorage {
    */
   public async storeToken(key: string, token: string): Promise<void> {
     if (!token) {
-      syncLogger.warn(
-        LogCategory.AUTH,
-        `Attempted to store empty token for key: ${key}`
-      );
       return;
     }
 
@@ -108,8 +102,8 @@ class TauriSecureStorage implements SecureTokenStorage {
 
       throw new Error("Store not available");
     } catch (error) {
-      syncLogger.error(
-        LogCategory.AUTH,
+      console.error(
+        "Failed to store token securely: ${key}",
         `Failed to store token securely: ${key}`,
         error instanceof Error ? error : new Error(String(error))
       );
@@ -145,8 +139,8 @@ class TauriSecureStorage implements SecureTokenStorage {
 
       throw new Error("Store not available");
     } catch (error) {
-      syncLogger.error(
-        LogCategory.AUTH,
+      console.error(
+        "Failed to retrieve token from secure storage: ${key}",
         `Failed to retrieve token from secure storage: ${key}`,
         error instanceof Error ? error : new Error(String(error))
       );
@@ -182,8 +176,8 @@ class TauriSecureStorage implements SecureTokenStorage {
 
       throw new Error("Store not available");
     } catch (error) {
-      syncLogger.error(
-        LogCategory.AUTH,
+      console.error(
+        "Failed to delete token from secure storage: ${key}",
         `Failed to delete token from secure storage: ${key}`,
         error instanceof Error ? error : new Error(String(error))
       );
@@ -222,8 +216,8 @@ class TauriSecureStorage implements SecureTokenStorage {
 
       throw new Error("Store not available");
     } catch (error) {
-      syncLogger.error(
-        LogCategory.AUTH,
+      console.error(
+        "Failed to clear secure storage",
         "Failed to clear secure storage",
         error instanceof Error ? error : new Error(String(error))
       );
@@ -251,8 +245,8 @@ class TauriSecureStorage implements SecureTokenStorage {
       const encoded = this.xorEncrypt(token, deviceKey);
       localStorage.setItem(key + "_fallback", encoded);
     } catch (error) {
-      syncLogger.error(
-        LogCategory.AUTH,
+      console.error(
+        "Failed to store token with fallback method",
         "Failed to store token with fallback method",
         error instanceof Error ? error : new Error(String(error))
       );
@@ -271,8 +265,8 @@ class TauriSecureStorage implements SecureTokenStorage {
       const deviceKey = this.getDeviceKey();
       return this.xorEncrypt(encoded, deviceKey);
     } catch (error) {
-      syncLogger.error(
-        LogCategory.AUTH,
+      console.error(
+        "Failed to retrieve token with fallback method",
         "Failed to retrieve token with fallback method",
         error instanceof Error ? error : new Error(String(error))
       );
