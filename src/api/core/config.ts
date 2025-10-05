@@ -33,6 +33,13 @@ export const endpoints = {
     me: "/v1/auth/me",
     changePassword: "/v1/auth/change-password",
   },
+
+  pos: {
+    pair: "/v1/pos/pair",
+    unpair: "/v1/pos/unpair", // For future backend implementation
+    refreshToken: "/v1/pos/auth/refresh",
+  },
+
   customers: {
     create: "/v1/pos/customers",
   },

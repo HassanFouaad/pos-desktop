@@ -1,6 +1,9 @@
 import { fetch } from "@tauri-apps/plugin-http";
-import { secureStorage } from "../../features/auth/services/secure-storage";
-import { getLocalStorage, setLocalStorage } from "../../utils/storage";
+import { refreshPosToken } from "../../features/auth/api/pos-auth";
+import {
+  secureStorage,
+  TokenType,
+} from "../../features/auth/services/secure-storage";
 import { endpoints, getConfig } from "./config";
 import { ApiResponse } from "./types";
 
@@ -31,19 +34,37 @@ class TauriHttpClient {
   }
 
   /**
-   * Get default headers including auth token if available
+   * Determine which token type to use based on the URL
+   * @param url The API endpoint URL
+   * @returns TokenType.USER for /auth/me, TokenType.POS for everything else
    */
-  private getDefaultHeaders(): Record<string, string> {
+  private getTokenTypeForUrl(url: string): TokenType {
+    // Only use USER token for the /auth/me endpoint
+    if (url.includes(endpoints.auth.me)) {
+      return TokenType.USER;
+    }
+
+    // Use POS token for all other endpoints
+    return TokenType.POS;
+  }
+
+  /**
+   * Get default headers including auth token if available
+   * @param url The API endpoint URL to determine which token to use
+   */
+  private async getDefaultHeaders(
+    url: string
+  ): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Accept: "application/json",
     };
 
-    const token = getLocalStorage("accessToken");
+    const tokenType = this.getTokenTypeForUrl(url);
+    const token = await secureStorage.getToken("accessToken", tokenType);
 
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
-      headers["x-sync-token"] = token;
     }
 
     return headers;
@@ -71,9 +92,9 @@ class TauriHttpClient {
   }
 
   /**
-   * Handle refresh token logic - skips if offline
+   * Refresh user access token using refresh token
    */
-  async refreshToken(): Promise<string | null> {
+  private async refreshUserToken(): Promise<string | null> {
     if (this.isRefreshing) {
       // If already refreshing, return the existing promise
       return this.refreshPromise;
@@ -82,7 +103,10 @@ class TauriHttpClient {
     this.isRefreshing = true;
 
     try {
-      const refreshToken = await secureStorage.getToken("refreshToken");
+      const refreshToken = await secureStorage.getToken(
+        "refreshToken",
+        TokenType.USER
+      );
 
       if (!refreshToken) {
         throw new Error("Unauthorized");
@@ -105,9 +129,14 @@ class TauriHttpClient {
 
         const newAccessToken = responseData.data.accessToken;
 
-        setLocalStorage("accessToken", newAccessToken);
+        // Store the new user access token
+        await secureStorage.storeToken(
+          "accessToken",
+          newAccessToken,
+          TokenType.USER
+        );
 
-        return responseData.data.accessToken;
+        return newAccessToken;
       }
 
       const responseData = await response.json();
@@ -117,8 +146,8 @@ class TauriHttpClient {
       }
 
       return null;
-    } catch (error: any) {
-      if (error?.message !== "Unauthorized") {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message !== "Unauthorized") {
         return null;
       }
 
@@ -133,48 +162,70 @@ class TauriHttpClient {
    * Handle API errors including token refresh
    */
   private async handleApiError<T>(
-    error: any,
+    error: unknown,
     url: string,
     options: RequestInit & { headers?: Record<string, string> },
     isRetry = false
   ): Promise<ApiResponse<T>> {
     const config = getConfig();
 
-    if (error.status === config.statusCodes.unauthorized && !isRetry) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      (error as { status: number }).status ===
+        config.statusCodes.unauthorized &&
+      !isRetry
+    ) {
       // Check if this is a protected route that needs refresh
       const isAuthEndpoint =
         url.includes("/auth/login") ||
         url.includes("/auth/refresh") ||
-        url.includes("/auth/logout");
+        url.includes("/auth/logout") ||
+        url.includes("/pos/pair") ||
+        url.includes("/pos/auth/refresh");
 
       if (!isAuthEndpoint) {
-        // Try to refresh the token
-        const newToken = await this.refreshToken();
+        // Determine which token type to refresh based on URL
+        const tokenType = this.getTokenTypeForUrl(url);
+        let newToken: string | null = null;
 
-        if (newToken) {
-          await secureStorage.storeToken("accessToken", newToken);
-          // Retry the original request with the new token
-          const newHeaders = options.headers ? { ...options.headers } : {};
-          newHeaders["Authorization"] = `Bearer ${newToken}`;
-
-          const newOptions = {
-            ...options,
-            headers: newHeaders,
-          };
-
-          try {
-            // Make the request again with new token
-            return await this.request<T>(url, newOptions, true);
-          } catch (retryError) {
-            // If retry fails, handle error normally
-            return this.handleApiError<T>(retryError, url, newOptions, true);
+        try {
+          if (tokenType === TokenType.USER) {
+            // Refresh user token
+            newToken = await this.refreshUserToken();
+          } else {
+            // Refresh POS token
+            newToken = await refreshPosToken();
           }
+
+          if (newToken) {
+            // Retry the original request with the new token
+            const newHeaders = options.headers ? { ...options.headers } : {};
+            newHeaders["Authorization"] = `Bearer ${newToken}`;
+
+            const newOptions = {
+              ...options,
+              headers: newHeaders,
+            };
+
+            try {
+              // Make the request again with new token
+              return await this.request<T>(url, newOptions, true);
+            } catch (retryError) {
+              // If retry fails, handle error normally
+              return this.handleApiError<T>(retryError, url, newOptions, true);
+            }
+          }
+        } catch (refreshError) {
+          // Token refresh failed, continue with error handling below
+          console.warn("Token refresh failed", refreshError);
         }
       }
     } else if (
       typeof error === "string" ||
-      error.name === "AbortError" ||
-      error.message?.includes("fetch")
+      (error instanceof Error && error.name === "AbortError") ||
+      (error instanceof Error && error.message?.includes("fetch"))
     ) {
       // Handle various forms of network errors
       error = {
@@ -185,12 +236,22 @@ class TauriHttpClient {
     }
 
     // Handle the error if we can't recover
+    const errorObj =
+      typeof error === "object" && error !== null
+        ? error
+        : { code: "UNKNOWN", message: String(error) };
+
     return {
       success: false,
       data: null as unknown as T,
       error: {
-        code: String(error.code || "UNKNOWN"),
-        message: error?.message || "An unexpected error occurred",
+        code: String(
+          ("code" in errorObj ? errorObj.code : undefined) || "UNKNOWN"
+        ),
+        message:
+          ("message" in errorObj
+            ? String(errorObj.message)
+            : "An unexpected error occurred") || "An unexpected error occurred",
         details: error,
       },
     };
@@ -258,13 +319,14 @@ class TauriHttpClient {
   /**
    * HTTP GET request
    */
-  public async get<T = any>(
+  public async get<T = unknown>(
     url: string,
-    queryParams?: Record<string, any>,
+    queryParams?: Record<string, string | number | boolean>,
     customHeaders?: Record<string, string>
   ): Promise<ApiResponse<T>> {
+    const defaultHeaders = await this.getDefaultHeaders(url);
     const headers = {
-      ...this.getDefaultHeaders(),
+      ...defaultHeaders,
       ...customHeaders,
     };
 
@@ -303,13 +365,14 @@ class TauriHttpClient {
   /**
    * HTTP POST request
    */
-  public async post<T = any>(
+  public async post<T = unknown>(
     url: string,
-    data?: any,
+    data?: unknown,
     customHeaders?: Record<string, string>
   ): Promise<ApiResponse<T>> {
+    const defaultHeaders = await this.getDefaultHeaders(url);
     const headers = {
-      ...this.getDefaultHeaders(),
+      ...defaultHeaders,
       ...customHeaders,
     };
 
@@ -323,13 +386,14 @@ class TauriHttpClient {
   /**
    * HTTP PUT request
    */
-  public async put<T = any>(
+  public async put<T = unknown>(
     url: string,
-    data?: any,
+    data?: unknown,
     customHeaders?: Record<string, string>
   ): Promise<ApiResponse<T>> {
+    const defaultHeaders = await this.getDefaultHeaders(url);
     const headers = {
-      ...this.getDefaultHeaders(),
+      ...defaultHeaders,
       ...customHeaders,
     };
 
@@ -343,13 +407,14 @@ class TauriHttpClient {
   /**
    * HTTP PATCH request
    */
-  public async patch<T = any>(
+  public async patch<T = unknown>(
     url: string,
-    data?: any,
+    data?: unknown,
     customHeaders?: Record<string, string>
   ): Promise<ApiResponse<T>> {
+    const defaultHeaders = await this.getDefaultHeaders(url);
     const headers = {
-      ...this.getDefaultHeaders(),
+      ...defaultHeaders,
       ...customHeaders,
     };
 
@@ -363,12 +428,13 @@ class TauriHttpClient {
   /**
    * HTTP DELETE request
    */
-  public async delete<T = any>(
+  public async delete<T = unknown>(
     url: string,
     customHeaders?: Record<string, string>
   ): Promise<ApiResponse<T>> {
+    const defaultHeaders = await this.getDefaultHeaders(url);
     const headers = {
-      ...this.getDefaultHeaders(),
+      ...defaultHeaders,
       ...customHeaders,
     };
 

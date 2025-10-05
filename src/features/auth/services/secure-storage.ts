@@ -1,5 +1,19 @@
-import { Store } from "@tauri-apps/plugin-store";
-import { getLocalStorage } from "../../../utils/storage";
+import { appDataDir } from "@tauri-apps/api/path";
+import { Stronghold } from "@tauri-apps/plugin-stronghold";
+import { config } from "../../../config";
+
+/**
+ * Token type enum for differentiating between POS and user tokens
+ */
+export enum TokenType {
+  POS = "pos",
+  USER = "user",
+}
+
+/**
+ * Type for clearing tokens - can be a specific type or all
+ */
+export type ClearTokenType = TokenType | "all";
 
 /**
  * Secure token storage interface
@@ -10,264 +24,155 @@ export interface SecureTokenStorage {
    * Store a token securely
    * @param key The key for the token
    * @param token The token value
+   * @param type The type of token (TokenType.POS | TokenType.USER)
    * @returns A promise that resolves when the operation is complete
    */
-  storeToken(key: string, token: string): Promise<void>;
+  storeToken(key: string, token: string, type: TokenType): Promise<void>;
 
   /**
-   * Retrieve a token by key
+   * Retrieve a token by key and type
    * @param key The key for the token
+   * @param type The type of token (TokenType.POS | TokenType.USER)
    * @returns The token value, or null if not found
    */
-  getToken(key: string): Promise<string | null>;
+  getToken(key: string, type: TokenType): Promise<string | null>;
 
   /**
    * Delete a stored token
    * @param key The key for the token to delete
+   * @param type The type of token (TokenType.POS | TokenType.USER)
    * @returns A promise that resolves when the operation is complete
    */
-  deleteToken(key: string): Promise<void>;
+  deleteToken(key: string, type: TokenType): Promise<void>;
 
   /**
-   * Clear all stored tokens
+   * Clear all stored tokens of a specific type
+   * @param type The type of tokens to clear (TokenType.POS | TokenType.USER | 'all')
    * @returns A promise that resolves when the operation is complete
    */
-  clearTokens(): Promise<void>;
+  clearTokens(type: ClearTokenType): Promise<void>;
 }
 
 /**
- * Implementation of SecureTokenStorage using Tauri's plugin-store
- * Falls back to localStorage in development mode or if store is unavailable
+ * Implementation of SecureTokenStorage using Tauri's Stronghold plugin
+ * Provides encrypted storage for sensitive authentication tokens
  */
-class TauriSecureStorage implements SecureTokenStorage {
-  private readonly IS_DEVELOPMENT = import.meta.env.DEV;
-  private readonly PREFIX = "auth_token_";
-  private store: Store | null = null;
-  private storeInitialized = false;
-
-  constructor() {
-    this.initStore();
-  }
+class TauriStrongholdStorage implements SecureTokenStorage {
+  private stronghold: Stronghold | null = null;
+  private strongholdInitialized = false;
+  private readonly VAULT_PASSWORD = config.VAULT_PASSWORD; // In production, use a more secure key derivation
+  private readonly VAULT_FILENAME = config.VAULT_FILENAME;
+  private readonly POS_CLIENT_NAME = config.POS_CLIENT_NAME;
+  private readonly USER_CLIENT_NAME = config.USER_CLIENT_NAME;
 
   /**
-   * Initialize the Tauri store
+   * Initialize the Stronghold vault
    */
-  private async initStore(): Promise<void> {
-    if (this.storeInitialized) return;
-
-    try {
-      // Create a new store instance for auth tokens
-      this.store = await Store.load("auth_tokens.dat");
-      this.storeInitialized = true;
-
-      console.info("Tauri store initialized successfully");
-    } catch (error) {
-      console.error(
-        "Failed to initialize Tauri store",
-        error instanceof Error ? error : new Error(String(error))
-      );
-      this.store = null;
-    }
-  }
-
-  /**
-   * Store a token securely using Tauri's plugin-store
-   * In development, falls back to localStorage with encryption
-   */
-  public async storeToken(key: string, token: string): Promise<void> {
-    if (!token) {
+  private async initStronghold(): Promise<void> {
+    if (this.strongholdInitialized && this.stronghold) {
       return;
     }
 
-    const secureKey = this.PREFIX + key;
-
     try {
-      // Make sure store is initialized
-      if (!this.storeInitialized) {
-        await this.initStore();
-      }
+      const appData = await appDataDir();
+      const vaultPath = `${appData}/${this.VAULT_FILENAME}`;
 
-      if (this.IS_DEVELOPMENT && !this.store) {
-        // In dev mode without store, use simple localStorage with base64 encoding
-        localStorage.setItem(secureKey, btoa(token));
-        return;
-      }
+      console.info("Initializing Stronghold vault at:", vaultPath);
 
-      if (this.store) {
-        // Use Tauri's plugin-store
-        await this.store.set(secureKey, token);
-        await this.store.save();
-        return;
-      }
+      // Load or create the stronghold
+      this.stronghold = await Stronghold.load(vaultPath, this.VAULT_PASSWORD);
+      this.strongholdInitialized = true;
 
-      throw new Error("Store not available");
+      console.info("Stronghold vault initialized successfully");
     } catch (error) {
       console.error(
-        "Failed to store token securely: ${key}",
-        `Failed to store token securely: ${key}`,
+        "Failed to initialize Stronghold vault",
         error instanceof Error ? error : new Error(String(error))
       );
+      throw new Error("Failed to initialize secure storage");
+    }
+  }
 
-      // Fall back to localStorage with encryption
-      this.storeTokenWithFallback(secureKey, token);
+  /**
+   * Get or create a client for the specified token type
+   */
+  private async getClient(type: TokenType) {
+    if (!this.stronghold) {
+      await this.initStronghold();
+    }
+
+    if (!this.stronghold) {
+      throw new Error("Stronghold not initialized");
+    }
+
+    const clientName =
+      type === TokenType.POS ? this.POS_CLIENT_NAME : this.USER_CLIENT_NAME;
+
+    try {
+      // Try to load existing client
+      return await this.stronghold.loadClient(clientName);
+    } catch {
+      // Client doesn't exist, create it
+      return await this.stronghold.createClient(clientName);
+    }
+  }
+
+  /**
+   * Store a token securely using Stronghold
+   */
+  public async storeToken(
+    key: string,
+    token: string,
+    type: TokenType
+  ): Promise<void> {
+    if (!token) {
+      console.warn(`Attempted to store empty token for key: ${key}`);
+      return;
+    }
+
+    try {
+      const client = await this.getClient(type);
+      const store = client.getStore();
+
+      // Convert string to Uint8Array for storage
+      const data = Array.from(new TextEncoder().encode(token));
+
+      await store.insert(key, data);
+
+      // Save the stronghold after inserting
+      if (this.stronghold) {
+        await this.stronghold.save();
+        console.info(`Token stored successfully: ${type}_${key}`);
+      }
+    } catch (error) {
+      console.error(
+        `Failed to store token: ${type}_${key}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
+      throw new Error(`Failed to store token securely: ${key}`);
     }
   }
 
   /**
    * Retrieve a token from secure storage
    */
-  public async getToken(key: string): Promise<string | null> {
-    const secureKey = this.PREFIX + key;
-
+  public async getToken(key: string, type: TokenType): Promise<string | null> {
     try {
-      // Make sure store is initialized
-      if (!this.storeInitialized) {
-        await this.initStore();
+      const client = await this.getClient(type);
+      const store = client.getStore();
+
+      const data = await store.get(key);
+
+      if (!data || data.length === 0) {
+        return null;
       }
 
-      if (this.IS_DEVELOPMENT && !this.store) {
-        // In dev mode without store, use localStorage
-        const value = getLocalStorage(secureKey);
-        return value ? atob(value) : null;
-      }
-
-      if (this.store) {
-        // Use Tauri's plugin-store
-        const token = await this.store.get<string>(secureKey);
-        return token || null;
-      }
-
-      throw new Error("Store not available");
+      // Convert Uint8Array back to string
+      const value = new TextDecoder().decode(new Uint8Array(data));
+      return value;
     } catch (error) {
       console.error(
-        "Failed to retrieve token from secure storage: ${key}",
-        `Failed to retrieve token from secure storage: ${key}`,
-        error instanceof Error ? error : new Error(String(error))
-      );
-
-      // Try fallback storage
-      return this.getTokenWithFallback(secureKey);
-    }
-  }
-
-  /**
-   * Delete a token from secure storage
-   */
-  public async deleteToken(key: string): Promise<void> {
-    const secureKey = this.PREFIX + key;
-
-    try {
-      // Make sure store is initialized
-      if (!this.storeInitialized) {
-        await this.initStore();
-      }
-
-      if (this.IS_DEVELOPMENT && !this.store) {
-        localStorage.removeItem(secureKey);
-        return;
-      }
-
-      if (this.store) {
-        // Use Tauri's plugin-store
-        await this.store.delete(secureKey);
-        await this.store.save();
-        return;
-      }
-
-      throw new Error("Store not available");
-    } catch (error) {
-      console.error(
-        "Failed to delete token from secure storage: ${key}",
-        `Failed to delete token from secure storage: ${key}`,
-        error instanceof Error ? error : new Error(String(error))
-      );
-
-      // Remove from fallback if it exists
-      localStorage.removeItem(secureKey + "_fallback");
-    }
-  }
-
-  /**
-   * Clear all stored tokens
-   */
-  public async clearTokens(): Promise<void> {
-    try {
-      // Make sure store is initialized
-      if (!this.storeInitialized) {
-        await this.initStore();
-      }
-
-      if (this.IS_DEVELOPMENT && !this.store) {
-        // In development without store, clear localStorage keys with our prefix
-        Object.keys(localStorage).forEach((key) => {
-          if (key.startsWith(this.PREFIX)) {
-            localStorage.removeItem(key);
-          }
-        });
-        return;
-      }
-
-      if (this.store) {
-        // Use Tauri's plugin-store - clear and save
-        await this.store.clear();
-        await this.store.save();
-        return;
-      }
-
-      throw new Error("Store not available");
-    } catch (error) {
-      console.error(
-        "Failed to clear secure storage",
-        "Failed to clear secure storage",
-        error instanceof Error ? error : new Error(String(error))
-      );
-
-      // Clear fallback storage
-      Object.keys(localStorage).forEach((key) => {
-        if (key.includes("_fallback")) {
-          localStorage.removeItem(key);
-        }
-      });
-    }
-  }
-
-  /**
-   * Fallback method to store tokens when secure storage is unavailable
-   * Uses a simple encryption mechanism with a device-specific key
-   * @private
-   */
-  private storeTokenWithFallback(key: string, token: string): void {
-    // This is not truly secure, but better than plaintext
-    // In a real app, you would use a proper encryption library
-    try {
-      // Simple obfuscation with XOR using a device fingerprint
-      const deviceKey = this.getDeviceKey();
-      const encoded = this.xorEncrypt(token, deviceKey);
-      localStorage.setItem(key + "_fallback", encoded);
-    } catch (error) {
-      console.error(
-        "Failed to store token with fallback method",
-        "Failed to store token with fallback method",
-        error instanceof Error ? error : new Error(String(error))
-      );
-    }
-  }
-
-  /**
-   * Fallback method to retrieve tokens when secure storage is unavailable
-   * @private
-   */
-  private getTokenWithFallback(key: string): string | null {
-    try {
-      const encoded = getLocalStorage(key + "_fallback");
-      if (!encoded) return null;
-
-      const deviceKey = this.getDeviceKey();
-      return this.xorEncrypt(encoded, deviceKey);
-    } catch (error) {
-      console.error(
-        "Failed to retrieve token with fallback method",
-        "Failed to retrieve token with fallback method",
+        `Failed to retrieve token: ${type}_${key}`,
         error instanceof Error ? error : new Error(String(error))
       );
       return null;
@@ -275,43 +180,90 @@ class TauriSecureStorage implements SecureTokenStorage {
   }
 
   /**
-   * Get a semi-stable device key based on available browser information
-   * @private
+   * Delete a token from secure storage
    */
-  private getDeviceKey(): string {
-    // This is just a basic implementation
-    // A real implementation would use more robust device fingerprinting
-    const userAgent = navigator.userAgent;
-    const language = navigator.language;
-    const screenData = `${screen.width}x${screen.height}x${screen.colorDepth}`;
+  public async deleteToken(key: string, type: TokenType): Promise<void> {
+    try {
+      const client = await this.getClient(type);
+      const store = client.getStore();
 
-    // Create a simple hash of device data
-    let hash = 0;
-    const combinedString = `${userAgent}|${language}|${screenData}`;
-    for (let i = 0; i < combinedString.length; i++) {
-      const char = combinedString.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32bit integer
+      await store.remove(key);
+
+      // Save the stronghold after removing
+      if (this.stronghold) {
+        await this.stronghold.save();
+        console.info(`Token deleted successfully: ${type}_${key}`);
+      }
+    } catch (error) {
+      console.error(
+        `Failed to delete token: ${type}_${key}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
+      throw new Error(`Failed to delete token: ${key}`);
     }
-
-    return hash.toString(36);
   }
 
   /**
-   * Simple XOR encryption/decryption
-   * @private
+   * Clear all stored tokens of a specific type
    */
-  private xorEncrypt(text: string, key: string): string {
-    let result = "";
+  public async clearTokens(type: ClearTokenType): Promise<void> {
+    try {
+      if (type === "all") {
+        // Clear both POS and user tokens
+        await this.clearClientTokens(TokenType.POS);
+        await this.clearClientTokens(TokenType.USER);
+      } else {
+        await this.clearClientTokens(type);
+      }
 
-    for (let i = 0; i < text.length; i++) {
-      const charCode = text.charCodeAt(i) ^ key.charCodeAt(i % key.length);
-      result += String.fromCharCode(charCode);
+      console.info(`Cleared tokens for type: ${type}`);
+    } catch (error) {
+      console.error(
+        `Failed to clear tokens for type: ${type}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
+      throw new Error(`Failed to clear tokens: ${type}`);
     }
+  }
 
-    return btoa(result); // base64 encode
+  /**
+   * Clear all tokens for a specific client
+   */
+  private async clearClientTokens(type: TokenType): Promise<void> {
+    try {
+      const client = await this.getClient(type);
+      const store = client.getStore();
+
+      // Stronghold doesn't have a clear all method, so we need to remove keys individually
+      // We'll maintain a list of known keys
+      const keysToRemove = [
+        "accessToken",
+        "refreshToken",
+        "deviceInfo",
+        "pairingData",
+      ];
+
+      for (const key of keysToRemove) {
+        try {
+          await store.remove(key);
+        } catch {
+          // Ignore errors for keys that don't exist
+        }
+      }
+
+      // Save the stronghold after clearing
+      if (this.stronghold) {
+        await this.stronghold.save();
+      }
+    } catch (error) {
+      console.error(
+        `Failed to clear client tokens for type: ${type}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
+      throw error;
+    }
   }
 }
 
 // Export singleton instance
-export const secureStorage = new TauriSecureStorage();
+export const secureStorage = new TauriStrongholdStorage();
