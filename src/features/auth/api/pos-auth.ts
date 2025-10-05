@@ -1,10 +1,6 @@
 import { z } from "zod";
 import httpClient, { ApiResponse, endpoints } from "../../../api";
-import {
-  PairPosRequest,
-  PosAuthResponse,
-  PosRefreshTokenResponse,
-} from "../../../types/pos-auth.types";
+import { PairPosRequest, PosAuthResponse } from "../../../types/pos-auth.types";
 import { secureStorage, TokenType } from "../services/secure-storage";
 
 /**
@@ -94,56 +90,10 @@ export const unpairPosDevice = async (): Promise<void> => {
 };
 
 /**
- * Refresh POS access token using refresh token
+ * Note: POS token refresh is now handled internally by httpClient
+ * to avoid circular dependencies. This keeps the auth API focused
+ * on pairing/unpairing operations.
  */
-export const refreshPosToken = async (): Promise<string | null> => {
-  try {
-    const refreshToken = await secureStorage.getToken(
-      "refreshToken",
-      TokenType.POS
-    );
-
-    if (!refreshToken) {
-      throw new Error("No POS refresh token found");
-    }
-
-    const response = await httpClient.post<PosRefreshTokenResponse>(
-      endpoints.pos.refreshToken,
-      {
-        refreshToken,
-      }
-    );
-
-    if (response.success && response.data) {
-      // Store new access token
-      await secureStorage.storeToken(
-        "accessToken",
-        response.data.accessToken,
-        TokenType.POS
-      );
-
-      console.info("POS token refreshed successfully");
-      return response.data.accessToken;
-    }
-
-    return null;
-  } catch (error) {
-    console.error("Failed to refresh POS token", error);
-
-    // If refresh fails with auth error, auto-unpair
-    if (error && typeof error === "object" && "status" in error) {
-      const status = (error as { status?: number }).status;
-      if (status === 401 || status === 403) {
-        console.warn(
-          "POS token refresh failed with auth error, auto-unpairing device"
-        );
-        await unpairPosDevice();
-      }
-    }
-
-    throw error;
-  }
-};
 
 /**
  * Get POS access token from secure storage

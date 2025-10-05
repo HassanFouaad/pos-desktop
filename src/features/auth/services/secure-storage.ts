@@ -61,64 +61,94 @@ class TauriStrongholdStorage implements SecureTokenStorage {
   private stronghold: Stronghold | null = null;
   private client: Client | null = null;
   private strongholdInitialized = false;
+  private initializationPromise: Promise<void> | null = null;
   private readonly VAULT_PASSWORD = config.VAULT_PASSWORD;
   private readonly VAULT_FILENAME = config.VAULT_FILENAME;
   private readonly CLIENT_NAME = config.AUTH_CLIENT_NAME;
+  private pendingSave = false;
+  private saveTimeout: NodeJS.Timeout | null = null;
 
   /**
-   * Initialize the Stronghold vault
+   * Initialize the Stronghold vault (optimized with caching and debouncing)
    */
   private async initStronghold(): Promise<void> {
-    if (this.strongholdInitialized && this.stronghold) {
+    // If already initialized, return immediately
+    if (this.strongholdInitialized && this.stronghold && this.client) {
       return;
     }
 
-    try {
-      const appData = await appDataDir();
-      // Normalize path separator (appDataDir may or may not end with separator)
-      const separator =
-        appData.endsWith("/") || appData.endsWith("\\") ? "" : "/";
-      const vaultPath = `${appData}${separator}${this.VAULT_FILENAME}`;
-      console.info("Initializing Stronghold vault at:", vaultPath);
-
-      // Create a fresh stronghold
-      this.stronghold = await Stronghold.load(vaultPath, this.VAULT_PASSWORD);
-      this.strongholdInitialized = true;
-      console.info("Stronghold vault loaded successfully");
-    } catch (error) {
-      console.error("Failed to initialize Stronghold vault:", error);
-      throw error;
+    // If initialization is in progress, wait for it
+    if (this.initializationPromise) {
+      return this.initializationPromise;
     }
+
+    // Start initialization
+    this.initializationPromise = (async () => {
+      try {
+        const appData = await appDataDir();
+        // Normalize path separator
+        const separator =
+          appData.endsWith("/") || appData.endsWith("\\") ? "" : "/";
+        const vaultPath = `${appData}${separator}${this.VAULT_FILENAME}`;
+
+        // Load stronghold
+        this.stronghold = await Stronghold.load(vaultPath, this.VAULT_PASSWORD);
+
+        // Load or create client immediately
+        try {
+          this.client = await this.stronghold.loadClient(this.CLIENT_NAME);
+        } catch {
+          this.client = await this.stronghold.createClient(this.CLIENT_NAME);
+        }
+
+        this.strongholdInitialized = true;
+        console.info("Stronghold vault initialized successfully");
+      } catch (error) {
+        console.error("Failed to initialize Stronghold vault:", error);
+        this.initializationPromise = null;
+        throw error;
+      }
+    })();
+
+    return this.initializationPromise;
   }
 
   /**
-   * Get or create the Stronghold client
-   * Uses a single client for all token types with key prefixes
+   * Get the Stronghold client (with optimized initialization)
    */
   private async getClient(): Promise<Client> {
-    // Return cached client if available
-    if (this.client) {
-      return this.client;
-    }
+    // Ensure stronghold is initialized
+    await this.initStronghold();
 
-    // Initialize stronghold if needed
-    if (!this.stronghold) {
-      await this.initStronghold();
-    }
-
-    if (!this.stronghold) {
-      throw new Error("Stronghold not initialized");
-    }
-
-    try {
-      // Try to load existing client
-      this.client = await this.stronghold.loadClient(this.CLIENT_NAME);
-    } catch {
-      // Client doesn't exist, create it
-      this.client = await this.stronghold.createClient(this.CLIENT_NAME);
+    if (!this.client) {
+      throw new Error("Stronghold client not initialized");
     }
 
     return this.client;
+  }
+
+  /**
+   * Debounced save to avoid frequent disk writes
+   */
+  private async debouncedSave(): Promise<void> {
+    this.pendingSave = true;
+
+    // Clear existing timeout
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+
+    // Set new timeout
+    this.saveTimeout = setTimeout(async () => {
+      if (this.pendingSave && this.stronghold) {
+        try {
+          await this.stronghold.save();
+          this.pendingSave = false;
+        } catch (error) {
+          console.error("Failed to save stronghold:", error);
+        }
+      }
+    }, 100); // Debounce by 100ms
   }
 
   /**
@@ -129,7 +159,7 @@ class TauriStrongholdStorage implements SecureTokenStorage {
   }
 
   /**
-   * Store a token securely using Stronghold
+   * Store a token securely using Stronghold (optimized with debounced save)
    */
   public async storeToken(
     key: string,
@@ -151,11 +181,8 @@ class TauriStrongholdStorage implements SecureTokenStorage {
 
       await store.insert(storageKey, data);
 
-      // Save the stronghold after inserting
-      if (this.stronghold) {
-        await this.stronghold.save();
-        console.info(`Token stored successfully: ${storageKey}`);
-      }
+      // Use debounced save instead of immediate save
+      await this.debouncedSave();
     } catch (error) {
       console.error(
         `Failed to store token: ${type}_${key}`,
@@ -193,7 +220,7 @@ class TauriStrongholdStorage implements SecureTokenStorage {
   }
 
   /**
-   * Delete a token from secure storage
+   * Delete a token from secure storage (optimized with debounced save)
    */
   public async deleteToken(key: string, type: TokenType): Promise<void> {
     try {
@@ -203,11 +230,8 @@ class TauriStrongholdStorage implements SecureTokenStorage {
 
       await store.remove(storageKey);
 
-      // Save the stronghold after removing
-      if (this.stronghold) {
-        await this.stronghold.save();
-        console.info(`Token deleted successfully: ${storageKey}`);
-      }
+      // Use debounced save instead of immediate save
+      await this.debouncedSave();
     } catch (error) {
       console.error(
         `Failed to delete token: ${type}_${key}`,
@@ -218,7 +242,7 @@ class TauriStrongholdStorage implements SecureTokenStorage {
   }
 
   /**
-   * Clear all stored tokens of a specific type
+   * Clear all stored tokens of a specific type (optimized with debounced save)
    */
   public async clearTokens(type: ClearTokenType): Promise<void> {
     try {
@@ -258,10 +282,8 @@ class TauriStrongholdStorage implements SecureTokenStorage {
         }
       }
 
-      // Save the stronghold after clearing
-      if (this.stronghold) {
-        await this.stronghold.save();
-      }
+      // Use debounced save instead of immediate save
+      await this.debouncedSave();
 
       console.info(`Cleared tokens for type: ${type}`);
     } catch (error) {

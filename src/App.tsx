@@ -1,4 +1,4 @@
-import { Grid } from "@mui/material";
+import { Grid, Typography } from "@mui/material";
 import { useEffect } from "react";
 import {
   Route,
@@ -18,7 +18,7 @@ import CustomersPage from "./features/customers/pages";
 import ProductsPage from "./features/products/pages";
 import { initAuth } from "./store/authSlice";
 import { checkPairingStatus } from "./store/globalSlice";
-import { useAppDispatch } from "./store/hooks";
+import { useAppDispatch, useAppSelector } from "./store/hooks";
 // Dashboard wrapper with navigation
 const DashboardWithNav = () => {
   const navigate = useNavigate();
@@ -44,20 +44,49 @@ const ModulePlaceholder = ({ title }: ModulePlaceholderProps) => (
 // Main POS App
 function App() {
   const dispatch = useAppDispatch();
+  const { isPaired, pairingCheckComplete } = useAppSelector(
+    (state) => state.global.pairing
+  );
+  const { initialized } = useAppSelector((state) => state.auth);
 
+  // Step 1: Check pairing status on mount
   useEffect(() => {
-    // Check pairing status first, then init auth
     dispatch(checkPairingStatus());
-    dispatch(initAuth());
   }, [dispatch]);
+
+  // Step 2: Only initialize auth if device is paired
+  useEffect(() => {
+    if (pairingCheckComplete && isPaired && !initialized) {
+      dispatch(initAuth());
+    }
+  }, [pairingCheckComplete, isPaired, initialized, dispatch]);
+
+  // Show loading screen while checking pairing status
+  if (!pairingCheckComplete) {
+    return (
+      <Grid
+        container
+        justifyContent="center"
+        alignItems="center"
+        sx={{ height: "100vh", width: "100vw" }}
+      >
+        <Grid sx={{ textAlign: "center" }}>
+          <Typography variant="h4">Loading...</Typography>
+        </Grid>
+      </Grid>
+    );
+  }
 
   return (
     <Router>
       <Routes>
-        {/* Public routes - no authentication required */}
+        {/* Pairing route - accessible even if not paired */}
         <Route path="/pair" element={<PairDevicePage />} />
+
+        {/* Pre-login route - only accessible if paired but not authenticated */}
         <Route path="/pre-login" element={<PreLoginPage />} />
 
+        {/* Login route - wrapped in PublicRoute for proper navigation */}
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
         </Route>

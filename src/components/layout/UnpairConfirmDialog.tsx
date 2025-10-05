@@ -1,10 +1,10 @@
 import { Warning as WarningIcon } from "@mui/icons-material";
 import {
-  Box,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Grid,
   Typography,
 } from "@mui/material";
 import { useState } from "react";
@@ -77,24 +77,22 @@ export const UnpairConfirmDialog = ({
       }}
     >
       <DialogTitle sx={{ textAlign: "center", pt: 3 }}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 2,
-          }}
-        >
-          <WarningIcon
-            sx={{
-              fontSize: 80,
-              color: "error.main",
-            }}
-          />
-          <Typography variant="h4" component="div" fontWeight="bold">
-            Unpair Device?
-          </Typography>
-        </Box>
+        <Grid container direction="column" alignItems="center" spacing={2}>
+          <Grid>
+            <WarningIcon
+              sx={{
+                fontSize: 80,
+                color: "error.main",
+                filter: "drop-shadow(0px 4px 12px rgba(255, 61, 113, 0.3))",
+              }}
+            />
+          </Grid>
+          <Grid>
+            <Typography variant="h4" component="div" fontWeight="bold">
+              Unpair Device?
+            </Typography>
+          </Grid>
+        </Grid>
       </DialogTitle>
 
       <DialogContent sx={{ px: 4, py: 3 }}>
@@ -107,17 +105,16 @@ export const UnpairConfirmDialog = ({
           This action will disconnect your device from the POS system.
         </Typography>
 
-        <Box
+        <Grid
           sx={{
             mt: 3,
             p: 2,
-            backgroundColor: "error.light",
+            backgroundColor: (theme) => `${theme.palette.error.main}15`,
             borderRadius: 2,
-            border: "1px solid",
-            borderColor: "error.main",
+            border: (theme) => `1px solid ${theme.palette.error.main}`,
           }}
         >
-          <Typography variant="body1" color="error.dark" fontWeight="medium">
+          <Typography variant="body1" color="error.main" fontWeight="medium">
             ⚠️ Warning:
           </Typography>
           <Typography
@@ -130,21 +127,21 @@ export const UnpairConfirmDialog = ({
             • Offline functionality will be disabled until re-paired
             <br />• Any unsaved data may be lost
           </Typography>
-        </Box>
+        </Grid>
 
         {error && (
-          <Box
+          <Grid
             sx={{
               mt: 2,
               p: 2,
-              backgroundColor: "error.lighter",
+              backgroundColor: (theme) => `${theme.palette.error.main}10`,
               borderRadius: 2,
             }}
           >
             <Typography variant="body2" color="error">
               {error}
             </Typography>
-          </Box>
+          </Grid>
         )}
       </DialogContent>
 
@@ -155,7 +152,7 @@ export const UnpairConfirmDialog = ({
           fullWidth
           onClick={handleCancel}
           disabled={loading}
-          sx={{ py: 2, fontSize: "1.1rem" }}
+          sx={{ py: 2, fontSize: "1.1rem", borderWidth: 2 }}
         >
           Cancel
         </TouchButton>

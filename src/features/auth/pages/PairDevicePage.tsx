@@ -1,8 +1,14 @@
-import { Alert, Box, Container, Paper, Typography } from "@mui/material";
+import {
+  Alert,
+  CircularProgress,
+  Container,
+  Grid,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TouchButton } from "../../../components/common/TouchButton";
-import { TouchKeyboard } from "../../../components/common/TouchKeyboard";
 import { setPairingData } from "../../../store/globalSlice";
 import { useAppDispatch } from "../../../store/hooks";
 import { pairPosDevice, pairPosSchema } from "../api/pos-auth";
@@ -14,12 +20,11 @@ export const PairDevicePage = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  // Handle OTP input from keyboard
-  const handleKeyPress = (value: string) => {
-    // Only allow digits and limit to 6 characters
-    const digitsOnly = value.replace(/\D/g, "").slice(0, 6);
-    setOtp(digitsOnly);
-    setError(""); // Clear error on input
+  // Handle OTP input change
+  const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setOtp(value);
+    setError("");
   };
 
   // Handle pairing
@@ -61,7 +66,7 @@ export const PairDevicePage = () => {
           })
         );
 
-        // Navigate to pre-login page (or login page)
+        // Navigate to pre-login page
         navigate("/pre-login");
       }
     } catch (err) {
@@ -76,8 +81,9 @@ export const PairDevicePage = () => {
     }
   };
 
-  // Handle enter key from keyboard
-  const handleEnter = () => {
+  // Handle form submit
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (otp.length === 6 && !loading) {
       handlePair();
     }
@@ -85,117 +91,122 @@ export const PairDevicePage = () => {
 
   return (
     <Container
-      maxWidth="md"
+      maxWidth="sm"
       sx={{
         height: "100vh",
         display: "flex",
-        flexDirection: "column",
+        alignItems: "center",
         justifyContent: "center",
-        py: 4,
       }}
     >
-      <Box sx={{ mb: 4, textAlign: "center" }}>
-        <Typography variant="h3" component="h1" gutterBottom fontWeight="bold">
-          Pair Your Device
-        </Typography>
-        <Typography variant="h6" color="text.secondary">
-          Enter the 6-digit pairing code from your admin panel
-        </Typography>
-      </Box>
+      <Grid container spacing={4}>
+        {/* Header Section */}
+        <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>
+          <Typography
+            variant="h3"
+            component="h1"
+            gutterBottom
+            fontWeight="bold"
+            sx={{
+              background: (theme) =>
+                `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            Pair Your Device
+          </Typography>
+          <Typography variant="h6" color="text.secondary">
+            Enter the 6-digit code from your admin panel
+          </Typography>
+        </Grid>
 
-      {/* OTP Display */}
-      <Paper
-        elevation={3}
-        sx={{
-          mb: 3,
-          p: 4,
-          textAlign: "center",
-          backgroundColor: "background.default",
-          borderRadius: 3,
-        }}
-      >
-        <Typography
-          variant="h2"
-          component="div"
-          fontFamily="monospace"
-          letterSpacing={8}
-          sx={{
-            minHeight: "80px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: { xs: "3rem", sm: "4rem" },
-          }}
-        >
-          {otp || "------"}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          {otp.length}/6 digits entered
-        </Typography>
-      </Paper>
+        {/* OTP Input Section */}
+        <Grid size={{ xs: 12 }}>
+          <Grid component="form" onSubmit={handleSubmit} container spacing={3}>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                fullWidth
+                value={otp}
+                onChange={handleOtpChange}
+                placeholder="000000"
+                autoFocus
+                inputProps={{
+                  maxLength: 6,
+                  inputMode: "numeric",
+                  pattern: "[0-9]*",
+                  style: {
+                    fontSize: "2.5rem",
+                    textAlign: "center",
+                    letterSpacing: "0.5em",
+                    fontFamily: "monospace",
+                    fontWeight: "bold",
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 3,
+                    backgroundColor: "background.default",
+                  },
+                }}
+              />
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 1, textAlign: "center" }}
+              >
+                {otp.length}/6 digits entered
+              </Typography>
+            </Grid>
 
-      {/* Error Display */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 3, fontSize: "1.1rem" }}>
-          {error}
-        </Alert>
-      )}
+            {/* Error Display */}
+            {error && (
+              <Grid size={{ xs: 12 }}>
+                <Alert severity="error" sx={{ borderRadius: 2 }}>
+                  {error}
+                </Alert>
+              </Grid>
+            )}
 
-      {/* Numeric Keyboard */}
-      <Box sx={{ mb: 3 }}>
-        <NumericKeyboard
-          value={otp}
-          onValueChange={handleKeyPress}
-          onEnter={handleEnter}
-        />
-      </Box>
+            {/* Pair Button */}
+            <Grid size={{ xs: 12 }}>
+              <TouchButton
+                type="submit"
+                size="large"
+                variant="contained"
+                color="primary"
+                fullWidth
+                disabled={otp.length !== 6 || loading}
+                sx={{
+                  py: 3,
+                  fontSize: "1.25rem",
+                  background: (theme) =>
+                    otp.length === 6
+                      ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`
+                      : undefined,
+                }}
+              >
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Pair Device"
+                )}
+              </TouchButton>
+            </Grid>
+          </Grid>
+        </Grid>
 
-      {/* Pair Button */}
-      <TouchButton
-        size="large"
-        variant="contained"
-        color="primary"
-        fullWidth
-        disabled={otp.length !== 6 || loading}
-        onClick={handlePair}
-        sx={{
-          py: 3,
-          fontSize: "1.5rem",
-        }}
-      >
-        {loading ? "Pairing..." : "Pair Device"}
-      </TouchButton>
+        {/* Help Text */}
+        <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            Don't have a pairing code?
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Contact your administrator to generate one
+          </Typography>
+        </Grid>
+      </Grid>
     </Container>
-  );
-};
-
-/**
- * Numeric keyboard component specifically for OTP entry
- */
-interface NumericKeyboardProps {
-  value: string;
-  onValueChange: (value: string) => void;
-  onEnter: () => void;
-}
-
-const NumericKeyboard = ({
-  value,
-  onValueChange,
-  onEnter,
-}: NumericKeyboardProps) => {
-  const [internalValue, setInternalValue] = useState(value);
-
-  return (
-    <TouchKeyboard
-      initialValue={internalValue}
-      onKeyPress={(newValue) => {
-        // Filter to only digits and limit to 6
-        const digitsOnly = newValue.replace(/\D/g, "").slice(0, 6);
-        setInternalValue(digitsOnly);
-        onValueChange(digitsOnly);
-      }}
-      onEnter={onEnter}
-      mode="text"
-    />
   );
 };

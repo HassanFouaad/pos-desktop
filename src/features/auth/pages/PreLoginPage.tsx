@@ -3,7 +3,7 @@ import {
   Store as StoreIcon,
   LinkOff as UnpairIcon,
 } from "@mui/icons-material";
-import { Box, Container, Paper, Typography } from "@mui/material";
+import { Container, Grid, Typography } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TouchButton } from "../../../components/common/TouchButton";
@@ -34,104 +34,142 @@ export const PreLoginPage = () => {
 
   return (
     <Container
-      maxWidth="md"
+      maxWidth="sm"
       sx={{
         height: "100vh",
         display: "flex",
-        flexDirection: "column",
+        alignItems: "center",
         justifyContent: "center",
-        py: 4,
       }}
     >
-      <Box sx={{ mb: 6, textAlign: "center" }}>
-        <StoreIcon sx={{ fontSize: 80, color: "primary.main", mb: 2 }} />
-        <Typography variant="h3" component="h1" gutterBottom fontWeight="bold">
-          Device Paired
-        </Typography>
-        <Typography variant="h6" color="text.secondary" gutterBottom>
-          {pairing.storeName || "Store"}
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          {pairing.tenantName || "Tenant"}
-        </Typography>
-      </Box>
+      <Grid container spacing={4}>
+        {/* Header Section */}
+        <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>
+          <StoreIcon
+            sx={{
+              fontSize: 100,
+              color: "primary.main",
+              mb: 2,
+              filter: "drop-shadow(0px 4px 12px rgba(0, 98, 255, 0.3))",
+            }}
+          />
+          <Typography
+            variant="h3"
+            component="h1"
+            gutterBottom
+            fontWeight="bold"
+            sx={{
+              background: (theme) =>
+                `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            Device Paired
+          </Typography>
+          <Typography variant="h5" color="text.primary" gutterBottom>
+            {pairing.storeName || "Store"}
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            {pairing.tenantName || "Tenant"}
+          </Typography>
+        </Grid>
 
-      {/* Device Information Card */}
-      <Paper
-        elevation={2}
-        sx={{
-          mb: 4,
-          p: 3,
-          backgroundColor: "background.default",
-          borderRadius: 3,
-        }}
-      >
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Device Name
-        </Typography>
-        <Typography variant="h6" gutterBottom>
-          {pairing.posDeviceName || "Unknown Device"}
-        </Typography>
+        {/* Device Information Section */}
+        <Grid
+          size={{ xs: 12 }}
+          sx={{
+            p: 3,
+            backgroundColor: "background.default",
+            borderRadius: 3,
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12 }}>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
+                Device Name
+              </Typography>
+              <Typography variant="h6" fontWeight="medium">
+                {pairing.posDeviceName || "Unknown Device"}
+              </Typography>
+            </Grid>
 
-        {pairing.lastPairedAt && (
-          <>
-            <Typography
-              variant="subtitle2"
-              color="text.secondary"
-              gutterBottom
-              sx={{ mt: 2 }}
+            {pairing.lastPairedAt && (
+              <Grid size={{ xs: 12 }}>
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  Paired On
+                </Typography>
+                <Typography variant="body1">
+                  {new Date(pairing.lastPairedAt).toLocaleString()}
+                </Typography>
+              </Grid>
+            )}
+          </Grid>
+        </Grid>
+
+        {/* Action Buttons */}
+        <Grid size={{ xs: 12 }} container spacing={2}>
+          <Grid size={{ xs: 12 }}>
+            <TouchButton
+              size="large"
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={handleLogin}
+              startIcon={<LoginIcon />}
+              sx={{
+                py: 3,
+                fontSize: "1.25rem",
+                background: (theme) =>
+                  `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+              }}
             >
-              Paired On
-            </Typography>
-            <Typography variant="body1">
-              {new Date(pairing.lastPairedAt).toLocaleString()}
-            </Typography>
-          </>
-        )}
-      </Paper>
+              Login as User
+            </TouchButton>
+          </Grid>
 
-      {/* Action Buttons */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        <TouchButton
-          size="large"
-          variant="contained"
-          color="primary"
-          fullWidth
-          onClick={handleLogin}
-          startIcon={<LoginIcon />}
-          sx={{
-            py: 3,
-            fontSize: "1.5rem",
-          }}
-        >
-          Login as User
-        </TouchButton>
+          <Grid size={{ xs: 12 }}>
+            <TouchButton
+              size="large"
+              variant="outlined"
+              color="error"
+              fullWidth
+              onClick={handleUnpairClick}
+              startIcon={<UnpairIcon />}
+              sx={{
+                py: 3,
+                fontSize: "1.1rem",
+                borderWidth: 2,
+                "&:hover": {
+                  borderWidth: 2,
+                },
+              }}
+            >
+              Unpair Device
+            </TouchButton>
+          </Grid>
+        </Grid>
 
-        <TouchButton
-          size="large"
-          variant="outlined"
-          color="error"
-          fullWidth
-          onClick={handleUnpairClick}
-          startIcon={<UnpairIcon />}
-          sx={{
-            py: 3,
-            fontSize: "1.25rem",
-          }}
-        >
-          Unpair Device
-        </TouchButton>
-      </Box>
-
-      {/* Help Text */}
-      <Box sx={{ mt: 4, textAlign: "center" }}>
-        <Typography variant="body2" color="text.secondary">
-          Login to start using the POS system
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Unpairing will disconnect this device and require re-pairing
-        </Typography>
-      </Box>
+        {/* Help Text */}
+        <Grid size={{ xs: 12 }} sx={{ textAlign: "center", mt: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            Login to start using the POS system
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Unpairing will disconnect this device and require re-pairing
+          </Typography>
+        </Grid>
+      </Grid>
 
       {/* Unpair Confirmation Dialog */}
       <UnpairConfirmDialog

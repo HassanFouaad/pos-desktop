@@ -10,8 +10,14 @@ export const ProtectedRoute = () => {
     (state) => state.global.pairing
   );
 
+  console.log({
+    isAuthenticated,
+    initialized,
+    isPaired,
+    pairingCheckComplete,
+  });
   // Wait for both auth and pairing checks to complete
-  if (!initialized || !pairingCheckComplete) return null;
+  if (!initialized && !pairingCheckComplete) return null;
 
   // If device is not paired, redirect to pairing page
   if (!isPaired) {

@@ -42,7 +42,7 @@ export const login = async (
  * Logout current user
  */
 export const logout = async (): Promise<void> => {
-  await httpClient.post(endpoints.auth.logout);
+  await httpClient.post<void>(endpoints.auth.logout);
 };
 
 /**
@@ -51,9 +51,12 @@ export const logout = async (): Promise<void> => {
 export const refreshTokenApi = async (
   refreshToken: string
 ): Promise<ApiResponse<Pick<AuthResponse, "accessToken">>> => {
-  return httpClient.post(endpoints.auth.refreshToken, {
-    refreshToken,
-  });
+  return httpClient.post<Pick<AuthResponse, "accessToken">>(
+    endpoints.auth.refreshToken,
+    {
+      refreshToken,
+    }
+  );
 };
 
 /**
@@ -63,7 +66,7 @@ export const changePassword = async (
   currentPassword: string,
   newPassword: string
 ): Promise<ApiResponse<void>> => {
-  const response = await httpClient.post(endpoints.auth.changePassword, {
+  const response = await httpClient.post<void>(endpoints.auth.changePassword, {
     currentPassword,
     newPassword,
   });
@@ -75,6 +78,6 @@ export const changePassword = async (
  * Get me
  */
 export const getMe = async (): Promise<ApiResponse<AuthResponse>> => {
-  const response = await httpClient.get(endpoints.auth.me);
+  const response = await httpClient.get<AuthResponse>(endpoints.auth.me);
   return response;
 };

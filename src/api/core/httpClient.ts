@@ -1,5 +1,4 @@
 import { fetch } from "@tauri-apps/plugin-http";
-import { refreshPosToken } from "../../features/auth/api/pos-auth";
 import {
   secureStorage,
   TokenType,
@@ -93,6 +92,7 @@ class TauriHttpClient {
 
   /**
    * Refresh user access token using refresh token
+   * If refresh fails with 401, clears user tokens
    */
   private async refreshUserToken(): Promise<string | null> {
     if (this.isRefreshing) {
@@ -147,11 +147,86 @@ class TauriHttpClient {
 
       return null;
     } catch (error: any) {
-      if (error?.message !== "Unauthorized") {
-        return null;
+      if (error?.message === "Unauthorized") {
+        // Clear user tokens on auth failure
+        console.warn("User refresh token expired, clearing user tokens");
+        await secureStorage.clearTokens(TokenType.USER);
+        throw error;
       }
 
-      throw error;
+      return null;
+    } finally {
+      this.isRefreshing = false;
+      this.refreshPromise = null;
+    }
+  }
+
+  /**
+   * Refresh POS access token using refresh token
+   * If refresh fails with 401, clears POS tokens
+   */
+  private async refreshPosToken(): Promise<string | null> {
+    if (this.isRefreshing) {
+      // If already refreshing, return the existing promise
+      return this.refreshPromise;
+    }
+
+    this.isRefreshing = true;
+
+    try {
+      const refreshToken = await secureStorage.getToken(
+        "refreshToken",
+        TokenType.POS
+      );
+
+      if (!refreshToken) {
+        throw new Error("Unauthorized");
+      }
+
+      const response = await fetch(
+        `${this.baseUrl}${endpoints.pos.refreshToken}`,
+        {
+          method: "POST",
+          body: JSON.stringify({ refreshToken }),
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const responseData = await response.json();
+
+        const newAccessToken = responseData.data.accessToken;
+
+        // Store the new POS access token
+        await secureStorage.storeToken(
+          "accessToken",
+          newAccessToken,
+          TokenType.POS
+        );
+
+        console.info("POS token refreshed successfully");
+        return newAccessToken;
+      }
+
+      const responseData = await response.json();
+
+      if (response.status === 401 || responseData?.error?.code === "ERR_401") {
+        throw new Error("Unauthorized");
+      }
+
+      return null;
+    } catch (error: any) {
+      if (error?.message === "Unauthorized") {
+        // Clear POS tokens on auth failure
+        console.warn("POS refresh token expired, clearing POS tokens");
+        await secureStorage.clearTokens(TokenType.POS);
+        throw error;
+      }
+
+      return null;
     } finally {
       this.isRefreshing = false;
       this.refreshPromise = null;
@@ -195,7 +270,8 @@ class TauriHttpClient {
             // Refresh user token
             newToken = await this.refreshUserToken();
           } else {
-            newToken = await refreshPosToken();
+            // Refresh POS token
+            newToken = await this.refreshPosToken();
           }
 
           if (newToken) {
