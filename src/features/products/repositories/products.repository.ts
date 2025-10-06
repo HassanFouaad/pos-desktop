@@ -1,4 +1,4 @@
-import { and, eq, ilike, or } from "drizzle-orm";
+import { and, eq, like, or } from "drizzle-orm";
 import { drizzleDb } from "../../../db";
 import {
   categories,
@@ -21,7 +21,7 @@ export class ProductsRepository {
     const query = this.db.select().from(categories);
 
     if (searchTerm) {
-      query.where(ilike(categories.name, `%${searchTerm}%`));
+      query.where(like(categories.name, `%${searchTerm}%`));
     }
 
     return query.execute();
@@ -75,9 +75,9 @@ export class ProductsRepository {
           eq(products.categoryId, categoryId),
           searchTerm
             ? or(
-                ilike(productVariants.name, `%${searchTerm}%`),
-                ilike(productVariants.sku, `%${searchTerm}%`),
-                ilike(products.name, `%${searchTerm}%`)
+                like(productVariants.name, `%${searchTerm}%`),
+                like(productVariants.sku, `%${searchTerm}%`),
+                like(products.name, `%${searchTerm}%`)
               )
             : undefined
         )

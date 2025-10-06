@@ -1,4 +1,4 @@
-import { desc, ilike, or } from "drizzle-orm";
+import { desc, like, or } from "drizzle-orm";
 import { v4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { customers } from "../../../db/schemas";
@@ -27,8 +27,8 @@ export class CustomersRepository {
     if (searchTerm) {
       query.where(
         or(
-          ilike(customers.name, `%${searchTerm}%`),
-          ilike(customers.phone, `%${searchTerm}%`)
+          like(customers.name, `%${searchTerm}%`),
+          like(customers.phone, `%${searchTerm}%`)
         )
       );
     }

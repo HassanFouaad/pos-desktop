@@ -1,6 +1,3 @@
-export { PageLayout } from "./PageLayout";
-export type { PageLayoutProps } from "./PageLayout";
-
 export { CenteredPageLayout } from "./CenteredPageLayout";
 export type { CenteredPageLayoutProps } from "./CenteredPageLayout";
 

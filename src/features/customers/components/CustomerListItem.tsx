@@ -6,7 +6,14 @@ import {
   Stars,
   TrendingUp,
 } from "@mui/icons-material";
-import { Box, Grid, Paper, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  Card,
+  CardActionArea,
+  Grid,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import dayjs from "dayjs";
 import { formatCurrency } from "../../products/utils/pricing";
 import { CustomerDTO } from "../types/customer.dto";
@@ -25,22 +32,22 @@ const DetailItem = ({
   label: string;
   value: string | number | null | undefined;
 }) => (
-  <Tooltip title={`${label}: ${value}`}>
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        mr: 2,
-        flexShrink: 0,
-        color: "text.secondary",
-      }}
-    >
-      {icon}
-      <Typography variant="body2" sx={{ ml: 0.5, fontWeight: 500 }}>
-        {value || "N/A"}
-      </Typography>
-    </Box>
-  </Tooltip>
+  <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
+    <Tooltip title={label}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          color: "text.secondary",
+        }}
+      >
+        {icon}
+        <Typography variant="body2" sx={{ ml: 0.5, fontWeight: 500 }} noWrap>
+          {value || "N/A"}
+        </Typography>
+      </Box>
+    </Tooltip>
+  </Grid>
 );
 
 export const CustomerListItem = ({
@@ -53,36 +60,15 @@ export const CustomerListItem = ({
     }
   };
 
-  return (
-    <Grid size={{ xs: 12 }}>
-      <Paper
-        onClick={handleClick}
-        sx={{
-          p: 2,
-          width: 1,
-          cursor: onClick ? "pointer" : "default",
-          "&:active": {
-            transform: onClick ? "scale(0.99)" : "none",
-          },
-        }}
-      >
-        <Grid container alignItems="center" justifyContent="space-between">
-          <Grid size={{ xs: 12 }}>
-            <Typography variant="h6">{customer.name}</Typography>
-          </Grid>
-        </Grid>
-        <Grid
-          container
-          sx={{
-            mt: 1.5,
-            pt: 1,
-            borderTop: 1,
-            borderColor: "divider",
-            flexWrap: "nowrap",
-            overflowX: "auto",
-            pb: 1,
-          }}
-        >
+  const cardContent = (
+    <Grid container spacing={2}>
+      <Grid size={{ xs: 12 }}>
+        <Typography variant="h6" fontWeight={600}>
+          {customer.name}
+        </Typography>
+      </Grid>
+      <Grid size={{ xs: 12 }}>
+        <Grid container spacing={1.5}>
           <DetailItem
             icon={<Phone sx={{ fontSize: 18 }} />}
             label="Phone"
@@ -118,7 +104,19 @@ export const CustomerListItem = ({
             }
           />
         </Grid>
-      </Paper>
+      </Grid>
+    </Grid>
+  );
+
+  return (
+    <Grid size={{ xs: 12 }}>
+      <Card sx={{ p: 2 }}>
+        {onClick ? (
+          <CardActionArea onClick={handleClick}>{cardContent}</CardActionArea>
+        ) : (
+          cardContent
+        )}
+      </Card>
     </Grid>
   );
 };

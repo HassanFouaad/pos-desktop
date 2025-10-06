@@ -105,8 +105,6 @@ export const UnpairConfirmDialog = ({
               sx={{
                 p: 2,
                 backgroundColor: theme.palette.error.alpha8,
-                borderRadius: theme.customShape.borderRadiusMedium,
-                border: `1px solid ${theme.palette.error.main}`,
               }}
             >
               <Typography

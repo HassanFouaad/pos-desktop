@@ -492,9 +492,6 @@ export const getComponents = (theme: Theme): Components<Theme> => ({
           transform: "translateY(-1px)",
         },
       },
-      label: {
-        padding: theme.spacing(0, 0.5),
-      },
       filled: {
         background:
           theme.palette.mode === "light"

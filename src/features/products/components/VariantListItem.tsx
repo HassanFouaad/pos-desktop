@@ -3,17 +3,8 @@ import {
   CheckCircleOutline,
   HourglassEmpty,
   Inventory,
-  TrendingDown,
-  VerticalAlignTop,
 } from "@mui/icons-material";
-import {
-  Card,
-  CardActionArea,
-  Chip,
-  Grid,
-  Typography,
-  useTheme,
-} from "@mui/material";
+import { Card, CardActionArea, Chip, Grid, Typography } from "@mui/material";
 import { StoreDTO } from "../../stores/repositories/stores.repository";
 import { VariantDetailDTO } from "../types/variant-detail.dto";
 import { formatCurrency } from "../utils/pricing";
@@ -26,27 +17,26 @@ interface VariantListItemProps {
 
 const InventoryChip = ({
   icon,
-  label,
   value,
-  color,
+  color = "default",
 }: {
   icon: React.ReactNode;
-  label: string;
   value: string | number;
-  color?: string;
+  color?:
+    | "default"
+    | "primary"
+    | "secondary"
+    | "error"
+    | "info"
+    | "success"
+    | "warning";
 }) => (
   <Chip
     icon={icon as React.ReactElement}
     label={`${value}`}
     size="small"
     variant="outlined"
-    sx={{
-      color,
-      borderColor: color,
-      "& .MuiChip-icon": {
-        color,
-      },
-    }}
+    color={color}
   />
 );
 
@@ -55,8 +45,6 @@ export const VariantListItem = ({
   store,
   onClick,
 }: VariantListItemProps) => {
-  const theme = useTheme();
-
   const handleClick = () => {
     if (onClick) {
       onClick(variant);
@@ -89,63 +77,36 @@ export const VariantListItem = ({
         {/* Inventory Chips */}
         {variant.inventory && (
           <Grid size={{ xs: 12 }}>
-            <Grid
-              container
-              spacing={1}
-              sx={{
-                pt: theme.spacing(1),
-                borderTop: `1px solid ${theme.palette.divider}`,
-              }}
-            >
+            <Grid container spacing={1} sx={{ pt: 2 }}>
               <Grid>
                 <InventoryChip
                   icon={<CheckCircleOutline fontSize="small" />}
-                  label="Available"
                   value={variant.inventory.quantityAvailable ?? 0}
-                  color={theme.palette.success.main}
+                  color="success"
                 />
               </Grid>
               <Grid>
                 <InventoryChip
                   icon={<Inventory fontSize="small" />}
-                  label="On Hand"
                   value={variant.inventory.quantityOnHand ?? 0}
-                  color={theme.palette.info.main}
+                  color="info"
                 />
               </Grid>
               <Grid>
                 <InventoryChip
                   icon={<HourglassEmpty fontSize="small" />}
-                  label="Committed"
                   value={variant.inventory.quantityCommitted ?? 0}
-                  color={theme.palette.warning.dark}
-                />
-              </Grid>
-              <Grid>
-                <InventoryChip
-                  icon={<TrendingDown fontSize="small" />}
-                  label="Reorder"
-                  value={variant.inventory.reorderPoint ?? 0}
-                  color={theme.palette.error.main}
-                />
-              </Grid>
-              <Grid>
-                <InventoryChip
-                  icon={<VerticalAlignTop fontSize="small" />}
-                  label="Max"
-                  value={variant.inventory.maxStockLevel ?? 0}
-                  color={theme.palette.primary.main}
+                  color="warning"
                 />
               </Grid>
               <Grid>
                 <InventoryChip
                   icon={<AttachMoney fontSize="small" />}
-                  label="Value"
                   value={formatCurrency(
                     variant.inventory.totalValue,
                     store.currency ?? "EGP"
                   )}
-                  color={theme.palette.text.secondary}
+                  color="primary"
                 />
               </Grid>
             </Grid>
@@ -157,7 +118,7 @@ export const VariantListItem = ({
 
   return (
     <Grid size={{ xs: 12 }}>
-      <Card>
+      <Card sx={{ p: 2 }}>
         {onClick ? (
           <CardActionArea onClick={handleClick}>{cardContent}</CardActionArea>
         ) : (

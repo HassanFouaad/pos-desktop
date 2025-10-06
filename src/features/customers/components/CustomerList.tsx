@@ -3,12 +3,12 @@ import {
   Alert,
   CircularProgress,
   Grid,
-  IconButton,
   Snackbar,
   Typography,
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
+import { TouchButton } from "../../../components/common/TouchButton";
 import { customersRepository } from "../repositories/customers.repository";
 import { CreateCustomerDTO } from "../schemas/create-customer.schema";
 import { CustomerDTO } from "../types/customer.dto";
@@ -41,7 +41,7 @@ export const CustomerList = () => {
       setCustomers((prev) =>
         offset === 0 ? fetchedCustomers : [...prev, ...fetchedCustomers]
       );
-      setHasMore(fetchedCustomers.length > 0);
+      setHasMore(fetchedCustomers.length === LIMIT);
     } catch (err) {
       setError("Failed to load customers.");
       console.error(err);
@@ -77,21 +77,24 @@ export const CustomerList = () => {
   };
 
   return (
-    <Grid container rowSpacing={2}>
-      <Grid size={{ md: 11, sm: 12, xs: 12 }}>
+    <Grid container spacing={2}>
+      <Grid size={{ xs: 12, sm: 9, md: 10 }}>
         <CustomerSearch
           onSearch={setSearchTerm}
           placeholder="Search customers by name, phone..."
         />
       </Grid>
 
-      <Grid
-        size={{ md: 1, sm: 12, xs: 12 }}
-        sx={{ textAlign: "center", alignItems: "center" }}
-      >
-        <IconButton onClick={() => setCreateModalOpen(true)}>
-          <Add />
-        </IconButton>
+      <Grid size={{ xs: 12, sm: 3, md: 2 }}>
+        <TouchButton
+          variant="contained"
+          color="primary"
+          fullWidth
+          onClick={() => setCreateModalOpen(true)}
+          startIcon={<Add />}
+        >
+          New
+        </TouchButton>
       </Grid>
 
       {loading && customers.length === 0 ? (

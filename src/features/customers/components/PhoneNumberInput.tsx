@@ -4,9 +4,10 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  SelectChangeEvent,
   TextField,
 } from "@mui/material";
-import React, { useState } from "react";
+import { useState } from "react";
 
 // A minimal list of countries for demonstration
 const countries = [{ code: "EG", label: "Egypt", phone: "+20" }];
@@ -19,21 +20,21 @@ interface PhoneNumberInputProps {
   helperText?: string;
 }
 
-export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
+export const PhoneNumberInput = ({
   label,
   value,
   onChange,
   error,
   helperText,
-}) => {
+}: PhoneNumberInputProps) => {
   const [countryCode, setCountryCode] = useState(countries[0].phone);
   // Deconstruct the value to get the local number
   const localNumber = value.startsWith(countryCode)
     ? value.substring(countryCode.length)
     : value;
 
-  const handleCountryChange = (e: React.ChangeEvent<{ value: unknown }>) => {
-    const newCountryCode = e.target.value as string;
+  const handleCountryChange = (e: SelectChangeEvent<string>) => {
+    const newCountryCode = e.target.value;
     setCountryCode(newCountryCode);
     onChange(`${newCountryCode}${localNumber}`);
   };
@@ -52,7 +53,7 @@ export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
             <InputLabel shrink>Country</InputLabel>
             <Select
               value={countryCode}
-              onChange={handleCountryChange as any}
+              onChange={handleCountryChange}
               displayEmpty
             >
               {countries.map((country) => (

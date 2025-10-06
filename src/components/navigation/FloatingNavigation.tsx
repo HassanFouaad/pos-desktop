@@ -69,7 +69,7 @@ export const FloatingNavigation = ({
         <Box
           sx={{
             position: "fixed",
-            top: (theme) => theme.spacing(2),
+            bottom: (theme) => theme.spacing(2),
             left: (theme) => theme.spacing(2),
             zIndex: muiTheme.zIndex.speedDial,
           }}

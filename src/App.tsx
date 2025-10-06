@@ -7,7 +7,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { GridDashboard } from "./components/dashboard/GridDashboard";
-import { GridLayout } from "./components/layout/GridLayout";
+import { GridLayout } from "./components/layouts/GridLayout";
 import { FloatingNavigation } from "./components/navigation/FloatingNavigation";
 import { ProtectedRoute } from "./features/auth/components/ProtectedRoute";
 import PublicRoute from "./features/auth/components/PublicRoute";
@@ -34,7 +34,7 @@ interface ModulePlaceholderProps {
 const ModulePlaceholder = ({ title }: ModulePlaceholderProps) => (
   <Grid
     container
-    justifyContent="center"
+    justifyContent="flex-start"
     alignItems="center"
     sx={{ height: "100%" }}
   >

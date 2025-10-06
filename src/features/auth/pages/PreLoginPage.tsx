@@ -5,20 +5,20 @@ import {
   Schedule as TimeIcon,
   LinkOff as UnpairIcon,
 } from "@mui/icons-material";
-import { Box, Divider, Grid, Typography, useTheme } from "@mui/material";
+import { Box, Grid, Typography } from "@mui/material";
+import dayjs from "dayjs";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { InfoCard } from "../../../components/cards/InfoCard";
 import { TouchButton } from "../../../components/common/TouchButton";
-import { UnpairConfirmDialog } from "../../../components/layout/UnpairConfirmDialog";
 import { CenteredPageLayout } from "../../../components/layouts/CenteredPageLayout";
+import { UnpairConfirmDialog } from "../../../components/layouts/UnpairConfirmDialog";
 import { useAppSelector } from "../../../store/hooks";
 
 export const PreLoginPage = () => {
   const [unpairDialogOpen, setUnpairDialogOpen] = useState(false);
   const navigate = useNavigate();
   const pairing = useAppSelector((state) => state.global.pairing);
-  const theme = useTheme();
 
   const handleLogin = () => {
     navigate("/login");
@@ -54,54 +54,51 @@ export const PreLoginPage = () => {
 
       {/* Device Information Section */}
       <Grid size={{ xs: 12 }}>
-        <InfoCard backgroundColor="section" bordered>
-          <Grid container spacing={3}>
+        <InfoCard backgroundColor="default" bordered={false}>
+          <Grid container spacing={4}>
             <Grid size={{ xs: 12 }}>
               <Box
-                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}
+                sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}
               >
-                <DeviceIcon sx={{ color: "primary.main", fontSize: 20 }} />
+                <DeviceIcon sx={{ color: "primary.main", fontSize: 24 }} />
                 <Typography
                   variant="subtitle2"
                   color="text.secondary"
                   fontWeight={600}
+                  sx={{ letterSpacing: "0.1em" }}
                 >
                   DEVICE NAME
                 </Typography>
               </Box>
-              <Typography variant="h6" fontWeight={600}>
+              <Typography variant="h5" fontWeight={700}>
                 {pairing.posDeviceName || "Unknown Device"}
               </Typography>
             </Grid>
 
             {pairing.lastPairedAt && (
-              <>
-                <Grid size={{ xs: 12 }}>
-                  <Divider />
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      mb: 1,
-                    }}
+              <Grid size={{ xs: 12 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    mb: 1,
+                  }}
+                >
+                  <TimeIcon sx={{ color: "text.secondary", fontSize: 24 }} />
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    fontWeight={600}
+                    sx={{ letterSpacing: "0.1em" }}
                   >
-                    <TimeIcon sx={{ color: "text.secondary", fontSize: 20 }} />
-                    <Typography
-                      variant="subtitle2"
-                      color="text.secondary"
-                      fontWeight={600}
-                    >
-                      PAIRED ON
-                    </Typography>
-                  </Box>
-                  <Typography variant="body1" fontWeight={500}>
-                    {new Date(pairing.lastPairedAt).toLocaleString()}
+                    PAIRED ON
                   </Typography>
-                </Grid>
-              </>
+                </Box>
+                <Typography variant="h6" fontWeight={600} color="text.primary">
+                  {dayjs(pairing.lastPairedAt).format("MMM D, YYYY h:mm A")}
+                </Typography>
+              </Grid>
             )}
           </Grid>
         </InfoCard>

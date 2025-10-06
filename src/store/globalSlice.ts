@@ -32,7 +32,7 @@ export interface GlobalState {
 const initialState: GlobalState = {
   theme: {
     // Initialize from localStorage or default to light
-    mode: (getLocalStorage("theme") as ThemeMode) || "light",
+    mode: (getLocalStorage("theme") as ThemeMode) || "dark",
   },
   pairing: {
     isPaired: false,

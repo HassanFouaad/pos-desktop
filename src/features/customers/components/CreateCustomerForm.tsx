@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Alert,
   Box,
-  Button,
   CircularProgress,
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Controller, useForm } from "react-hook-form";
+import { TouchButton } from "../../../components/common/TouchButton";
 import {
   CreateCustomerDTO,
   createCustomerSchema,
@@ -49,67 +50,75 @@ export function CreateCustomerForm({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogContent>
-        <Typography variant="h6" component="h2">
-          Create New Customer
-        </Typography>
-        <Box
-          component="form"
-          onSubmit={handleSubmit(handleFormSubmit)}
-          noValidate
-          sx={{ mt: 2 }}
-        >
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12 }}>
-              <Controller
-                name="name"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Customer Name (Optional)"
-                    variant="outlined"
-                    fullWidth
-                    error={!!errors.name}
-                    helperText={errors.name?.message}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid size={{ xs: 12 }}>
-              <Controller
-                name="phone"
-                control={control}
-                render={({ field }) => (
-                  <PhoneNumberInput
-                    label="Phone Number"
-                    value={field.value}
-                    onChange={field.onChange}
-                    error={!!errors.phone}
-                    helperText={errors.phone?.message}
-                  />
-                )}
-              />
-            </Grid>
-            {error && (
-              <Grid size={{ xs: 12 }}>
-                <Typography color="error" variant="body2" sx={{ mt: 1 }}>
-                  {error}
-                </Typography>
-              </Grid>
-            )}
-            <Grid size={{ xs: 12 }}>
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{ mt: 2 }}
-                disabled={isLoading}
-              >
-                {isLoading ? <CircularProgress size={24} /> : "Create"}
-              </Button>
-            </Grid>
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>
+            <Typography variant="h4" component="h2" fontWeight={700}>
+              Create New Customer
+            </Typography>
           </Grid>
-        </Box>
+
+          <Grid size={{ xs: 12 }}>
+            <Box
+              component="form"
+              onSubmit={handleSubmit(handleFormSubmit)}
+              noValidate
+            >
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12 }}>
+                  <Controller
+                    name="name"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Customer Name (Optional)"
+                        variant="outlined"
+                        fullWidth
+                        error={!!errors.name}
+                        helperText={errors.name?.message}
+                      />
+                    )}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12 }}>
+                  <Controller
+                    name="phone"
+                    control={control}
+                    render={({ field }) => (
+                      <PhoneNumberInput
+                        label="Phone Number"
+                        value={field.value}
+                        onChange={field.onChange}
+                        error={!!errors.phone}
+                        helperText={errors.phone?.message}
+                      />
+                    )}
+                  />
+                </Grid>
+                {error && (
+                  <Grid size={{ xs: 12 }}>
+                    <Alert severity="error">{error}</Alert>
+                  </Grid>
+                )}
+                <Grid size={{ xs: 12 }}>
+                  <TouchButton
+                    type="submit"
+                    size="large"
+                    fullWidth
+                    variant="contained"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <CircularProgress size={24} color="inherit" />
+                    ) : (
+                      "Create Customer"
+                    )}
+                  </TouchButton>
+                </Grid>
+              </Grid>
+            </Box>
+          </Grid>
+        </Grid>
       </DialogContent>
     </Dialog>
   );
