@@ -8,9 +8,9 @@ import {
   LoginCredentials,
 } from "../features/auth/api/auth";
 import {
-  secureStorage,
+  dbTokenStorage,
   TokenType,
-} from "../features/auth/services/secure-storage";
+} from "../features/auth/services/db-token-storage";
 import { usersRepository } from "../features/users/repositories/users.repository";
 import { removeLocalStorage, setLocalStorage } from "../utils/storage";
 
@@ -58,8 +58,12 @@ export const initAuth = createAsyncThunk(
       const currentLoggedInUser = await usersRepository.getLoggedInUser();
 
       console.log("currentLoggedInUser", currentLoggedInUser);
-      // Get USER token from secure storage (not POS token)
-      let token = await secureStorage.getToken("accessToken", TokenType.USER);
+      // Get USER token from database (not POS token)
+      const tokenResult = await dbTokenStorage.getToken(
+        "accessToken",
+        TokenType.USER
+      );
+      let token = typeof tokenResult === "string" ? tokenResult : null;
 
       // Update offline mode status
       const isNetworkOnline = true;
@@ -71,8 +75,8 @@ export const initAuth = createAsyncThunk(
         // If we have a user but no token, try to get it from the user object
         if (!token && currentLoggedInUser.accessToken) {
           token = currentLoggedInUser.accessToken;
-          // Save it to secure storage for future use
-          await secureStorage.storeToken("accessToken", token, TokenType.USER);
+          // Save it to database for future use
+          await dbTokenStorage.storeToken("accessToken", token, TokenType.USER);
         }
 
         // If we have a user, consider them authenticated even without a token in offline mode
@@ -150,13 +154,13 @@ export const login = createAsyncThunk(
         throw new Error("Invalid password");
       }
 
-      // Store USER tokens in secure storage
-      await secureStorage.storeToken(
+      // Store USER tokens in database
+      await dbTokenStorage.storeToken(
         "accessToken",
         user.accessToken ?? "",
         TokenType.USER
       );
-      await secureStorage.storeToken(
+      await dbTokenStorage.storeToken(
         "refreshToken",
         user.refreshToken ?? "",
         TokenType.USER
@@ -185,13 +189,13 @@ export const login = createAsyncThunk(
 
     await usersRepository.setLoggedInUser(authResponse.data.user.id);
 
-    // Store USER tokens in secure storage
-    await secureStorage.storeToken(
+    // Store USER tokens in database
+    await dbTokenStorage.storeToken(
       "accessToken",
       authResponse.data.accessToken,
       TokenType.USER
     );
-    await secureStorage.storeToken(
+    await dbTokenStorage.storeToken(
       "refreshToken",
       authResponse.data.refreshToken,
       TokenType.USER
@@ -208,8 +212,8 @@ export const logout = createAsyncThunk("auth/logout", async () => {
   try {
     console.info("Logging out user");
 
-    // Clear only USER tokens from secure storage (keep POS tokens for device pairing)
-    await secureStorage.clearTokens(TokenType.USER);
+    // Clear only USER tokens from database (keep POS tokens for device pairing)
+    await dbTokenStorage.clearTokens(TokenType.USER);
 
     // Clear flags from localStorage
     removeLocalStorage("hasToken");

@@ -19,6 +19,7 @@ import ProductsPage from "./features/products/pages";
 import { initAuth } from "./store/authSlice";
 import { checkPairingStatus } from "./store/globalSlice";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
+
 // Dashboard wrapper with navigation
 const DashboardWithNav = () => {
   const navigate = useNavigate();
@@ -37,7 +38,11 @@ const ModulePlaceholder = ({ title }: ModulePlaceholderProps) => (
     alignItems="center"
     sx={{ height: "100%" }}
   >
-    <Grid sx={{ textAlign: "center" }}>{title} Module</Grid>
+    <Grid>
+      <Typography variant="h5" textAlign="center">
+        {title} Module
+      </Typography>
+    </Grid>
   </Grid>
 );
 

@@ -1,7 +1,6 @@
 import {
   Alert,
   CircularProgress,
-  Container,
   Grid,
   TextField,
   Typography,
@@ -9,6 +8,8 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TouchButton } from "../../../components/common/TouchButton";
+import { CenteredPageLayout } from "../../../components/layouts/CenteredPageLayout";
+import { FormSection } from "../../../components/layouts/FormSection";
 import { setPairingData } from "../../../store/globalSlice";
 import { useAppDispatch } from "../../../store/hooks";
 import { pairPosDevice, pairPosSchema } from "../api/pos-auth";
@@ -82,7 +83,7 @@ export const PairDevicePage = () => {
   };
 
   // Handle form submit
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (otp.length === 6 && !loading) {
       handlePair();
@@ -90,123 +91,85 @@ export const PairDevicePage = () => {
   };
 
   return (
-    <Container
-      maxWidth="sm"
-      sx={{
-        height: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Grid container spacing={4}>
-        {/* Header Section */}
-        <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>
-          <Typography
-            variant="h3"
-            component="h1"
-            gutterBottom
-            fontWeight="bold"
-            sx={{
-              background: (theme) =>
-                `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            Pair Your Device
-          </Typography>
-          <Typography variant="h6" color="text.secondary">
-            Enter the 6-digit code from your admin panel
-          </Typography>
-        </Grid>
-
-        {/* OTP Input Section */}
-        <Grid size={{ xs: 12 }}>
-          <Grid component="form" onSubmit={handleSubmit} container spacing={3}>
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                value={otp}
-                onChange={handleOtpChange}
-                placeholder="000000"
-                autoFocus
-                inputProps={{
-                  maxLength: 6,
-                  inputMode: "numeric",
-                  pattern: "[0-9]*",
-                  style: {
-                    fontSize: "2.5rem",
-                    textAlign: "center",
-                    letterSpacing: "0.5em",
-                    fontFamily: "monospace",
-                    fontWeight: "bold",
-                  },
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 3,
-                    backgroundColor: "background.default",
-                  },
-                }}
-              />
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 1, textAlign: "center" }}
-              >
-                {otp.length}/6 digits entered
-              </Typography>
-            </Grid>
-
-            {/* Error Display */}
-            {error && (
-              <Grid size={{ xs: 12 }}>
-                <Alert severity="error" sx={{ borderRadius: 2 }}>
-                  {error}
-                </Alert>
-              </Grid>
-            )}
-
-            {/* Pair Button */}
-            <Grid size={{ xs: 12 }}>
-              <TouchButton
-                type="submit"
-                size="large"
-                variant="contained"
-                color="primary"
-                fullWidth
-                disabled={otp.length !== 6 || loading}
-                sx={{
-                  py: 3,
-                  fontSize: "1.25rem",
-                  background: (theme) =>
-                    otp.length === 6
-                      ? `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`
-                      : undefined,
-                }}
-              >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  "Pair Device"
-                )}
-              </TouchButton>
-            </Grid>
-          </Grid>
-        </Grid>
-
-        {/* Help Text */}
-        <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>
-          <Typography variant="body2" color="text.secondary">
-            Don't have a pairing code?
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Contact your administrator to generate one
-          </Typography>
-        </Grid>
+    <CenteredPageLayout>
+      {/* Header Section */}
+      <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>
+        <Typography variant="h3" component="h1" gutterBottom fontWeight="bold">
+          Pair Your Device
+        </Typography>
+        <Typography variant="h6" color="text.secondary">
+          Enter the 6-digit code from your admin panel
+        </Typography>
       </Grid>
-    </Container>
+
+      {/* Form Section */}
+      <Grid size={{ xs: 12 }}>
+        <FormSection onSubmit={handleSubmit}>
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              fullWidth
+              value={otp}
+              onChange={handleOtpChange}
+              placeholder="000000"
+              autoFocus
+              inputProps={{
+                maxLength: 6,
+                inputMode: "numeric",
+                pattern: "[0-9]*",
+                style: {
+                  fontSize: "2.5rem",
+                  textAlign: "center",
+                  letterSpacing: "0.5em",
+                  fontFamily: "monospace",
+                  fontWeight: "bold",
+                },
+              }}
+            />
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mt: 1, textAlign: "center" }}
+            >
+              {otp.length}/6 digits entered
+            </Typography>
+          </Grid>
+
+          {/* Error Display */}
+          {error && (
+            <Grid size={{ xs: 12 }}>
+              <Alert severity="error">{error}</Alert>
+            </Grid>
+          )}
+
+          {/* Pair Button */}
+          <Grid size={{ xs: 12 }}>
+            <TouchButton
+              type="submit"
+              size="large"
+              variant="contained"
+              color="primary"
+              fullWidth
+              disabled={otp.length !== 6 || loading}
+            >
+              {loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Pair Device"
+              )}
+            </TouchButton>
+          </Grid>
+        </FormSection>
+      </Grid>
+
+      {/* Help Text */}
+      <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>
+        <Typography variant="body2" color="text.secondary">
+          Don't have a pairing code?
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          Contact your administrator to generate one
+        </Typography>
+      </Grid>
+    </CenteredPageLayout>
   );
 };

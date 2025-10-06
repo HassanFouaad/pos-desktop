@@ -3,81 +3,78 @@ import {
   Card,
   CardActionArea,
   CardContent,
-  CardMedia,
   Grid,
   Typography,
   useTheme,
 } from "@mui/material";
 import { ReactNode } from "react";
 
-export interface GridCardProps {
+export interface ActionCardProps {
   title?: string;
   subtitle?: string;
-  imageSrc?: string;
-  imageHeight?: number | string;
-  imageAlt?: string;
   onClick?: () => void;
   badge?: ReactNode;
   icon?: ReactNode;
-  iconBackground?: string;
+  iconColor?: string;
   selected?: boolean;
   disabled?: boolean;
-  gridProps?: {
-    size?: {
-      xs?: number;
-      sm?: number;
-      md?: number;
-      lg?: number;
-      xl?: number;
-    };
+  gridSize?: {
+    xs?: number;
+    sm?: number;
+    md?: number;
+    lg?: number;
+    xl?: number;
   };
 }
 
-export const GridCard = ({
+/**
+ * Interactive action card for dashboard and grid views
+ * All styling handled by theme - no custom styling
+ */
+export const ActionCard = ({
   title,
   subtitle,
-  imageSrc,
-  imageHeight = 140,
-  imageAlt = "card image",
   onClick,
   badge,
   icon,
-  iconBackground,
+  iconColor,
   selected = false,
   disabled = false,
-  gridProps = { size: { xs: 12, sm: 6, md: 4, lg: 3 } },
-}: GridCardProps) => {
+  gridSize = { xs: 12, sm: 6, md: 4 },
+}: ActionCardProps) => {
   const theme = useTheme();
 
-  // Card content to display
   const cardContent = (
     <>
-      {/* Image if provided */}
-      {imageSrc && (
-        <CardMedia
-          component="img"
-          height={imageHeight}
-          image={imageSrc}
-          alt={imageAlt}
-        />
-      )}
-
-      {/* Icon with background if provided */}
+      {/* Icon with gradient background if provided */}
       {icon && (
         <Grid container justifyContent="center" sx={{ pt: 2, pb: 1 }}>
           <Grid
-            component="div"
             sx={{
-              bgcolor: iconBackground
-                ? `${iconBackground}22`
-                : `${theme.palette.primary.main}22`,
-              color: iconBackground || theme.palette.primary.main,
-              borderRadius: "50%",
+              background: iconColor
+                ? theme.palette.mode === "light"
+                  ? `linear-gradient(135deg, ${iconColor}22 0%, ${iconColor}33 100%)`
+                  : `linear-gradient(135deg, ${iconColor}33 0%, ${iconColor}22 100%)`
+                : theme.palette.mode === "light"
+                ? `linear-gradient(135deg, ${theme.palette.primary.alpha8} 0%, ${theme.palette.primary.alpha16} 100%)`
+                : `linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%)`,
+              color: iconColor || theme.palette.primary.main,
+              borderRadius: theme.customShape.borderRadiusLarge,
               width: 64,
               height: 64,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              border: `1px solid ${
+                iconColor
+                  ? `${iconColor}${
+                      theme.palette.mode === "light" ? "40" : "55"
+                    }`
+                  : theme.palette.mode === "light"
+                  ? theme.palette.primary.alpha12
+                  : "rgba(59, 130, 246, 0.2)"
+              }`,
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           >
             {icon}
@@ -87,21 +84,16 @@ export const GridCard = ({
 
       {/* Title and subtitle */}
       <CardContent>
-        <Grid container direction="column" spacing={1}>
+        <Grid container spacing={1}>
           {title && (
-            <Grid>
-              <Typography
-                variant="h6"
-                align="center"
-                noWrap
-                sx={{ fontWeight: 600 }}
-              >
+            <Grid size={{ xs: 12 }}>
+              <Typography variant="h6" align="center" noWrap fontWeight={600}>
                 {title}
               </Typography>
             </Grid>
           )}
           {subtitle && (
-            <Grid>
+            <Grid size={{ xs: 12 }}>
               <Typography
                 variant="body2"
                 color="text.secondary"
@@ -117,9 +109,9 @@ export const GridCard = ({
     </>
   );
 
-  // Render the card with appropriate Grid item wrapper
+  // Render the card with appropriate Grid wrapper
   return (
-    <Grid component="div" {...gridProps}>
+    <Grid size={gridSize}>
       {badge ? (
         <Badge badgeContent={badge} color="primary" sx={{ width: 1 }}>
           <Card
@@ -130,9 +122,14 @@ export const GridCard = ({
                 ? `2px solid ${theme.palette.primary.main}`
                 : "none",
               opacity: disabled ? 0.6 : 1,
-              transition: "transform 0.2s ease",
-              "&:active": {
-                transform: "scale(0.98)",
+              transform: selected ? "scale(1.02)" : "scale(1)",
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              "&:hover": {
+                transform: selected ? "scale(1.02)" : "scale(1.01)",
+                boxShadow:
+                  theme.palette.mode === "light"
+                    ? "0 8px 32px rgba(0, 0, 0, 0.04)"
+                    : "0 8px 32px rgba(0, 0, 0, 0.3)",
               },
             }}
           >
@@ -158,9 +155,14 @@ export const GridCard = ({
               ? `2px solid ${theme.palette.primary.main}`
               : "none",
             opacity: disabled ? 0.6 : 1,
-            transition: "transform 0.2s ease",
-            "&:active": {
-              transform: "scale(0.98)",
+            transform: selected ? "scale(1.02)" : "scale(1)",
+            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+            "&:hover": {
+              transform: selected ? "scale(1.02)" : "scale(1.01)",
+              boxShadow:
+                theme.palette.mode === "light"
+                  ? "0 8px 32px rgba(0, 0, 0, 0.04)"
+                  : "0 8px 32px rgba(0, 0, 0, 0.3)",
             },
           }}
         >

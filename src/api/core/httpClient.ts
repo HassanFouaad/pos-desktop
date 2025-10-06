@@ -1,8 +1,8 @@
 import { fetch } from "@tauri-apps/plugin-http";
 import {
-  secureStorage,
+  dbTokenStorage,
   TokenType,
-} from "../../features/auth/services/secure-storage";
+} from "../../features/auth/services/db-token-storage";
 import { endpoints, getConfig } from "./config";
 import { ApiResponse } from "./types";
 
@@ -60,7 +60,8 @@ class TauriHttpClient {
     };
 
     const tokenType = this.getTokenTypeForUrl(url);
-    const token = await secureStorage.getToken("accessToken", tokenType);
+    const tokenResult = await dbTokenStorage.getToken("accessToken", tokenType);
+    const token = typeof tokenResult === "string" ? tokenResult : null;
 
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
@@ -103,10 +104,12 @@ class TauriHttpClient {
     this.isRefreshing = true;
 
     try {
-      const refreshToken = await secureStorage.getToken(
+      const refreshTokenResult = await dbTokenStorage.getToken(
         "refreshToken",
         TokenType.USER
       );
+      const refreshToken =
+        typeof refreshTokenResult === "string" ? refreshTokenResult : null;
 
       if (!refreshToken) {
         throw new Error("Unauthorized");
@@ -130,7 +133,7 @@ class TauriHttpClient {
         const newAccessToken = responseData.data.accessToken;
 
         // Store the new user access token
-        await secureStorage.storeToken(
+        await dbTokenStorage.storeToken(
           "accessToken",
           newAccessToken,
           TokenType.USER
@@ -150,7 +153,7 @@ class TauriHttpClient {
       if (error?.message === "Unauthorized") {
         // Clear user tokens on auth failure
         console.warn("User refresh token expired, clearing user tokens");
-        await secureStorage.clearTokens(TokenType.USER);
+        await dbTokenStorage.clearTokens(TokenType.USER);
         throw error;
       }
 
@@ -174,10 +177,12 @@ class TauriHttpClient {
     this.isRefreshing = true;
 
     try {
-      const refreshToken = await secureStorage.getToken(
+      const refreshTokenResult = await dbTokenStorage.getToken(
         "refreshToken",
         TokenType.POS
       );
+      const refreshToken =
+        typeof refreshTokenResult === "string" ? refreshTokenResult : null;
 
       if (!refreshToken) {
         throw new Error("Unauthorized");
@@ -201,7 +206,7 @@ class TauriHttpClient {
         const newAccessToken = responseData.data.accessToken;
 
         // Store the new POS access token
-        await secureStorage.storeToken(
+        await dbTokenStorage.storeToken(
           "accessToken",
           newAccessToken,
           TokenType.POS
@@ -222,7 +227,7 @@ class TauriHttpClient {
       if (error?.message === "Unauthorized") {
         // Clear POS tokens on auth failure
         console.warn("POS refresh token expired, clearing POS tokens");
-        await secureStorage.clearTokens(TokenType.POS);
+        await dbTokenStorage.clearTokens(TokenType.POS);
         throw error;
       }
 
@@ -404,6 +409,7 @@ class TauriHttpClient {
       ...defaultHeaders,
       ...customHeaders,
     };
+    console.log("headers", headers);
 
     // Build query string
     if (queryParams) {
@@ -450,7 +456,7 @@ class TauriHttpClient {
       ...defaultHeaders,
       ...customHeaders,
     };
-
+    console.log("headers", headers);
     return this.request<T>(url, {
       method: "POST",
       headers,

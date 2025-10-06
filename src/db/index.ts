@@ -5,8 +5,10 @@ const setupPowerSync = async () => {
   try {
     console.log("Setting up PowerSync");
     powerSyncDb.init();
+    console.log("PowerSync initialized");
     const connector = new BackendConnector();
     await powerSyncDb.connect(connector);
+
     console.log("PowerSync setup successfully");
   } catch (error) {
     console.error("Failed to setup PowerSync", error);

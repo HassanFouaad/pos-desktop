@@ -7,8 +7,8 @@ import {
   Settings as SettingsIcon,
 } from "@mui/icons-material";
 import {
+  Box,
   Fab,
-  Grid,
   SpeedDial,
   SpeedDialAction,
   SpeedDialIcon,
@@ -63,15 +63,14 @@ export const FloatingNavigation = ({
   const allActions = [...defaultActions, ...extraActions];
 
   return (
-    <Grid container>
+    <>
       {/* Back button */}
       {showBackButton && (
-        <Grid
-          component="div"
+        <Box
           sx={{
             position: "fixed",
-            top: 16,
-            left: 16,
+            top: (theme) => theme.spacing(2),
+            left: (theme) => theme.spacing(2),
             zIndex: muiTheme.zIndex.speedDial,
           }}
         >
@@ -81,24 +80,19 @@ export const FloatingNavigation = ({
               color="default"
               aria-label="back"
               onClick={handleBack}
-              sx={{
-                backgroundColor: muiTheme.palette.background.paper,
-                color: muiTheme.palette.text.primary,
-              }}
             >
               <BackIcon />
             </Fab>
           </Tooltip>
-        </Grid>
+        </Box>
       )}
 
       {/* SpeedDial for settings and actions */}
-      <Grid
-        component="div"
+      <Box
         sx={{
           position: "fixed",
-          bottom: 16,
-          right: 16,
+          bottom: (theme) => theme.spacing(2),
+          right: (theme) => theme.spacing(2),
           zIndex: muiTheme.zIndex.speedDial,
         }}
       >
@@ -109,14 +103,6 @@ export const FloatingNavigation = ({
           onOpen={handleOpen}
           open={open}
           direction="up"
-          FabProps={{
-            sx: {
-              bgcolor: muiTheme.palette.primary.main,
-              "&:hover": {
-                bgcolor: muiTheme.palette.primary.dark,
-              },
-            },
-          }}
         >
           {allActions.map((action) => (
             <SpeedDialAction
@@ -127,16 +113,10 @@ export const FloatingNavigation = ({
                 action.onClick();
                 handleClose();
               }}
-              FabProps={{
-                sx: {
-                  bgcolor: muiTheme.palette.background.paper,
-                  color: muiTheme.palette.text.primary,
-                },
-              }}
             />
           ))}
         </SpeedDial>
-      </Grid>
-    </Grid>
+      </Box>
+    </>
   );
 };

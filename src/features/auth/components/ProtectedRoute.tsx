@@ -16,6 +16,12 @@ export const ProtectedRoute = () => {
     isPaired,
     pairingCheckComplete,
   });
+  console.log("ProtectedRoute", {
+    isAuthenticated,
+    initialized,
+    isPaired,
+    pairingCheckComplete,
+  });
   // Wait for both auth and pairing checks to complete
   if (!initialized && !pairingCheckComplete) return null;
 

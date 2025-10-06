@@ -1,8 +1,8 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
-  secureStorage,
+  dbTokenStorage,
   TokenType,
-} from "../features/auth/services/secure-storage";
+} from "../features/auth/services/db-token-storage";
 import { getLocalStorage, setLocalStorage } from "../utils/storage";
 
 export type ThemeMode = "light" | "dark";
@@ -48,33 +48,39 @@ const initialState: GlobalState = {
 };
 
 /**
- * Check if device is paired by looking for POS tokens in secure storage
+ * Check if device is paired by looking for POS tokens in database
  */
 export const checkPairingStatus = createAsyncThunk(
   "global/checkPairingStatus",
   async () => {
     try {
-      // Check if POS access token exists in stronghold
-      const posAccessToken = await secureStorage.getToken(
+      // Check if POS access token exists in database
+      const posAccessTokenResult = await dbTokenStorage.getToken(
         "accessToken",
         TokenType.POS
       );
+      const posAccessToken =
+        typeof posAccessTokenResult === "string" ? posAccessTokenResult : null;
 
       if (!posAccessToken) {
         return null; // Not paired
       }
 
-      // Get pairing data from stronghold
-      const pairingDataStr = await secureStorage.getToken(
+      // Get pairing data from database
+      const pairingDataResult = await dbTokenStorage.getToken(
         "pairingData",
         TokenType.POS
       );
 
-      if (!pairingDataStr) {
+      if (!pairingDataResult) {
         return null; // No pairing data found
       }
 
-      const pairingData = JSON.parse(pairingDataStr);
+      // pairingDataResult is already a Record<string, unknown> if it exists
+      const pairingData =
+        typeof pairingDataResult === "string"
+          ? JSON.parse(pairingDataResult)
+          : pairingDataResult;
       return pairingData;
     } catch (error) {
       console.error("Failed to check pairing status", error);
@@ -105,6 +111,9 @@ const globalSlice = createSlice({
       state.theme.mode = action.payload;
     },
     setPairingData: (state, action: PayloadAction<DevicePairingState>) => {
+      action.payload.lastPairedAt = new Date(
+        action.payload.lastPairedAt ?? new Date()
+      ).toISOString() as unknown as Date;
       state.pairing = action.payload;
     },
     clearPairingData: (state) => {
@@ -127,6 +136,7 @@ const globalSlice = createSlice({
         if (action.payload) {
           state.pairing = {
             ...action.payload,
+            lastPairedAt: new Date(action.payload.lastPairedAt).toISOString(),
             isPaired: true,
             pairingCheckComplete: true,
           };

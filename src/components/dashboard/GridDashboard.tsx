@@ -9,7 +9,7 @@ import {
   ShoppingCart as SalesIcon,
 } from "@mui/icons-material";
 import { Grid, useTheme } from "@mui/material";
-import { GridCard } from "../common/GridCard";
+import { ActionCard } from "../cards/ActionCard";
 
 interface GridDashboardProps {
   onNavigate: (path: string) => void;
@@ -59,7 +59,7 @@ export const GridDashboard = ({ onNavigate }: GridDashboardProps) => {
     {
       title: "Reports",
       icon: <ReportsIcon sx={{ fontSize: 36 }} />,
-      color: "#673ab7", // Purple
+      color: theme.palette.secondary.dark,
       path: "/reports",
     },
     {
@@ -73,13 +73,13 @@ export const GridDashboard = ({ onNavigate }: GridDashboardProps) => {
   return (
     <Grid container spacing={2}>
       {tiles.map((tile) => (
-        <GridCard
+        <ActionCard
           key={tile.title}
           title={tile.title}
           icon={tile.icon}
-          iconBackground={tile.color}
+          iconColor={tile.color}
           onClick={() => onNavigate(tile.path)}
-          gridProps={{ size: { xs: 12, sm: 12, md: 4 } }}
+          gridSize={{ xs: 12, sm: 12, md: 4 }}
         />
       ))}
     </Grid>

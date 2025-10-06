@@ -16,6 +16,12 @@ export const AppSchema = new DrizzleAppSchema({
       localOnly: true,
     },
   } as DrizzleTableWithPowerSyncOptions,
+  posDevices: {
+    tableDefinition: DatabaseSchema.posDevices,
+    options: {
+      localOnly: true,
+    },
+  } as DrizzleTableWithPowerSyncOptions,
 });
 
 export const powerSyncDb = new PowerSyncDatabase({

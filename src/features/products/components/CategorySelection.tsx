@@ -1,7 +1,7 @@
 import { Category } from "@mui/icons-material";
 import { CircularProgress, Grid } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
-import { GridCard } from "../../../components/common/GridCard";
+import { ActionCard } from "../../../components/cards/ActionCard";
 import { productsRepository } from "../repositories/products.repository";
 import { CategoryDTO } from "../types/category.dto";
 import { ProductSearch } from "./ProductSearch";
@@ -64,12 +64,12 @@ export const CategorySelection = ({
         </Grid>
       ) : (
         categories.map((category) => (
-          <GridCard
+          <ActionCard
             key={category.id}
             title={category.name ?? "Unnamed Category"}
             icon={<Category />}
             onClick={() => onSelectCategory(category)}
-            gridProps={{ size: { xs: 12, sm: 12, md: 4, lg: 2 } }}
+            gridSize={{ xs: 12, sm: 12, md: 4, lg: 2 }}
           />
         ))
       )}

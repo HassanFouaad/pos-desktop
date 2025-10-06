@@ -1,11 +1,14 @@
 import { Warning as WarningIcon } from "@mui/icons-material";
 import {
+  Alert,
+  Box,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Grid,
   Typography,
+  useTheme,
 } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +32,7 @@ export const UnpairConfirmDialog = ({
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const theme = useTheme();
 
   const handleConfirm = async () => {
     try {
@@ -69,21 +73,14 @@ export const UnpairConfirmDialog = ({
       onClose={loading ? undefined : handleCancel}
       maxWidth="sm"
       fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          p: 2,
-        },
-      }}
     >
-      <DialogTitle sx={{ textAlign: "center", pt: 3 }}>
+      <DialogTitle sx={{ textAlign: "center" }}>
         <Grid container direction="column" alignItems="center" spacing={2}>
           <Grid>
             <WarningIcon
               sx={{
                 fontSize: 80,
                 color: "error.main",
-                filter: "drop-shadow(0px 4px 12px rgba(255, 61, 113, 0.3))",
               }}
             />
           </Grid>
@@ -95,64 +92,54 @@ export const UnpairConfirmDialog = ({
         </Grid>
       </DialogTitle>
 
-      <DialogContent sx={{ px: 4, py: 3 }}>
-        <Typography
-          variant="h6"
-          color="text.secondary"
-          textAlign="center"
-          gutterBottom
-        >
-          This action will disconnect your device from the POS system.
-        </Typography>
-
-        <Grid
-          sx={{
-            mt: 3,
-            p: 2,
-            backgroundColor: (theme) => `${theme.palette.error.main}15`,
-            borderRadius: 2,
-            border: (theme) => `1px solid ${theme.palette.error.main}`,
-          }}
-        >
-          <Typography variant="body1" color="error.main" fontWeight="medium">
-            ⚠️ Warning:
-          </Typography>
-          <Typography
-            variant="body2"
-            color="error.dark"
-            sx={{ mt: 1, lineHeight: 1.6 }}
-          >
-            • You will need to re-pair this device to use it again
-            <br />
-            • Offline functionality will be disabled until re-paired
-            <br />• Any unsaved data may be lost
-          </Typography>
-        </Grid>
-
-        {error && (
-          <Grid
-            sx={{
-              mt: 2,
-              p: 2,
-              backgroundColor: (theme) => `${theme.palette.error.main}10`,
-              borderRadius: 2,
-            }}
-          >
-            <Typography variant="body2" color="error">
-              {error}
+      <DialogContent>
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12 }}>
+            <Typography variant="h6" color="text.secondary" textAlign="center">
+              This action will disconnect your device from the POS system.
             </Typography>
           </Grid>
-        )}
+
+          <Grid size={{ xs: 12 }}>
+            <Box
+              sx={{
+                p: 2,
+                backgroundColor: theme.palette.error.alpha8,
+                borderRadius: theme.customShape.borderRadiusMedium,
+                border: `1px solid ${theme.palette.error.main}`,
+              }}
+            >
+              <Typography
+                variant="body1"
+                color="error.main"
+                fontWeight="medium"
+              >
+                ⚠️ Warning:
+              </Typography>
+              <Typography variant="body2" color="error.dark" sx={{ mt: 1 }}>
+                • You will need to re-pair this device to use it again
+                <br />
+                • Offline functionality will be disabled until re-paired
+                <br />• Any unsaved data may be lost
+              </Typography>
+            </Box>
+          </Grid>
+
+          {error && (
+            <Grid size={{ xs: 12 }}>
+              <Alert severity="error">{error}</Alert>
+            </Grid>
+          )}
+        </Grid>
       </DialogContent>
 
-      <DialogActions sx={{ px: 4, pb: 3, gap: 2 }}>
+      <DialogActions>
         <TouchButton
           size="large"
           variant="outlined"
           fullWidth
           onClick={handleCancel}
           disabled={loading}
-          sx={{ py: 2, fontSize: "1.1rem", borderWidth: 2 }}
         >
           Cancel
         </TouchButton>
@@ -163,7 +150,6 @@ export const UnpairConfirmDialog = ({
           fullWidth
           onClick={handleConfirm}
           disabled={loading}
-          sx={{ py: 2, fontSize: "1.1rem" }}
         >
           {loading ? "Unpairing..." : "Yes, Unpair"}
         </TouchButton>

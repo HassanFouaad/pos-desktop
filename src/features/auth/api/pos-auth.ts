@@ -1,7 +1,7 @@
 import { z } from "zod";
 import httpClient, { ApiResponse, endpoints } from "../../../api";
 import { PairPosRequest, PosAuthResponse } from "../../../types/pos-auth.types";
-import { secureStorage, TokenType } from "../services/secure-storage";
+import { dbTokenStorage, TokenType } from "../services/db-token-storage";
 
 /**
  * POS pairing request schema
@@ -24,13 +24,13 @@ export const pairPosDevice = async (
     );
 
     if (response.success && response.data) {
-      // Store POS tokens in stronghold
-      await secureStorage.storeToken(
+      // Store POS tokens in database
+      await dbTokenStorage.storeToken(
         "accessToken",
         response.data.accessToken,
         TokenType.POS
       );
-      await secureStorage.storeToken(
+      await dbTokenStorage.storeToken(
         "refreshToken",
         response.data.refreshToken,
         TokenType.POS
@@ -47,9 +47,9 @@ export const pairPosDevice = async (
         lastPairedAt: new Date(),
       };
 
-      await secureStorage.storeToken(
+      await dbTokenStorage.storeToken(
         "pairingData",
-        JSON.stringify(pairingData),
+        pairingData,
         TokenType.POS
       );
 
@@ -79,8 +79,8 @@ export const unpairPosDevice = async (): Promise<void> => {
       );
     }
 
-    // Clear all POS tokens from stronghold regardless of backend result
-    await secureStorage.clearTokens(TokenType.POS);
+    // Clear all POS tokens from database regardless of backend result
+    await dbTokenStorage.clearTokens(TokenType.POS);
 
     console.info("POS device unpaired successfully");
   } catch (error) {
@@ -96,15 +96,17 @@ export const unpairPosDevice = async (): Promise<void> => {
  */
 
 /**
- * Get POS access token from secure storage
+ * Get POS access token from database
  */
 export const getPosAccessToken = async (): Promise<string | null> => {
-  return await secureStorage.getToken("accessToken", TokenType.POS);
+  const token = await dbTokenStorage.getToken("accessToken", TokenType.POS);
+  return typeof token === "string" ? token : null;
 };
 
 /**
- * Get user access token from secure storage
+ * Get user access token from database
  */
 export const getUserAccessToken = async (): Promise<string | null> => {
-  return await secureStorage.getToken("accessToken", TokenType.USER);
+  const token = await dbTokenStorage.getToken("accessToken", TokenType.USER);
+  return typeof token === "string" ? token : null;
 };

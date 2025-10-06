@@ -6,12 +6,6 @@ import { AuthResponse } from "../../auth/api/auth";
 type UserSchema = typeof users.$inferInsert;
 
 class UsersRepository {
-  private db: typeof drizzleDb = drizzleDb;
-
-  constructor() {
-    this.db = drizzleDb;
-  }
-
   /**
    * Inserts or updates a user in the local database.
    * Also ensures all other users are marked as not logged in.
@@ -32,7 +26,7 @@ class UsersRepository {
       accessToken: accessToken,
     };
 
-    const foundUser = await this.db
+    const foundUser = await drizzleDb
       .select()
       .from(users)
       .where(eq(users.id, userToInsert.id))
@@ -40,13 +34,13 @@ class UsersRepository {
       .execute();
 
     if (foundUser?.[0]) {
-      await this.db
+      await drizzleDb
         .update(users)
         .set(userToInsert)
         .where(eq(users.id, userToInsert.id))
         .execute();
     } else {
-      await this.db.insert(users).values(userToInsert).execute();
+      await drizzleDb.insert(users).values(userToInsert).execute();
     }
   }
 
@@ -54,7 +48,7 @@ class UsersRepository {
    * Finds a user by their username (email in this case) for offline auth.
    */
   async findUserByUsername(username: string): Promise<UserSchema | null> {
-    const [user] = await this.db
+    const [user] = await drizzleDb
       .select()
       .from(users)
       .where(eq(users.email, username))
@@ -67,7 +61,7 @@ class UsersRepository {
    * Retrieves the currently logged-in user from the local database.
    */
   async getLoggedInUser(): Promise<UserSchema | null> {
-    const [user] = await this.db
+    const [user] = await drizzleDb
       .select()
       .from(users)
       .where(eq(users.isLoggedIn, true))
@@ -81,7 +75,7 @@ class UsersRepository {
    */
   async setLoggedInUser(userId: string): Promise<void> {
     // Use a transaction to ensure atomicity
-    await this.db.transaction(async (tx) => {
+    await drizzleDb.transaction(async (tx) => {
       await tx.update(users).set({ isLoggedIn: false });
       await tx
         .update(users)
@@ -94,7 +88,7 @@ class UsersRepository {
    * Marks all users as logged out.
    */
   async logoutAllUsers(): Promise<void> {
-    await this.db.update(users).set({ isLoggedIn: false });
+    await drizzleDb.update(users).set({ isLoggedIn: false });
   }
 }
 
