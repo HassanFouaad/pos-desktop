@@ -67,7 +67,7 @@ export const LogoutConfirmDialog = ({
     <Dialog
       open={open}
       onClose={loading ? undefined : handleCancel}
-      maxWidth="xs"
+      maxWidth="sm"
     >
       <DialogTitle sx={{ textAlign: "center" }}>
         <Grid container direction="column" alignItems="center" spacing={2}>

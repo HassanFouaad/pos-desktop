@@ -1,5 +1,3 @@
-import { VariantDetailDTO } from "../types/variant-detail.dto";
-
 /**
  * Formats a numeric value into a currency string using Intl.NumberFormat.
  * @param amount The numeric amount to format.
@@ -18,17 +16,4 @@ export const formatCurrency = (
     style: "currency",
     currency,
   }).format(numericAmount);
-};
-
-/**
- * Gets the formatted price for a single product variant.
- * @param variant The product variant object.
- * @param storeCurrency The currency of the store.
- * @returns The formatted price string.
- */
-export const getVariantPrice = (
-  variant: VariantDetailDTO,
-  storeCurrency?: string | null
-): string => {
-  return formatCurrency(variant.baseSellingPrice, storeCurrency || "EGP");
 };

@@ -12,9 +12,10 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "desktop-pos",
-        "width": 800,
-        "height": 600
+        "fullscreen": true,
+        "decorations": false
       }
     ],
     "security": {

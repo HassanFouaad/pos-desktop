@@ -10,7 +10,6 @@ import { AppProvider } from "./providers/AppProvider";
  * and AppProvider for global context/state management
  */
 
-// Initialize sync monitoring
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <AppProvider>
