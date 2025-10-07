@@ -27,6 +27,17 @@ export class ProductsRepository {
     return query.execute();
   }
 
+  async getCategoryById(categoryId: string): Promise<CategoryDTO | undefined> {
+    const result = await this.db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, categoryId))
+      .limit(1)
+      .execute();
+
+    return result[0];
+  }
+
   /**
    * Fetches a list of variants for a given category, including product and inventory info.
    * @param categoryId The ID of the category.

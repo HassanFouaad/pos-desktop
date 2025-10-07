@@ -2,7 +2,6 @@ import { z } from "zod";
 import httpClient, { ApiResponse, endpoints } from "../../../api";
 
 export const loginSchema = z.object({
-  tenantSubDomain: z.string().min(1, "Tenant Sub Domain is required"),
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });

@@ -51,7 +51,7 @@ class UsersRepository {
     const [user] = await drizzleDb
       .select()
       .from(users)
-      .where(eq(users.email, username))
+      .where(eq(users.username, username))
       .limit(1)
       .execute();
     return user || null;

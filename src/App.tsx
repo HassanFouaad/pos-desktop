@@ -16,6 +16,7 @@ import { PairDevicePage } from "./features/auth/pages/PairDevicePage";
 import { PreLoginPage } from "./features/auth/pages/PreLoginPage";
 import CustomersPage from "./features/customers/pages";
 import ProductsPage from "./features/products/pages";
+import ProductListPage from "./features/products/pages/ProductListPage";
 import { initAuth } from "./store/authSlice";
 import { checkPairingStatus } from "./store/globalSlice";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
@@ -138,6 +139,19 @@ function App() {
               <GridLayout title="Products">
                 <Grid>
                   <ProductsPage />
+                </Grid>
+                <FloatingNavigation showBackButton />
+              </GridLayout>
+            }
+          />
+
+          {/* Product List by Category */}
+          <Route
+            path="/products/:categoryId"
+            element={
+              <GridLayout title="Products">
+                <Grid>
+                  <ProductListPage />
                 </Grid>
                 <FloatingNavigation showBackButton />
               </GridLayout>

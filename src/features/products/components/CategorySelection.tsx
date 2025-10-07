@@ -1,18 +1,14 @@
 import { Category } from "@mui/icons-material";
 import { CircularProgress, Grid } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ActionCard } from "../../../components/cards/ActionCard";
 import { productsRepository } from "../repositories/products.repository";
 import { CategoryDTO } from "../types/category.dto";
 import { ProductSearch } from "./ProductSearch";
 
-interface CategorySelectionProps {
-  onSelectCategory: (category: CategoryDTO) => void;
-}
-
-export const CategorySelection = ({
-  onSelectCategory,
-}: CategorySelectionProps) => {
+export const CategorySelection = () => {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<CategoryDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +64,7 @@ export const CategorySelection = ({
             key={category.id}
             title={category.name ?? "Unnamed Category"}
             icon={<Category />}
-            onClick={() => onSelectCategory(category)}
+            onClick={() => navigate(`/products/${category.id}`)}
             gridSize={{ xs: 12, sm: 12, md: 4, lg: 2 }}
           />
         ))

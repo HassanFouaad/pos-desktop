@@ -1,7 +1,7 @@
 export interface SyncTokenDTO {
   token: string;
 
-  expiresIn: number;
+  expiresAt: Date;
 
   endpoint: string;
 }

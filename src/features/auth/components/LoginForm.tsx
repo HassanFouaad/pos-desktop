@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import {
   Alert,
   CircularProgress,
@@ -16,9 +17,15 @@ interface LoginFormProps {
   onSubmit: (data: LoginCredentials) => void;
   isLoading: boolean;
   error: string | null;
+  onBack?: () => void;
 }
 
-export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
+export function LoginForm({
+  onSubmit,
+  isLoading,
+  error,
+  onBack,
+}: LoginFormProps) {
   const {
     register,
     handleSubmit,
@@ -42,19 +49,6 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
       {/* Form */}
       <Grid size={{ xs: 12 }}>
         <FormSection onSubmit={handleSubmit(onSubmit)}>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              fullWidth
-              id="tenantSubDomain"
-              label="Tenant Sub Domain"
-              autoComplete="tenantSubDomain"
-              autoFocus
-              {...register("tenantSubDomain")}
-              error={!!errors.tenantSubDomain}
-              helperText={errors.tenantSubDomain?.message}
-            />
-          </Grid>
-
           <Grid size={{ xs: 12 }}>
             <TextField
               fullWidth
@@ -102,6 +96,23 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
               )}
             </TouchButton>
           </Grid>
+
+          {onBack && (
+            <Grid size={{ xs: 12 }}>
+              <TouchButton
+                type="button"
+                size="large"
+                variant="outlined"
+                color="secondary"
+                fullWidth
+                onClick={onBack}
+                disabled={isLoading}
+                startIcon={<ArrowBackIcon />}
+              >
+                Back to Device Info
+              </TouchButton>
+            </Grid>
+          )}
         </FormSection>
       </Grid>
     </CenteredPageLayout>

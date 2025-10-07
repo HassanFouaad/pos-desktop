@@ -3,7 +3,7 @@ import {
   PowerSyncBackendConnector,
 } from "@powersync/web";
 import { getPosAccessToken } from "../../auth/api/pos-auth";
-import { getSyncData } from "../api";
+import { getSyncData, uploadSyncData } from "../api";
 
 export default class BackendConnector implements PowerSyncBackendConnector {
   constructor() {}
@@ -16,9 +16,10 @@ export default class BackendConnector implements PowerSyncBackendConnector {
     }
 
     const syncToken = await getSyncData();
+    console.log("syncToken", syncToken.data);
 
     if (!syncToken.data?.token || !syncToken.data?.endpoint) {
-      if (syncToken.error?.code === "NETWORK_ERROR") {
+      if (syncToken.error?.isNetworkError) {
         throw syncToken.error;
       }
 
@@ -28,21 +29,26 @@ export default class BackendConnector implements PowerSyncBackendConnector {
     return {
       endpoint: syncToken.data?.endpoint,
       token: syncToken.data?.token,
+      expiresAt: syncToken.data?.expiresAt,
     };
   }
 
   async uploadData(database: AbstractPowerSyncDatabase): Promise<void> {
     const transaction = await database.getNextCrudTransaction();
 
-    console.log("transaction", transaction);
-
     if (!transaction) {
       return;
     }
 
     try {
-      // TODO: Upload here
-
+      const res = await uploadSyncData(transaction);
+      console.log("res", {
+        res,
+        transaction: transaction,
+      });
+      if (!res.success) {
+        throw res.error;
+      }
       await transaction.complete();
     } catch (error: any) {
       if (shouldDiscardDataOnError(error)) {

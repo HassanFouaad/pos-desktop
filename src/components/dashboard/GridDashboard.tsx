@@ -79,7 +79,7 @@ export const GridDashboard = ({ onNavigate }: GridDashboardProps) => {
           icon={tile.icon}
           iconColor={tile.color}
           onClick={() => onNavigate(tile.path)}
-          gridSize={{ xs: 12, sm: 12, md: 4 }}
+          gridSize={{ xs: 12, sm: 12, md: 6, lg: 3 }}
         />
       ))}
     </Grid>

@@ -1,4 +1,4 @@
-import { desc, like, or } from "drizzle-orm";
+import { desc, eq, like, or } from "drizzle-orm";
 import { v4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { customers } from "../../../db/schemas";
@@ -34,7 +34,6 @@ export class CustomersRepository {
     }
     const [customersData] = await Promise.all([query.execute()]);
 
-    console.log("customersData", customersData);
     return customersData;
   }
 
@@ -43,6 +42,25 @@ export class CustomersRepository {
     phone: string;
   }): Promise<void> {
     const loggedInUser = await usersRepository.getLoggedInUser();
+
+    const foundBefore = await this.db
+      .select()
+      .from(customers)
+      .where(eq(customers.phone, customerData.phone))
+      .limit(1)
+      .execute();
+
+    if (foundBefore?.[0]) {
+      await this.db
+        .update(customers)
+        .set({
+          ...customerData,
+          updatedAt: new Date(),
+        })
+        .where(eq(customers.id, foundBefore?.[0].id))
+        .execute();
+      return;
+    }
 
     const localId = v4();
     // Create payload for the changes table

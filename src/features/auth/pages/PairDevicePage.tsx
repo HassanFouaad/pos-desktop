@@ -60,6 +60,7 @@ export const PairDevicePage = () => {
             posDeviceName: response.data.device.name,
             storeId: response.data.store.id,
             storeName: response.data.store.name,
+            storeCode: response.data.store.code,
             tenantId: response.data.tenant.id,
             tenantName: response.data.tenant.name,
             lastPairedAt: new Date(),

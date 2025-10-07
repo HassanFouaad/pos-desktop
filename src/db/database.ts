@@ -22,6 +22,13 @@ export const AppSchema = new DrizzleAppSchema({
       localOnly: true,
     },
   } as DrizzleTableWithPowerSyncOptions,
+  // Order-related tables that sync with backend
+  orders: DatabaseSchema.orders,
+  orderItems: DatabaseSchema.orderItems,
+  returns: DatabaseSchema.returns,
+  returnItems: DatabaseSchema.returnItems,
+  orderHistory: DatabaseSchema.orderHistory,
+  syncLog: DatabaseSchema.syncLog,
 });
 
 export const powerSyncDb = new PowerSyncDatabase({

@@ -139,9 +139,11 @@ export const initAuth = createAsyncThunk(
 export const login = createAsyncThunk(
   "auth/login",
   async (credentials: LoginCredentials) => {
-    const isNetworkOnline = true;
+    const authResponse = await apiLogin(credentials);
 
-    if (!isNetworkOnline) {
+    const isOfflineMode = Boolean(authResponse?.error?.isNetworkError);
+
+    if (isOfflineMode) {
       const user = await usersRepository.findUserByUsername(
         credentials.username
       );
@@ -154,12 +156,14 @@ export const login = createAsyncThunk(
         throw new Error("Invalid password");
       }
 
+      await usersRepository.setLoggedInUser(user.id);
       // Store USER tokens in database
       await dbTokenStorage.storeToken(
         "accessToken",
         user.accessToken ?? "",
         TokenType.USER
       );
+
       await dbTokenStorage.storeToken(
         "refreshToken",
         user.refreshToken ?? "",
@@ -171,8 +175,6 @@ export const login = createAsyncThunk(
 
       return user;
     }
-
-    const authResponse = await apiLogin(credentials);
 
     if (authResponse.error || !authResponse.data) {
       throw authResponse.error;

@@ -16,6 +16,7 @@ export interface DevicePairingState {
   posDeviceName: string | null;
   storeId: string | null;
   storeName: string | null;
+  storeCode: string | null;
   tenantId: string | null;
   tenantName: string | null;
   lastPairedAt: Date | null;
@@ -40,6 +41,7 @@ const initialState: GlobalState = {
     posDeviceName: null,
     storeId: null,
     storeName: null,
+    storeCode: null,
     tenantId: null,
     tenantName: null,
     lastPairedAt: null,
@@ -123,6 +125,7 @@ const globalSlice = createSlice({
         posDeviceName: null,
         storeId: null,
         storeName: null,
+        storeCode: null,
         tenantId: null,
         tenantName: null,
         lastPairedAt: null,

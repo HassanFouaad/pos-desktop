@@ -28,7 +28,16 @@ export function LoginPage() {
     }
   };
 
+  const handleBack = () => {
+    navigate("/pre-login");
+  };
+
   return (
-    <LoginForm onSubmit={handleLogin} isLoading={isLoading} error={error} />
+    <LoginForm
+      onSubmit={handleLogin}
+      isLoading={isLoading}
+      error={error}
+      onBack={handleBack}
+    />
   );
 }

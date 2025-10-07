@@ -1,0 +1,18 @@
+import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+
+export const inventory = sqliteTable("inventory", {
+  id: text("id").primaryKey(),
+  tenantId: text("tenantId"),
+  storeId: text("storeId"),
+  variantId: text("variantId"),
+  quantityOnHand: integer("quantityOnHand"),
+  quantityCommitted: integer("quantityCommitted"),
+  quantityAvailable: integer("quantityAvailable"),
+  reorderPoint: integer("reorderPoint"),
+  maxStockLevel: integer("maxStockLevel"),
+  lastCountedAt: integer("lastCountedAt", { mode: "timestamp" }),
+  costPerUnit: real("costPerUnit"),
+  totalValue: real("totalValue"),
+  createdAt: integer("createdAt", { mode: "timestamp" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+});

@@ -3,6 +3,7 @@ import {
   Close as CloseIcon,
   Brightness4 as DarkModeIcon,
   Brightness7 as LightModeIcon,
+  Logout as LogoutIcon,
   Menu as MenuIcon,
   Settings as SettingsIcon,
 } from "@mui/icons-material";
@@ -18,6 +19,7 @@ import {
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
+import { LogoutConfirmDialog } from "../layouts/LogoutConfirmDialog";
 
 export interface NavigationAction {
   icon: React.ReactNode;
@@ -35,6 +37,7 @@ export const FloatingNavigation = ({
   extraActions = [],
 }: FloatingNavigationProps) => {
   const [open, setOpen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const navigate = useNavigate();
   const muiTheme = useMuiTheme();
   // Use Redux theme state via custom hook
@@ -44,6 +47,18 @@ export const FloatingNavigation = ({
   const handleClose = () => setOpen(false);
 
   const handleBack = () => navigate(-1);
+
+  const handleLogoutClick = () => {
+    setLogoutDialogOpen(true);
+  };
+
+  const handleLogoutConfirmed = () => {
+    setLogoutDialogOpen(false);
+  };
+
+  const handleLogoutCancelled = () => {
+    setLogoutDialogOpen(false);
+  };
 
   // Default actions
   const defaultActions: NavigationAction[] = [
@@ -56,6 +71,11 @@ export const FloatingNavigation = ({
       icon: <SettingsIcon />,
       name: "Settings",
       onClick: () => navigate("/settings"),
+    },
+    {
+      icon: <LogoutIcon />,
+      name: "Logout",
+      onClick: handleLogoutClick,
     },
   ];
 
@@ -117,6 +137,13 @@ export const FloatingNavigation = ({
           ))}
         </SpeedDial>
       </Box>
+
+      {/* Logout Confirmation Dialog */}
+      <LogoutConfirmDialog
+        open={logoutDialogOpen}
+        onConfirm={handleLogoutConfirmed}
+        onCancel={handleLogoutCancelled}
+      />
     </>
   );
 };

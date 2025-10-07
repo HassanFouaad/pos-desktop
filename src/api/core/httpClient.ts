@@ -1,4 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
+import { posDeviceRepository } from "../../features/auth/repositories/pos-device.repository";
 import {
   dbTokenStorage,
   TokenType,
@@ -224,10 +225,12 @@ class TauriHttpClient {
 
       return null;
     } catch (error: any) {
+      console.log("error", error);
       if (error?.message === "Unauthorized") {
         // Clear POS tokens on auth failure
         console.warn("POS refresh token expired, clearing POS tokens");
         await dbTokenStorage.clearTokens(TokenType.POS);
+        await posDeviceRepository.clearPosDevice();
         throw error;
       }
 
@@ -247,6 +250,7 @@ class TauriHttpClient {
     options: RequestInit & { headers?: Record<string, string> },
     isRetry = false
   ): Promise<ApiResponse<T>> {
+    console.log("error", error);
     const config = getConfig();
 
     if (
@@ -321,6 +325,10 @@ class TauriHttpClient {
         ? error
         : { code: "UNKNOWN", message: String(error) };
 
+    const errorCode = String(
+      ("code" in errorObj ? errorObj.code : undefined) || "UNKNOWN"
+    );
+
     return {
       success: false,
       data: null as unknown as T,
@@ -333,6 +341,7 @@ class TauriHttpClient {
             ? String(errorObj.message)
             : "An unexpected error occurred") || "An unexpected error occurred",
         details: error,
+        isNetworkError: errorCode === "NETWORK_ERROR",
       },
     };
   }
@@ -362,7 +371,7 @@ class TauriHttpClient {
       clearTimeout(timeoutId);
 
       if (response.ok) {
-        const responseData = await response.json();
+        const responseData = response?.body ? await response.json() : {};
         return this.processResponse<T>(responseData);
       }
 
@@ -389,6 +398,7 @@ class TauriHttpClient {
           code: "REQUEST_TIMEOUT",
           message: "Request timed out",
           status: 0,
+          isNetworkError: true,
         };
       }
 
@@ -456,7 +466,6 @@ class TauriHttpClient {
       ...defaultHeaders,
       ...customHeaders,
     };
-    console.log("headers", headers);
     return this.request<T>(url, {
       method: "POST",
       headers,

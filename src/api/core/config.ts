@@ -46,5 +46,6 @@ export const endpoints = {
 
   sync: {
     token: "/v1/pos/sync/token",
+    upload: "/v1/pos/sync",
   },
 };
