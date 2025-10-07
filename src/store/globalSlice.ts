@@ -61,6 +61,7 @@ export const checkPairingStatus = createAsyncThunk(
         "accessToken",
         TokenType.POS
       );
+
       const posAccessToken =
         typeof posAccessTokenResult === "string" ? posAccessTokenResult : null;
 

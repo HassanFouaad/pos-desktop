@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { GridDashboard } from "./components/dashboard/GridDashboard";
 import { GridLayout } from "./components/layouts/GridLayout";
+import { StoreInactiveBlocker } from "./components/layouts/StoreInactiveBlocker";
 import { FloatingNavigation } from "./components/navigation/FloatingNavigation";
 import { ProtectedRoute } from "./features/auth/components/ProtectedRoute";
 import PublicRoute from "./features/auth/components/PublicRoute";
@@ -84,160 +85,165 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        {/* Pairing route - accessible even if not paired */}
-        <Route path="/pair" element={<PairDevicePage />} />
+    <>
+      {/* Real-time store status blocker - monitors store.isActive */}
+      <StoreInactiveBlocker />
 
-        {/* Pre-login route - only accessible if paired but not authenticated */}
-        <Route path="/pre-login" element={<PreLoginPage />} />
+      <Router>
+        <Routes>
+          {/* Pairing route - accessible even if not paired */}
+          <Route path="/pair" element={<PairDevicePage />} />
 
-        {/* Login route - wrapped in PublicRoute for proper navigation */}
-        <Route element={<PublicRoute />}>
-          <Route path="/login" element={<LoginPage />} />
-        </Route>
+          {/* Pre-login route - only accessible if paired but not authenticated */}
+          <Route path="/pre-login" element={<PreLoginPage />} />
 
-        <Route element={<ProtectedRoute />}>
-          <Route
-            path="/"
-            element={
-              <GridLayout title="Modern POS">
-                <DashboardWithNav />
-                <FloatingNavigation />
-              </GridLayout>
-            }
-          />
+          {/* Login route - wrapped in PublicRoute for proper navigation */}
+          <Route element={<PublicRoute />}>
+            <Route path="/login" element={<LoginPage />} />
+          </Route>
 
-          {/* Sales Module */}
-          <Route
-            path="/sales/*"
-            element={
-              <GridLayout title="Sales">
-                <Grid>
-                  <ModulePlaceholder title="Sales" />
-                </Grid>
-                <FloatingNavigation showBackButton />
-              </GridLayout>
-            }
-          />
+          <Route element={<ProtectedRoute />}>
+            <Route
+              path="/"
+              element={
+                <GridLayout title="Modern POS">
+                  <DashboardWithNav />
+                  <FloatingNavigation />
+                </GridLayout>
+              }
+            />
 
-          {/* Customers Module */}
-          <Route
-            path="/customers"
-            element={
-              <GridLayout title="Customers">
-                <CustomersPage />
-                <FloatingNavigation showBackButton />
-              </GridLayout>
-            }
-          />
+            {/* Sales Module */}
+            <Route
+              path="/sales/*"
+              element={
+                <GridLayout title="Sales">
+                  <Grid>
+                    <ModulePlaceholder title="Sales" />
+                  </Grid>
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
 
-          {/* Inventory/Products Module */}
-          <Route
-            path="/products"
-            element={
-              <GridLayout title="Products">
-                <Grid>
-                  <ProductsPage />
-                </Grid>
-                <FloatingNavigation showBackButton />
-              </GridLayout>
-            }
-          />
+            {/* Customers Module */}
+            <Route
+              path="/customers"
+              element={
+                <GridLayout title="Customers">
+                  <CustomersPage />
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
 
-          {/* Product List by Category */}
-          <Route
-            path="/products/:categoryId"
-            element={
-              <GridLayout title="Products">
-                <Grid>
-                  <ProductListPage />
-                </Grid>
-                <FloatingNavigation showBackButton />
-              </GridLayout>
-            }
-          />
+            {/* Inventory/Products Module */}
+            <Route
+              path="/products"
+              element={
+                <GridLayout title="Products">
+                  <Grid>
+                    <ProductsPage />
+                  </Grid>
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
 
-          {/* Orders Module */}
-          <Route
-            path="/orders"
-            element={
-              <GridLayout title="Orders">
-                <Grid>
-                  <ModulePlaceholder title="Orders" />
-                </Grid>
-                <FloatingNavigation showBackButton />
-              </GridLayout>
-            }
-          />
+            {/* Product List by Category */}
+            <Route
+              path="/products/:categoryId"
+              element={
+                <GridLayout title="Products">
+                  <Grid>
+                    <ProductListPage />
+                  </Grid>
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
 
-          {/* Payments Module */}
-          <Route
-            path="/payments"
-            element={
-              <GridLayout title="Payments">
-                <Grid>
-                  <ModulePlaceholder title="Payments" />
-                </Grid>
-                <FloatingNavigation showBackButton />
-              </GridLayout>
-            }
-          />
+            {/* Orders Module */}
+            <Route
+              path="/orders"
+              element={
+                <GridLayout title="Orders">
+                  <Grid>
+                    <ModulePlaceholder title="Orders" />
+                  </Grid>
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
 
-          {/* Receipts Module */}
-          <Route
-            path="/receipts"
-            element={
-              <GridLayout title="Receipts">
-                <Grid>
-                  <ModulePlaceholder title="Receipts" />
-                </Grid>
-                <FloatingNavigation showBackButton />
-              </GridLayout>
-            }
-          />
+            {/* Payments Module */}
+            <Route
+              path="/payments"
+              element={
+                <GridLayout title="Payments">
+                  <Grid>
+                    <ModulePlaceholder title="Payments" />
+                  </Grid>
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
 
-          {/* Reports Module */}
-          <Route
-            path="/reports"
-            element={
-              <GridLayout title="Reports">
-                <Grid>
-                  <ModulePlaceholder title="Reports" />
-                </Grid>
-                <FloatingNavigation showBackButton />
-              </GridLayout>
-            }
-          />
+            {/* Receipts Module */}
+            <Route
+              path="/receipts"
+              element={
+                <GridLayout title="Receipts">
+                  <Grid>
+                    <ModulePlaceholder title="Receipts" />
+                  </Grid>
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
 
-          {/* Settings Module */}
-          <Route
-            path="/settings"
-            element={
-              <GridLayout title="Settings">
-                <Grid>
-                  <ModulePlaceholder title="Settings" />
-                </Grid>
-                <FloatingNavigation showBackButton />
-              </GridLayout>
-            }
-          />
+            {/* Reports Module */}
+            <Route
+              path="/reports"
+              element={
+                <GridLayout title="Reports">
+                  <Grid>
+                    <ModulePlaceholder title="Reports" />
+                  </Grid>
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
 
-          {/* More Module */}
-          <Route
-            path="/more"
-            element={
-              <GridLayout title="More Options">
-                <Grid>
-                  <ModulePlaceholder title="More Options" />
-                </Grid>
-                <FloatingNavigation showBackButton />
-              </GridLayout>
-            }
-          />
-        </Route>
-      </Routes>
-    </Router>
+            {/* Settings Module */}
+            <Route
+              path="/settings"
+              element={
+                <GridLayout title="Settings">
+                  <Grid>
+                    <ModulePlaceholder title="Settings" />
+                  </Grid>
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
+
+            {/* More Module */}
+            <Route
+              path="/more"
+              element={
+                <GridLayout title="More Options">
+                  <Grid>
+                    <ModulePlaceholder title="More Options" />
+                  </Grid>
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
+          </Route>
+        </Routes>
+      </Router>
+    </>
   );
 }
 

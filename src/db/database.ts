@@ -28,17 +28,25 @@ export const AppSchema = new DrizzleAppSchema({
   returns: DatabaseSchema.returns,
   returnItems: DatabaseSchema.returnItems,
   orderHistory: DatabaseSchema.orderHistory,
-  syncLog: DatabaseSchema.syncLog,
 });
-
+console.log("SharedWorker", typeof SharedWorker);
 export const powerSyncDb = new PowerSyncDatabase({
   database: {
-    dbFilename: "powersync.db",
+    dbFilename: "powersync1.db",
   },
-  schema: AppSchema,
+  /*  database: new WASQLiteOpenFactory({
+    dbFilename: "powersync.db",
+    vfs: WASQLiteVFS.OPFSCoopSyncVFS,
+    debugMode: true,
+    flags: {
+      enableMultiTabs: typeof SharedWorker !== "undefined",
+      useWebWorker: typeof SharedWorker !== "undefined",
+    },
+  }), */
   flags: {
     useWebWorker: false,
   },
+  schema: AppSchema,
 });
 
 // This is the DB you will use in queries

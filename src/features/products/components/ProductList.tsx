@@ -5,6 +5,7 @@ import { StoreDTO } from "../../stores/repositories/stores.repository";
 import { productsRepository } from "../repositories/products.repository";
 import { CategoryDTO } from "../types/category.dto";
 import { VariantDetailDTO } from "../types/variant-detail.dto";
+import { CategoryHeader } from "./CategoryHeader";
 import { ProductSearch } from "./ProductSearch";
 import { VariantListItem } from "./VariantListItem";
 
@@ -16,11 +17,30 @@ interface ProductListProps {
 }
 
 export const ProductList = ({ category, store }: ProductListProps) => {
+  const [currentCategory, setCurrentCategory] = useState<CategoryDTO>(category);
   const [variants, setVariants] = useState<VariantDetailDTO[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Update currentCategory when category prop changes
+  useEffect(() => {
+    setCurrentCategory(category);
+  }, [category]);
+
+  const handleCategoryUpdated = useCallback(async () => {
+    try {
+      const updatedCategory = await productsRepository.getCategoryById(
+        category.id
+      );
+      if (updatedCategory) {
+        setCurrentCategory(updatedCategory);
+      }
+    } catch (err) {
+      console.error("Failed to refresh category:", err);
+    }
+  }, [category.id]);
 
   const fetchVariants = useCallback(
     async (search: string, offset: number) => {
@@ -60,6 +80,11 @@ export const ProductList = ({ category, store }: ProductListProps) => {
 
   return (
     <Grid container spacing={2}>
+      <CategoryHeader
+        category={currentCategory}
+        onCategoryUpdated={handleCategoryUpdated}
+      />
+
       <Grid size={{ xs: 12 }} sx={{ mb: 2 }}>
         <ProductSearch
           onSearch={setSearchTerm}
@@ -89,7 +114,7 @@ export const ProductList = ({ category, store }: ProductListProps) => {
         <Grid
           id="scrollableDiv"
           size={{ xs: 12 }}
-          sx={{ height: "calc(100vh - 200px)", overflow: "auto" }}
+          sx={{ height: 1, overflow: "auto" }}
         >
           <InfiniteScroll
             dataLength={variants.length}

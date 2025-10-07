@@ -6,3 +6,5 @@ export type { ContentSectionProps } from "./ContentSection";
 
 export { FormSection } from "./FormSection";
 export type { FormSectionProps } from "./FormSection";
+
+export { StoreInactiveBlocker } from "./StoreInactiveBlocker";
