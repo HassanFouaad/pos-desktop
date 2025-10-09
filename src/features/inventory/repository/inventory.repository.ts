@@ -1,6 +1,6 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { and, eq } from "drizzle-orm";
-import { container } from "tsyringe";
+import { singleton } from "tsyringe";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { DatabaseSchema } from "../../../db/schemas";
@@ -11,6 +11,7 @@ import {
   InventoryDto,
 } from "../types/inventory.types";
 
+@singleton()
 export class InventoryRepository {
   /**
    * Find inventory by variant and store
@@ -117,5 +118,3 @@ export class InventoryRepository {
     });
   }
 }
-
-container.registerSingleton(InventoryRepository);

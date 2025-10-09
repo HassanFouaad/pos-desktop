@@ -1,4 +1,4 @@
-import { container, inject, injectable } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 import { OrderStatus, PaymentMethod, RefundMethod } from "../../../db/enums";
 import { OrderItemsRepository } from "../repositories/order-items.repository";
 import { OrdersRepository } from "../repositories/orders.repository";
@@ -415,5 +415,3 @@ export class RefundService {
     };
   }
 }
-
-container.registerSingleton(RefundService);

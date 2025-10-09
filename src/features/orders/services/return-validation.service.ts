@@ -1,4 +1,4 @@
-import { container, inject } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 import { OrderStatus } from "../../../db/enums";
 import { OrderDto } from "../types/order.types";
 import {
@@ -10,6 +10,7 @@ import {
 } from "../types/return.types";
 import { InventoryValidationService } from "./inventory-validation.service";
 
+@injectable()
 export class ReturnValidationService {
   // Default return window in days - could be moved to tenant configuration in the future
   private readonly DEFAULT_RETURN_WINDOW_DAYS = 30;
@@ -218,5 +219,3 @@ export class ReturnValidationService {
     return false;
   }
 }
-
-container.registerSingleton(ReturnValidationService);

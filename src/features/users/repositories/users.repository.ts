@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm";
-import { container } from "tsyringe";
+import { singleton } from "tsyringe";
 import { drizzleDb } from "../../../db";
 import { users } from "../../../db/schemas";
 import { AuthResponse } from "../../auth/api/auth";
 
 type UserSchema = typeof users.$inferInsert;
 
+@singleton()
 export class UsersRepository {
   /**
    * Inserts or updates a user in the local database.
@@ -92,5 +93,3 @@ export class UsersRepository {
     await drizzleDb.update(users).set({ isLoggedIn: false });
   }
 }
-
-container.registerSingleton(UsersRepository);

@@ -1,12 +1,13 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { eq, inArray } from "drizzle-orm";
-import { container } from "tsyringe";
+import { singleton } from "tsyringe";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { DatabaseSchema } from "../../../db/schemas";
 import { orderItems } from "../../../db/schemas/order-items.schema";
 import { OrderItemDto } from "../types/order.types";
 
+@singleton()
 export class OrderItemsRepository {
   /**
    * Create a new order item
@@ -224,5 +225,3 @@ export class OrderItemsRepository {
     }
   }
 }
-
-container.registerSingleton(OrderItemsRepository);

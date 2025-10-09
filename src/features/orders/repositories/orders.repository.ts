@@ -1,11 +1,12 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { eq } from "drizzle-orm";
-import { container } from "tsyringe";
+import { singleton } from "tsyringe";
 import { drizzleDb } from "../../../db";
 import { DatabaseSchema, orderItems } from "../../../db/schemas";
 import { orders } from "../../../db/schemas/orders.schema";
 import { OrderDto } from "../types/order.types";
 
+@singleton()
 export class OrdersRepository {
   /**
    * Create a new order
@@ -99,14 +100,6 @@ export class OrdersRepository {
    * Format: POS-YYYYMMDD-XXXX
    */
   private generateOrderNumber(storeCode: string): string {
-    // Generate 6 random numbers
-    let numbers = "";
-    for (let i = 0; i < 6; i++) {
-      numbers += Math.floor(Math.random() * 10); // 0–9
-    }
-
-    return `SO-${storeCode}-${numbers}`;
+    return `${storeCode}-${Date.now()}`;
   }
 }
-
-container.registerSingleton(OrdersRepository);

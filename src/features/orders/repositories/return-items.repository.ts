@@ -1,12 +1,13 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { eq } from "drizzle-orm";
-import { container } from "tsyringe";
+import { singleton } from "tsyringe";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { DatabaseSchema } from "../../../db/schemas";
 import { returnItems } from "../../../db/schemas/return-items.schema";
 import { ReturnItemDto } from "../types/return.types";
 
+@singleton()
 export class ReturnItemsRepository {
   /**
    * Create a new return item
@@ -136,5 +137,3 @@ export class ReturnItemsRepository {
     );
   }
 }
-
-container.registerSingleton(ReturnItemsRepository);

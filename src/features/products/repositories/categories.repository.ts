@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { container, inject, singleton } from "tsyringe";
+import { inject, singleton } from "tsyringe";
 import { v4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { categories } from "../../../db/schemas";
@@ -41,5 +41,3 @@ export class CategoriesRepository {
       .execute();
   }
 }
-
-container.registerSingleton(CategoriesRepository);

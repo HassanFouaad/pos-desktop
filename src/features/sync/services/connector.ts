@@ -1,11 +1,11 @@
 import {
   AbstractPowerSyncDatabase,
   PowerSyncBackendConnector,
-} from "@powersync/web";
-import { container } from "tsyringe";
-import { getPosAccessToken } from "../../auth/api/pos-auth";
+} from "@powersync/core";
+import { container, injectable } from "tsyringe";
 import { getSyncData, uploadSyncData } from "../api";
 
+@injectable()
 export default class BackendConnector implements PowerSyncBackendConnector {
   constructor() {}
 

@@ -1,9 +1,11 @@
-import { container, inject, singleton } from "tsyringe";
+import { PowerSyncDatabase } from "@powersync/core";
+import { inject, injectable } from "tsyringe";
 import { powerSyncDb } from "../../../db";
 import BackendConnector from "./connector";
 
-@singleton()
+@injectable()
 class SyncService {
+  private powerSync: PowerSyncDatabase | null = null;
   constructor(
     @inject(BackendConnector) private readonly connector: BackendConnector
   ) {}
@@ -24,7 +26,5 @@ class SyncService {
     }
   }
 }
-
-container.registerSingleton(SyncService);
 
 export default SyncService;

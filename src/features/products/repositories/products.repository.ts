@@ -1,5 +1,5 @@
 import { and, eq, like, or } from "drizzle-orm";
-import { container } from "tsyringe";
+import { singleton } from "tsyringe";
 import { drizzleDb } from "../../../db";
 import {
   categories,
@@ -15,6 +15,7 @@ import type {
   VariantDetailDTO,
 } from "../types/variant-detail.dto";
 
+@singleton()
 export class ProductsRepository {
   async getCategories(searchTerm?: string): Promise<CategoryDTO[]> {
     const query = drizzleDb.select().from(categories);
@@ -194,5 +195,3 @@ export class ProductsRepository {
     return result[0];
   }
 }
-
-container.registerSingleton(ProductsRepository);

@@ -10,7 +10,7 @@ export class StoresService {
   ) {}
 
   /**
-   * Get the current tenant
+   * Get current tenant data from local DB
    */
   async getCurrentTenant(): Promise<TenantDto | null> {
     return this.storesRepository.getCurrentTenant();
@@ -24,7 +24,7 @@ export class StoresService {
   }
 
   /**
-   * Get the current POS
+   * Get current POS device data from local DB
    */
   async getCurrentPos(): Promise<PosDTO | null> {
     return this.storesRepository.getCurrentPos();

@@ -1,12 +1,13 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
-import { eq } from "drizzle-orm";
-import { container } from "tsyringe";
+import { desc, eq } from "drizzle-orm";
+import { singleton } from "tsyringe";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { DatabaseSchema } from "../../../db/schemas";
 import { orderHistory } from "../../../db/schemas/order-history.schema";
 import { CreateOrderHistoryDto, OrderHistoryDto } from "../types/order.types";
 
+@singleton()
 export class OrderHistoryRepository {
   /**
    * Create a new order history entry
@@ -64,7 +65,7 @@ export class OrderHistoryRepository {
       .select()
       .from(orderHistory)
       .where(eq(orderHistory.orderId, orderId))
-      .orderBy(orderHistory.createdAt);
+      .orderBy(desc(orderHistory.createdAt));
 
     return history.map((item) => ({
       ...item,
@@ -73,5 +74,3 @@ export class OrderHistoryRepository {
     })) as OrderHistoryDto[];
   }
 }
-
-container.registerSingleton(OrderHistoryRepository);

@@ -1,10 +1,11 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
-import { container, inject } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 import { DatabaseSchema } from "../../../db/schemas";
 import { InventoryService } from "../../inventory/services";
 import { OrderItemDto } from "../types/order.types";
 import { CreateReturnItemDto, ValidationResult } from "../types/return.types";
 
+@injectable()
 export class InventoryValidationService {
   constructor(
     @inject(InventoryService)
@@ -161,5 +162,3 @@ export class InventoryValidationService {
     return { valid: true };
   }
 }
-
-container.registerSingleton(InventoryValidationService);
