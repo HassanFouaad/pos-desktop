@@ -12,8 +12,9 @@ import { ActionCard } from "../../../../components/cards/ActionCard";
 import { useAppDispatch } from "../../../../store/hooks";
 import { addCartItem } from "../../../../store/orderSlice";
 
+import { container } from "tsyringe";
 import { OrderItemStockType } from "../../../../db/enums";
-import { productsRepository } from "../../../products/repositories/products.repository";
+import { ProductsService } from "../../../products/services";
 import type { VariantDetailDTO } from "../../../products/types/variant-detail.dto";
 import { formatCurrency } from "../../../products/utils/pricing";
 import { StoreDto } from "../../../stores/types";
@@ -24,6 +25,8 @@ interface ProductGridProps {
   storeId: string;
   store: StoreDto;
 }
+
+const productsService = container.resolve(ProductsService);
 
 export const ProductGrid = ({
   categoryId,
@@ -46,7 +49,7 @@ export const ProductGrid = ({
 
       setLoading(true);
       try {
-        const variants = await productsRepository.getVariantsByCategory(
+        const variants = await productsService.getVariantsByCategory(
           categoryId,
           storeId,
           undefined, // searchTerm

@@ -1,3 +1,4 @@
+import { container, inject } from "tsyringe";
 import { OrderStatus } from "../../../db/enums";
 import { OrderDto } from "../types/order.types";
 import {
@@ -7,12 +8,16 @@ import {
   ValidationErrorItem,
   ValidationResult,
 } from "../types/return.types";
-import { inventoryValidationService } from "./inventory-validation.service";
+import { InventoryValidationService } from "./inventory-validation.service";
 
 export class ReturnValidationService {
   // Default return window in days - could be moved to tenant configuration in the future
   private readonly DEFAULT_RETURN_WINDOW_DAYS = 30;
 
+  constructor(
+    @inject(InventoryValidationService)
+    private readonly inventoryValidationService: InventoryValidationService
+  ) {}
   /**
    * Validate if an order is eligible for return
    * @param order Order to check for return eligibility
@@ -104,7 +109,7 @@ export class ReturnValidationService {
         );
         if (orderItem && item.returnToInventory) {
           const inventoryValidation =
-            await inventoryValidationService.validateReturnItemInventory(
+            await this.inventoryValidationService.validateReturnItemInventory(
               storeId,
               item,
               orderItem
@@ -214,4 +219,4 @@ export class ReturnValidationService {
   }
 }
 
-export const returnValidationService = new ReturnValidationService();
+container.registerSingleton(ReturnValidationService);

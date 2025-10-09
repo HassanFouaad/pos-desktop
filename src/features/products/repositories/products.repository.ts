@@ -1,4 +1,5 @@
 import { and, eq, like, or } from "drizzle-orm";
+import { container } from "tsyringe";
 import { drizzleDb } from "../../../db";
 import {
   categories,
@@ -200,4 +201,4 @@ export class ProductsRepository {
   }
 }
 
-export const productsRepository = new ProductsRepository();
+container.registerSingleton(ProductsRepository);

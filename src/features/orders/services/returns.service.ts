@@ -1,11 +1,12 @@
+import { inject, injectable } from "tsyringe";
 import { OrderStatus } from "../../../db/enums";
 import { InventoryReferenceType } from "../../inventory/enums/inventory-reference-type";
-import { inventoryRepository } from "../../inventory/repository/inventory.repository";
-import { storesRepository } from "../../stores/repositories/stores.repository";
-import { orderItemsRepository } from "../repositories/order-items.repository";
-import { ordersRepository } from "../repositories/orders.repository";
-import { returnItemsRepository } from "../repositories/return-items.repository";
-import { returnsRepository } from "../repositories/returns.repository";
+import { InventoryService } from "../../inventory/services/inventory.service";
+import { StoresService } from "../../stores/services/stores.service";
+import { OrderItemsRepository } from "../repositories/order-items.repository";
+import { OrdersRepository } from "../repositories/orders.repository";
+import { ReturnItemsRepository } from "../repositories/return-items.repository";
+import { ReturnsRepository } from "../repositories/returns.repository";
 import { OrderItemDto } from "../types/order.types";
 import {
   ApproveReturnDto,
@@ -14,10 +15,29 @@ import {
   ReturnDto,
   ReturnItemDto,
 } from "../types/return.types";
-import { refundService } from "./refund.service";
-import { returnValidationService } from "./return-validation.service";
+import { RefundService } from "./refund.service";
+import { ReturnValidationService } from "./return-validation.service";
 
+@injectable()
 export class ReturnsService {
+  constructor(
+    @inject(ReturnsRepository)
+    private readonly returnsRepository: ReturnsRepository,
+    @inject(ReturnItemsRepository)
+    private readonly returnItemsRepository: ReturnItemsRepository,
+    @inject(OrderItemsRepository)
+    private readonly orderItemsRepository: OrderItemsRepository,
+    @inject(OrdersRepository)
+    private readonly ordersRepository: OrdersRepository,
+    @inject(InventoryService)
+    private readonly inventoryService: InventoryService,
+    @inject(RefundService)
+    private readonly refundService: RefundService,
+    @inject(ReturnValidationService)
+    private readonly returnValidationService: ReturnValidationService,
+    @inject(StoresService)
+    private readonly storesService: StoresService
+  ) {}
   /**
    * Find return by ID
    * @param id Return ID
@@ -25,7 +45,7 @@ export class ReturnsService {
    * @throws Error if return not found
    */
   async findById(id: string): Promise<ReturnDto> {
-    const returnRecord = await returnsRepository.findById(id);
+    const returnRecord = await this.returnsRepository.findById(id);
 
     if (!returnRecord) {
       throw new Error("Return not found");
@@ -40,7 +60,7 @@ export class ReturnsService {
    * @returns Array of returns for the order
    */
   async findByOriginalOrderId(originalOrderId: string): Promise<ReturnDto[]> {
-    return returnsRepository.findByOriginalOrderId(originalOrderId);
+    return this.returnsRepository.findByOriginalOrderId(originalOrderId);
   }
 
   /**
@@ -52,7 +72,7 @@ export class ReturnsService {
    */
   async create(createDto: CreateReturnDto, userId: string): Promise<ReturnDto> {
     // Fetch the original order with necessary details
-    const originalOrder = await ordersRepository.findById(
+    const originalOrder = await this.ordersRepository.findById(
       createDto.originalOrderId
     );
 
@@ -62,10 +82,10 @@ export class ReturnsService {
 
     // Execute operations sequentially (PowerSync handles consistency)
     try {
-      const tenant = await storesRepository.getCurrentTenant();
+      const tenant = await this.storesService.getCurrentTenant();
 
       // Create return record directly without creating an order
-      const returnRecord = await returnsRepository.create({
+      const returnRecord = await this.returnsRepository.create({
         originalOrderId: originalOrder.id,
         storeId: originalOrder.storeId,
         tenantId: tenant?.id,
@@ -73,7 +93,7 @@ export class ReturnsService {
         returnReason: createDto.returnReason,
         processedBy: userId,
         requiresApproval:
-          returnValidationService.checkApprovalRequired(createDto),
+          this.returnValidationService.checkApprovalRequired(createDto),
         refundMethod: createDto.refundMethod,
         refundAmount: 0, // Will be calculated based on items
         notes: createDto.notes,
@@ -83,7 +103,7 @@ export class ReturnsService {
       let totalRefundAmount = 0;
 
       // Get all order items in a single query for better performance
-      const orderItems = await orderItemsRepository.findByOrderId(
+      const orderItems = await this.orderItemsRepository.findByOrderId(
         originalOrder.id
       );
 
@@ -147,7 +167,7 @@ export class ReturnsService {
       }
 
       // Bulk create return items for better performance
-      const createdReturnItems = await returnItemsRepository.createBulk(
+      const createdReturnItems = await this.returnItemsRepository.createBulk(
         returnItemsToCreate.map((item) => ({
           ...item,
           storeId: originalOrder.storeId,
@@ -155,7 +175,7 @@ export class ReturnsService {
       );
 
       // Bulk update order items for better performance
-      await orderItemsRepository.bulkUpdate(orderItemsToUpdate);
+      await this.orderItemsRepository.bulkUpdate(orderItemsToUpdate);
 
       // Process inventory for returned items
       await this.processInventoryReturn({
@@ -167,7 +187,7 @@ export class ReturnsService {
       });
 
       // Update return record with total refund amount
-      await returnsRepository.update(returnRecord.id, {
+      await this.returnsRepository.update(returnRecord.id, {
         refundAmount: totalRefundAmount,
       });
 
@@ -186,7 +206,7 @@ export class ReturnsService {
       }
 
       // Update original order status
-      await ordersRepository.updateOrder(originalOrder.id, {
+      await this.ordersRepository.updateOrder(originalOrder.id, {
         status: isFullReturn
           ? OrderStatus.REFUNDED
           : OrderStatus.PARTIALLY_REFUNDED,
@@ -223,13 +243,13 @@ export class ReturnsService {
       return;
     }
 
-    const tenant = await storesRepository.getCurrentTenant();
+    const tenant = await this.storesService.getCurrentTenant();
 
     // Process each return item that should be returned to inventory
     for (const returnItem of returnItems) {
       if (returnItem.returnToInventory) {
         // Get the return record to access original order ID
-        const returnRecord = await returnsRepository.findById(returnId);
+        const returnRecord = await this.returnsRepository.findById(returnId);
         if (!returnRecord) {
           console.error(
             `Return record ${returnId} not found during inventory processing`
@@ -238,7 +258,7 @@ export class ReturnsService {
         }
 
         // Get the order items to access the variant ID
-        const orderItems = await orderItemsRepository.findByOrderId(
+        const orderItems = await this.orderItemsRepository.findByOrderId(
           returnRecord.originalOrderId
         );
 
@@ -253,16 +273,16 @@ export class ReturnsService {
 
         try {
           // Use inventory service to return stock to inventory
-          await inventoryRepository.returnStock(
-            orderItem.variantId,
-            storeId,
-            returnItem.quantityReturned,
-            returnId,
-            InventoryReferenceType.ORDER_RETURN,
-            userId || "",
-            tenant?.id || "",
-            `Return: ${returnReason || "Customer return"}`
-          );
+          await this.inventoryService.returnStock({
+            variantId: orderItem.variantId,
+            storeId: storeId,
+            quantity: returnItem.quantityReturned,
+            referenceId: returnId,
+            referenceType: InventoryReferenceType.ORDER_RETURN,
+            currentUserId: userId || "",
+            tenantId: tenant?.id || "",
+            reason: `Return: ${returnReason || "Customer return"}`,
+          });
         } catch (error) {
           // Log error but continue processing (don't fail the entire return)
           console.error(
@@ -286,13 +306,13 @@ export class ReturnsService {
     userId: string
   ): Promise<ReturnDto> {
     // First, make sure the return exists
-    const returnRecord = await returnsRepository.findById(id);
+    const returnRecord = await this.returnsRepository.findById(id);
     if (!returnRecord) {
       throw new Error("Return not found");
     }
 
     // Process the refund through the refund service
-    await refundService.processRefund(
+    await this.refundService.processRefund(
       {
         returnId: id,
         refundMethod: processDto.refundMethod,
@@ -318,7 +338,7 @@ export class ReturnsService {
     approveDto: ApproveReturnDto,
     userId: string
   ): Promise<ReturnDto> {
-    const returnRecord = await returnsRepository.findById(id);
+    const returnRecord = await this.returnsRepository.findById(id);
 
     if (!returnRecord) {
       throw new Error("Return not found");
@@ -331,7 +351,7 @@ export class ReturnsService {
       }
 
       // Update the return with approval data
-      await returnsRepository.update(id, {
+      await this.returnsRepository.update(id, {
         approvedBy: approveDto.approved ? userId : undefined,
         approvalNotes: approveDto.approvalNotes,
       });
@@ -354,7 +374,7 @@ export class ReturnsService {
     createDto: CreateReturnDto,
     userId: string
   ): Promise<ReturnDto> {
-    const originalOrder = await ordersRepository.findById(
+    const originalOrder = await this.ordersRepository.findById(
       createDto.originalOrderId
     );
 
@@ -363,19 +383,21 @@ export class ReturnsService {
     }
 
     // Step 1: Validate return eligibility
-    const eligibility = await returnValidationService.validateReturnEligibility(
-      originalOrder
-    );
+    const eligibility =
+      await this.returnValidationService.validateReturnEligibility(
+        originalOrder
+      );
 
     if (!eligibility.eligible && !eligibility.requiresApproval) {
       throw new Error(eligibility.reason || "Return not eligible");
     }
 
     // Step 2: Validate return items (including inventory validation if storeId provided)
-    const itemValidation = await returnValidationService.validateReturnItems(
-      eligibility.order,
-      createDto.items
-    );
+    const itemValidation =
+      await this.returnValidationService.validateReturnItems(
+        eligibility.order,
+        createDto.items
+      );
 
     if (!itemValidation.valid) {
       throw new Error(
@@ -389,5 +411,3 @@ export class ReturnsService {
     return returnData;
   }
 }
-
-export const returnsService = new ReturnsService();

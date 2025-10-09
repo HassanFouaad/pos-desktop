@@ -1,11 +1,15 @@
 import { CircularProgress, Grid, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { storesRepository } from "../../stores/repositories/stores.repository";
+import { container } from "tsyringe";
+import { StoresService } from "../../stores/services/stores.service";
 import { StoreDto } from "../../stores/types";
 import { ProductList } from "../components/ProductList";
-import { productsRepository } from "../repositories/products.repository";
+import { ProductsService } from "../services/products.service";
 import { CategoryDTO } from "../types/category.dto";
+
+const productsService = container.resolve(ProductsService);
+const storesService = container.resolve(StoresService);
 
 const ProductListPage = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
@@ -27,8 +31,8 @@ const ProductListPage = () => {
         setError(null);
 
         const [fetchedCategory, currentStore] = await Promise.all([
-          productsRepository.getCategoryById(categoryId),
-          storesRepository.getCurrentStore(),
+          productsService.getCategoryById(categoryId),
+          storesService.getCurrentStore(),
         ]);
 
         if (!fetchedCategory) {

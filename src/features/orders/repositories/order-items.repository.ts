@@ -1,5 +1,6 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { eq, inArray } from "drizzle-orm";
+import { container } from "tsyringe";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { DatabaseSchema } from "../../../db/schemas";
@@ -51,17 +52,15 @@ export class OrderItemsRepository {
   async createBulk(
     items: Omit<OrderItemDto, "id" | "createdAt" | "updatedAt">[],
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
-  ): Promise<string[]> {
+  ): Promise<void> {
     if (items.length === 0) {
-      return [];
+      return;
     }
 
     const now = new Date();
-    const ids: string[] = [];
 
     const itemsData = items.map((item) => {
       const id = uuidv4();
-      ids.push(id);
       return {
         id,
         orderId: item.orderId,
@@ -88,7 +87,7 @@ export class OrderItemsRepository {
     });
 
     await (manager ?? drizzleDb).insert(orderItems).values(itemsData);
-    return ids;
+    return;
   }
 
   /**
@@ -226,4 +225,4 @@ export class OrderItemsRepository {
   }
 }
 
-export const orderItemsRepository = new OrderItemsRepository();
+container.registerSingleton(OrderItemsRepository);

@@ -10,8 +10,9 @@ import { useNavigate } from "react-router-dom";
 import { TouchButton } from "../../../components/common/TouchButton";
 import { CenteredPageLayout } from "../../../components/layouts/CenteredPageLayout";
 import { FormSection } from "../../../components/layouts/FormSection";
-import { setPairingData } from "../../../store/globalSlice";
+import { setPairingData, setStore } from "../../../store/globalSlice";
 import { useAppDispatch } from "../../../store/hooks";
+import { StoreDto } from "../../stores/types";
 import { pairPosDevice, pairPosSchema } from "../api/pos-auth";
 
 export const PairDevicePage = () => {
@@ -63,10 +64,14 @@ export const PairDevicePage = () => {
             storeCode: response.data.store.code,
             tenantId: response.data.tenant.id,
             tenantName: response.data.tenant.name,
-            lastPairedAt: new Date(),
+            lastPairedAt: new Date().toISOString(),
             pairingCheckComplete: true,
+            isLoading: false,
           })
         );
+
+        if (response.data.store)
+          dispatch(setStore(response.data.store as StoreDto));
 
         // Navigate to pre-login page
         navigate("/pre-login");

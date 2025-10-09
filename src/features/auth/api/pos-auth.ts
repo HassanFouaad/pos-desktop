@@ -44,7 +44,7 @@ export const pairPosDevice = async (
         storeName: response.data.store.name,
         tenantId: response.data.tenant.id,
         tenantName: response.data.tenant.name,
-        lastPairedAt: new Date(),
+        lastPairedAt: new Date().toISOString(),
       };
 
       await dbTokenStorage.storeToken(

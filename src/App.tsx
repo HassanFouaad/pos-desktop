@@ -1,4 +1,4 @@
-import { Grid, Typography } from "@mui/material";
+import { Box, Grid, Typography } from "@mui/material";
 import { useEffect } from "react";
 import {
   Route,
@@ -86,7 +86,7 @@ function App() {
   }
 
   return (
-    <>
+    <Box sx={{ height: "100vh", width: 1, overflow: "hidden" }}>
       {/* Real-time store status blocker - monitors store.isActive */}
       <StoreInactiveBlocker />
 
@@ -242,7 +242,7 @@ function App() {
           </Route>
         </Routes>
       </Router>
-    </>
+    </Box>
   );
 }
 

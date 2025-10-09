@@ -31,7 +31,7 @@ export const OrderCompleteDialog = ({
     <ResponsiveDialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      maxWidth="md"
       contentSx={{
         textAlign: "center",
         py: 6,

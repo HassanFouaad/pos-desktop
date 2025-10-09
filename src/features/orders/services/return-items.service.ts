@@ -1,31 +1,36 @@
-import {
-  CreateReturnItemData,
-  returnItemsRepository,
-} from "../repositories/return-items.repository";
+import { inject, injectable } from "tsyringe";
+import { ReturnItemsRepository } from "../repositories/return-items.repository";
 import { ReturnItemDto } from "../types/return.types";
 
+@injectable()
 export class ReturnItemsService {
+  constructor(
+    @inject(ReturnItemsRepository)
+    private readonly returnItemsRepository: ReturnItemsRepository
+  ) {}
   /**
    * Find return items by return ID
    */
   async findByReturnId(returnId: string): Promise<ReturnItemDto[]> {
-    return returnItemsRepository.findByReturnId(returnId);
+    return this.returnItemsRepository.findByReturnId(returnId);
   }
 
   /**
    * Create a new return item
    */
-  async create(returnItemData: CreateReturnItemData): Promise<ReturnItemDto> {
-    return returnItemsRepository.create(returnItemData);
+  async create(
+    returnItemData: Omit<ReturnItemDto, "id" | "createdAt">
+  ): Promise<ReturnItemDto> {
+    return this.returnItemsRepository.create(returnItemData);
   }
 
   /**
    * Create multiple return items in bulk
    */
   async createBulk(
-    returnItemsData: CreateReturnItemData[]
+    returnItemsData: Omit<ReturnItemDto, "id" | "createdAt">[]
   ): Promise<ReturnItemDto[]> {
-    return returnItemsRepository.createBulk(returnItemsData);
+    return this.returnItemsRepository.createBulk(returnItemsData);
   }
 
   /**
@@ -44,8 +49,6 @@ export class ReturnItemsService {
    * Count return items by return ID
    */
   async countByReturnId(returnId: string): Promise<number> {
-    return returnItemsRepository.countByReturnId(returnId);
+    return this.returnItemsRepository.countByReturnId(returnId);
   }
 }
-
-export const returnItemsService = new ReturnItemsService();

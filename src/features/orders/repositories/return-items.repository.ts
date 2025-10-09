@@ -1,5 +1,6 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { eq } from "drizzle-orm";
+import { container } from "tsyringe";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { DatabaseSchema } from "../../../db/schemas";
@@ -136,4 +137,4 @@ export class ReturnItemsRepository {
   }
 }
 
-export const returnItemsRepository = new ReturnItemsRepository();
+container.registerSingleton(ReturnItemsRepository);

@@ -10,6 +10,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useStoreStatus } from "../../hooks/useStoreStatus";
+import { useAppSelector } from "../../store/hooks";
 
 /**
  * Full-screen blocker that displays when the store is inactive.
@@ -17,22 +18,24 @@ import { useStoreStatus } from "../../hooks/useStoreStatus";
  * Uses PowerSync watched queries for real-time monitoring.
  */
 export const StoreInactiveBlocker = () => {
-  const { isActive, loading, storeData } = useStoreStatus();
+  useStoreStatus();
+  const store = useAppSelector((state) => state.global.store);
   const theme = useTheme();
 
+  console.log("Store", store);
   // Don't show anything while loading
-  if (loading) {
+  if (!store) {
     return null;
   }
 
   // Don't show blocker if store is active
-  if (isActive) {
+  if (store.isActive) {
     return null;
   }
 
   return (
     <Backdrop
-      open={!isActive}
+      open={!store.isActive}
       sx={{
         color: "#fff",
         zIndex: theme.zIndex.modal + 1000, // Ensure it's above everything
@@ -113,7 +116,7 @@ export const StoreInactiveBlocker = () => {
               </Grid>
 
               {/* Store Info */}
-              {storeData && (
+              {store && (
                 <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>
                   <Box
                     sx={{
@@ -135,11 +138,11 @@ export const StoreInactiveBlocker = () => {
                       STORE INFORMATION
                     </Typography>
                     <Typography variant="h6" fontWeight={600}>
-                      {storeData.name || "Unknown Store"}
+                      {store.name || "Unknown Store"}
                     </Typography>
-                    {storeData.code && (
+                    {store.code && (
                       <Typography variant="body2" color="text.secondary">
-                        Code: {storeData.code}
+                        Code: {store.code}
                       </Typography>
                     )}
                   </Box>

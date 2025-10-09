@@ -48,12 +48,3 @@ export interface PairPosRequest {
 /**
  * Stored pairing data in secure storage
  */
-export interface PairingData {
-  posDeviceId: string;
-  posDeviceName: string;
-  storeId: string;
-  storeName: string;
-  tenantId: string;
-  tenantName: string;
-  lastPairedAt: Date;
-}

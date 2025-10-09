@@ -1,11 +1,23 @@
-import { productsRepository } from "../../products/repositories/products.repository";
+import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
+import { inject, injectable } from "tsyringe";
+import { DatabaseSchema } from "../../../db/schemas";
+import { ProductsService } from "../../products/services/products.service";
+import { OrderItemsRepository } from "../repositories/order-items.repository";
 import {
   CreateOrderItemDto,
   LineItemCalculation,
+  OrderItemDto,
   PreviewOrderItemDto,
 } from "../types/order.types";
 
+@injectable()
 export class OrderItemsService {
+  constructor(
+    @inject(OrderItemsRepository)
+    private readonly orderItemsRepository: OrderItemsRepository,
+    @inject(ProductsService)
+    private readonly productsService: ProductsService
+  ) {}
   /**
    * Calculate line item totals based on quantity, price, and tax
    * Matches backend logic exactly
@@ -76,7 +88,7 @@ export class OrderItemsService {
 
       if (item.variantId) {
         // Get variant with all details in a single query (includes product, inventory, store price)
-        const variant = await productsRepository.getVariantWithDetails(
+        const variant = await this.productsService.getVariantWithDetails(
           item.variantId,
           storeId
         );
@@ -150,6 +162,21 @@ export class OrderItemsService {
 
     return previewItems;
   }
-}
 
-export const orderItemsService = new OrderItemsService();
+  /**
+   * Create order items in bulk
+   */
+  async createBulk(
+    items: OrderItemDto[],
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<void> {
+    return this.orderItemsRepository.createBulk(items, manager);
+  }
+
+  /**
+   * Find order items by order ID
+   */
+  async findByOrderId(orderId: string): Promise<OrderItemDto[]> {
+    return this.orderItemsRepository.findByOrderId(orderId);
+  }
+}

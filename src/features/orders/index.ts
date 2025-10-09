@@ -1,14 +1,6 @@
 // Main page
 export { CreateOrderPage } from "./pages/CreateOrderPage";
 
-// Services
-export { orderItemsService } from "./services/order-items.service";
-export { ordersService } from "./services/orders.service";
-
-// Repositories
-export { orderItemsRepository } from "./repositories/order-items.repository";
-export { ordersRepository } from "./repositories/orders.repository";
-
 // Types
 export * from "./types/order.types";
 

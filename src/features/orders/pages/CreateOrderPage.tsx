@@ -1,20 +1,23 @@
 import { Box, Grid, useTheme } from "@mui/material";
 import { useEffect, useState } from "react";
+import { container } from "tsyringe";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
   resetOrder,
   selectCartItems,
   updatePreview,
 } from "../../../store/orderSlice";
-import { storesRepository } from "../../stores/repositories/stores.repository";
+import { StoresService } from "../../stores/services";
 import { StoreDto } from "../../stores/types";
 import { OrderActions } from "../components/LeftPanel/OrderActions";
 import { OrderCart } from "../components/LeftPanel/OrderCart";
 import { OrderTotals } from "../components/LeftPanel/OrderTotals";
 import { CategoryGrid } from "../components/RightPanel/CategoryGrid";
 import { ProductGrid } from "../components/RightPanel/ProductGrid";
-import { ordersService } from "../services/orders.service";
+import { OrdersService } from "../services/orders.service";
 
+const ordersService = container.resolve(OrdersService);
+const storesService = container.resolve(StoresService);
 export const CreateOrderPage = () => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
@@ -28,7 +31,7 @@ export const CreateOrderPage = () => {
   // Load store on mount
   useEffect(() => {
     const loadStore = async () => {
-      const store = await storesRepository.getCurrentStore();
+      const store = await storesService.getCurrentStore();
       setStore(store);
     };
 

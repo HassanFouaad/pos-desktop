@@ -5,13 +5,13 @@ import {
   Inventory,
 } from "@mui/icons-material";
 import { Card, CardActionArea, Chip, Grid, Typography } from "@mui/material";
-import { StoreDTO } from "../../stores/repositories/stores.repository";
+import { StoreDto } from "../../stores/types";
 import { VariantDetailDTO } from "../types/variant-detail.dto";
 import { formatCurrency } from "../utils/pricing";
 
 interface VariantListItemProps {
   variant: VariantDetailDTO;
-  store: StoreDTO;
+  store: StoreDto;
   onClick?: (variant: VariantDetailDTO) => void;
 }
 

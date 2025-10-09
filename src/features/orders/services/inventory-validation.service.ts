@@ -1,10 +1,15 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
+import { container, inject } from "tsyringe";
 import { DatabaseSchema } from "../../../db/schemas";
-import { inventoryRepository } from "../../inventory/repository/inventory.repository";
+import { InventoryService } from "../../inventory/services";
 import { OrderItemDto } from "../types/order.types";
 import { CreateReturnItemDto, ValidationResult } from "../types/return.types";
 
 export class InventoryValidationService {
+  constructor(
+    @inject(InventoryService)
+    private readonly inventoryService: InventoryService
+  ) {}
   /**
    * Validate if a variant can be returned to inventory
    * @param storeId Store ID
@@ -21,7 +26,7 @@ export class InventoryValidationService {
       // We don't need to check if the variant exists separately because the inventory repository will do that
       try {
         // If no inventory record exists, we'll create one later during the return process
-        await inventoryRepository.findByVariantAndStore(
+        await this.inventoryService.findByVariantAndStore(
           variantId,
           storeId,
           manager
@@ -157,4 +162,4 @@ export class InventoryValidationService {
   }
 }
 
-export const inventoryValidationService = new InventoryValidationService();
+container.registerSingleton(InventoryValidationService);

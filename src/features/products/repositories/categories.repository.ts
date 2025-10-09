@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { container } from "tsyringe";
 import { v4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { categories } from "../../../db/schemas";
@@ -41,4 +42,4 @@ export class CategoriesRepository {
   }
 }
 
-export const categoriesRepository = new CategoriesRepository();
+container.registerSingleton(CategoriesRepository);

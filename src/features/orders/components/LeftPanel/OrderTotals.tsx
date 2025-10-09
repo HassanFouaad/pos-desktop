@@ -87,7 +87,7 @@ export const OrderTotals = () => {
       <Box
         sx={{
           bgcolor: "primary.lighter",
-          borderRadius: 2,
+          borderRadius: 1,
           p: 1.5,
           border: "1px solid",
           borderColor: "primary.light",

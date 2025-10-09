@@ -1,3 +1,4 @@
+import { inject, injectable } from "tsyringe";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import {
@@ -7,13 +8,12 @@ import {
   OrderType,
   PaymentStatus,
 } from "../../../db/enums";
-import { customersService } from "../../customers/services/customers.service";
-import { inventoryRepository } from "../../inventory/repository/inventory.repository";
-import { storesRepository } from "../../stores/repositories/stores.repository";
+import { CustomersService } from "../../customers/services/customers.service";
+import { InventoryService } from "../../inventory/services/inventory.service";
+import { StoresService } from "../../stores/services/stores.service";
 import { usersRepository } from "../../users/repositories/users.repository";
-import { orderHistoryRepository } from "../repositories/order-history.repository";
-import { orderItemsRepository } from "../repositories/order-items.repository";
-import { ordersRepository } from "../repositories/orders.repository";
+import { OrderHistoryRepository } from "../repositories/order-history.repository";
+import { OrdersRepository } from "../repositories/orders.repository";
 import {
   CompleteOrderDto,
   CreateOrderDto,
@@ -24,9 +24,24 @@ import {
   PreviewOrderItemDto,
   VoidOrderDto,
 } from "../types/order.types";
-import { orderItemsService } from "./order-items.service";
+import { OrderItemsService } from "./order-items.service";
 
+@injectable()
 export class OrdersService {
+  constructor(
+    @inject(OrdersRepository)
+    private readonly ordersRepository: OrdersRepository,
+    @inject(OrderHistoryRepository)
+    private readonly orderHistoryRepository: OrderHistoryRepository,
+    @inject(OrderItemsService)
+    private readonly orderItemsService: OrderItemsService,
+    @inject(CustomersService)
+    private readonly customersService: CustomersService,
+    @inject(InventoryService)
+    private readonly inventoryService: InventoryService,
+    @inject(StoresService)
+    private readonly storesService: StoresService
+  ) {}
   /**
    * Preview a sales order without saving to database
    * This is called on every cart change to update totals
@@ -46,13 +61,13 @@ export class OrdersService {
     }
 
     // Validate store exists
-    const store = await storesRepository.getCurrentStore();
+    const store = await this.storesService.getCurrentStore();
     if (!store) {
       throw new Error("Store not found");
     }
 
     // Get preview items with calculations
-    const previewItems = await orderItemsService.previewOrderItems(
+    const previewItems = await this.orderItemsService.previewOrderItems(
       items,
       storeId
     );
@@ -84,13 +99,13 @@ export class OrdersService {
     }
 
     // Validate store exists
-    const store = await storesRepository.getCurrentStore();
+    const store = await this.storesService.getCurrentStore();
     if (!store) {
       throw new Error("Store not found");
     }
 
     const user = await usersRepository.getLoggedInUser();
-    const tenant = await storesRepository.getCurrentTenant();
+    const tenant = await this.storesService.getCurrentTenant();
     const localId = uuidv4();
 
     console.log("Getting preview for order");
@@ -109,7 +124,7 @@ export class OrdersService {
       const orderId = await drizzleDb.transaction(
         async (tx: any): Promise<string> => {
           // Create order with calculated totals
-          const orderId = await ordersRepository.createOrder(
+          const orderId = await this.ordersRepository.createOrder(
             {
               ...data,
               storeId: store.id,
@@ -173,7 +188,7 @@ export class OrdersService {
               previewItem.variantId
             ) {
               console.log("Reserving inventory for stock item");
-              await inventoryRepository.reserveStock(
+              await this.inventoryService.reserveStock(
                 {
                   variantId: previewItem.variantId,
                   storeId: store.id,
@@ -187,9 +202,9 @@ export class OrdersService {
             }
           }
 
-          await orderItemsRepository.createBulk(toCreateOrderItems, tx);
+          await this.orderItemsService.createBulk(toCreateOrderItems, tx);
           // Create initial order history entry
-          await orderHistoryRepository.create(
+          await this.orderHistoryRepository.create(
             {
               orderId: orderId,
               userId: user?.id,
@@ -208,7 +223,7 @@ export class OrdersService {
       console.log("Order created with ID:", orderId);
 
       // Return the complete order with items
-      const createdOrder = await ordersRepository.findById(orderId);
+      const createdOrder = await this.ordersRepository.findById(orderId);
       console.log("Created order", createdOrder);
       return createdOrder as OrderDto;
     } catch (error) {
@@ -222,8 +237,8 @@ export class OrdersService {
    * Note: No transaction wrapper - PowerSync handles consistency
    */
   async completeOrder(data: CompleteOrderDto): Promise<OrderDto> {
-    const tenant = await storesRepository.getCurrentTenant();
-    const order = await ordersRepository.findById(data.orderId);
+    const tenant = await this.storesService.getCurrentTenant();
+    const order = await this.ordersRepository.findById(data.orderId);
     const user = await usersRepository.getLoggedInUser();
 
     if (!order) {
@@ -236,60 +251,71 @@ export class OrdersService {
 
     try {
       // Consume inventory for all stock items
-      const items = await orderItemsRepository.findByOrderId(data.orderId);
+      const items = await this.orderItemsService.findByOrderId(data.orderId);
 
-      for (const item of items) {
-        if (item.stockType === OrderItemStockType.INVENTORY && item.variantId) {
-          await inventoryRepository.consumeStock(
-            item.variantId,
-            order.storeId,
-            item.quantity,
-            data.orderId,
-            user?.id as string,
-            tenant?.id ?? ""
-          );
+      await drizzleDb.transaction(async (manager: any) => {
+        for (const item of items) {
+          if (
+            item.stockType === OrderItemStockType.INVENTORY &&
+            item.variantId
+          ) {
+            await this.inventoryService.consumeStock(
+              {
+                variantId: item.variantId,
+                storeId: order.storeId,
+                quantity: item.quantity,
+                referenceId: data.orderId,
+                currentUserId: user?.id as string,
+                tenantId: tenant?.id ?? "",
+              },
+              manager
+            );
+            const changeGiven = Math.max(
+              0,
+              data.amountPaid - order.totalAmount
+            );
+
+            // Update order status
+            await this.ordersRepository.updateOrder(
+              data.orderId,
+              {
+                status: OrderStatus.COMPLETED,
+                paymentMethod: data.paymentMethod,
+                paymentStatus: PaymentStatus.PAID,
+                amountPaid: data.amountPaid,
+                amountDue: 0,
+                changeGiven,
+                completedAt: data.orderDate || new Date(),
+                orderDate: data.orderDate || order.orderDate,
+              },
+              manager
+            );
+
+            // Create order history entry for completion
+            await this.orderHistoryRepository.create(
+              {
+                orderId: data.orderId,
+                userId: user?.id,
+                fromStatus: OrderStatus.PENDING,
+                toStatus: OrderStatus.COMPLETED,
+                storeId: order.storeId,
+                tenantId: tenant?.id ?? "",
+              },
+              manager
+            );
+          }
+
+          if (order.customerId) {
+            await this.customersService.updateVisitData(
+              order.customerId,
+              order.totalAmount,
+              manager
+            );
+          }
         }
-      }
-
-      // Calculate change
-      const changeGiven = Math.max(0, data.amountPaid - order.totalAmount);
-
-      // Update order status
-      await ordersRepository.updateOrder(data.orderId, {
-        status: OrderStatus.COMPLETED,
-        paymentMethod: data.paymentMethod,
-        paymentStatus: PaymentStatus.PAID,
-        amountPaid: data.amountPaid,
-        amountDue: 0,
-        changeGiven,
-        completedAt: data.orderDate || new Date(),
-        orderDate: data.orderDate || order.orderDate,
       });
 
-      // Create order history entry for completion
-      await orderHistoryRepository.create({
-        orderId: data.orderId,
-        userId: user?.id,
-        fromStatus: OrderStatus.PENDING,
-        toStatus: OrderStatus.COMPLETED,
-        storeId: order.storeId,
-        tenantId: tenant?.id ?? "",
-      });
-
-      // Update customer visit data if customer is associated
-      if (order.customerId) {
-        try {
-          await customersService.updateVisitData(
-            order.customerId,
-            order.totalAmount
-          );
-        } catch (error) {
-          console.error("Failed to update customer visit data:", error);
-          // Don't fail the entire operation if customer update fails
-        }
-      }
-
-      return ordersRepository.findById(data.orderId) as Promise<OrderDto>;
+      return this.ordersRepository.findById(data.orderId) as Promise<OrderDto>;
     } catch (error) {
       console.error("Error completing order:", error);
       throw error;
@@ -301,8 +327,8 @@ export class OrdersService {
    * Note: No transaction wrapper - PowerSync handles consistency
    */
   async voidOrder(data: VoidOrderDto): Promise<void> {
-    const tenant = await storesRepository.getCurrentTenant();
-    const order = await ordersRepository.findById(data.orderId);
+    const tenant = await this.storesService.getCurrentTenant();
+    const order = await this.ordersRepository.findById(data.orderId);
     const user = await usersRepository.getLoggedInUser();
 
     if (!order) {
@@ -315,29 +341,28 @@ export class OrdersService {
 
     try {
       // Release inventory for all stock items
-      const items = await orderItemsRepository.findByOrderId(data.orderId);
+      const items = await this.orderItemsService.findByOrderId(data.orderId);
 
       for (const item of items) {
         if (item.stockType === OrderItemStockType.INVENTORY && item.variantId) {
-          await inventoryRepository.releaseStock(
-            item.variantId,
-            order.storeId,
-            item.quantity,
-            data.orderId,
-            user?.id as string,
-            tenant?.id ?? ""
-          );
+          await this.inventoryService.releaseStock({
+            variantId: item.variantId,
+            storeId: order.storeId,
+            quantity: item.quantity,
+            referenceId: data.orderId,
+            currentUserId: user?.id as string,
+            tenantId: tenant?.id ?? "",
+          });
         }
       }
 
       // Update order status
-      await ordersRepository.updateOrder(data.orderId, {
+      await this.ordersRepository.updateOrder(data.orderId, {
         status: OrderStatus.VOIDED,
-        internalNotes: data.reason,
       });
 
       // Create order history entry for voiding
-      await orderHistoryRepository.create({
+      await this.orderHistoryRepository.create({
         orderId: data.orderId,
         userId: user?.id,
         fromStatus: OrderStatus.PENDING,
@@ -355,7 +380,7 @@ export class OrdersService {
    * Get order by ID
    */
   async getOrderById(orderId: string): Promise<OrderDto | null> {
-    return ordersRepository.findById(orderId);
+    return this.ordersRepository.findById(orderId);
   }
 
   // Private helper methods
@@ -449,5 +474,3 @@ export class OrdersService {
     };
   }
 }
-
-export const ordersService = new OrdersService();

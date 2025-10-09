@@ -1,10 +1,9 @@
-import { eq } from "drizzle-orm";
-import { drizzleDb } from "../../../db";
-import { orders } from "../../../db/schemas/orders.schema";
-
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
+import { eq } from "drizzle-orm";
 import { container } from "tsyringe";
+import { drizzleDb } from "../../../db";
 import { DatabaseSchema, orderItems } from "../../../db/schemas";
+import { orders } from "../../../db/schemas/orders.schema";
 import { OrderDto } from "../types/order.types";
 
 export class OrdersRepository {
@@ -111,5 +110,3 @@ export class OrdersRepository {
 }
 
 container.registerSingleton(OrdersRepository);
-
-export const ordersRepository = new OrdersRepository();

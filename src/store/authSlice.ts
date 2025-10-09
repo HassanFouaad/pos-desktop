@@ -1,6 +1,4 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { drizzleDb } from "../db";
-import { users } from "../db/schemas";
 import {
   login as apiLogin,
   AuthResponse,
@@ -52,12 +50,8 @@ export const initAuth = createAsyncThunk(
   "auth/init",
   async (_, { dispatch }) => {
     try {
-      console.log("initAuth");
-      const allUsers = await drizzleDb.select().from(users);
-      console.log("allUsers", allUsers);
       const currentLoggedInUser = await usersRepository.getLoggedInUser();
 
-      console.log("currentLoggedInUser", currentLoggedInUser);
       // Get USER token from database (not POS token)
       const tokenResult = await dbTokenStorage.getToken(
         "accessToken",
@@ -67,6 +61,7 @@ export const initAuth = createAsyncThunk(
 
       // Update offline mode status
       const isNetworkOnline = true;
+
       dispatch(authSlice.actions.setOfflineMode(!isNetworkOnline));
 
       // CRITICAL FIX: If we have a logged in user in the database, use it regardless

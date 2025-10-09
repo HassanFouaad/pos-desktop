@@ -1,11 +1,14 @@
 import { Edit } from "@mui/icons-material";
 import { Alert, Card, Grid, Snackbar, Typography } from "@mui/material";
 import { useState } from "react";
+import { container } from "tsyringe";
 import { TouchButton } from "../../../components/common/TouchButton";
-import { categoriesRepository } from "../repositories/categories.repository";
 import { UpdateCategoryDTO } from "../schemas/update-category.schema";
+import { ProductsService } from "../services/products.service";
 import { CategoryDTO } from "../types/category.dto";
 import { EditCategoryForm } from "./EditCategoryForm";
+
+const productsService = container.resolve(ProductsService);
 
 interface CategoryHeaderProps {
   category: CategoryDTO;
@@ -25,7 +28,7 @@ export const CategoryHeader = ({
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await categoriesRepository.updateCategory(data);
+      await productsService.updateCategory(data);
       setEditModalOpen(false);
       setSnackbarOpen(true);
       onCategoryUpdated();

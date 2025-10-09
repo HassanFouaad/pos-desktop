@@ -29,7 +29,7 @@ export const AppSchema = new DrizzleAppSchema({
   returnItems: DatabaseSchema.returnItems,
   orderHistory: DatabaseSchema.orderHistory,
 });
-console.log("SharedWorker", typeof SharedWorker);
+
 export const powerSyncDb = new PowerSyncDatabase({
   database: {
     dbFilename: "powersync1.db",

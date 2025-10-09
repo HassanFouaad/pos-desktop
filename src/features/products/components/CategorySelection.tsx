@@ -2,14 +2,16 @@ import { Add, Category } from "@mui/icons-material";
 import { Alert, CircularProgress, Grid, Snackbar } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { container } from "tsyringe";
 import { ActionCard } from "../../../components/cards/ActionCard";
 import { TouchButton } from "../../../components/common/TouchButton";
-import { categoriesRepository } from "../repositories/categories.repository";
-import { productsRepository } from "../repositories/products.repository";
 import { CreateCategoryDTO } from "../schemas/create-category.schema";
+import { ProductsService } from "../services/products.service";
 import { CategoryDTO } from "../types/category.dto";
 import { CreateCategoryForm } from "./CreateCategoryForm";
 import { ProductSearch } from "./ProductSearch";
+
+const productsService = container.resolve(ProductsService);
 
 export const CategorySelection = () => {
   const navigate = useNavigate();
@@ -26,7 +28,7 @@ export const CategorySelection = () => {
     try {
       setLoading(true);
       setError(null);
-      const fetchedCategories = await productsRepository.getCategories(search);
+      const fetchedCategories = await productsService.getCategories(search);
       setCategories(fetchedCategories);
     } catch (err) {
       setError("Failed to load categories.");
@@ -44,7 +46,7 @@ export const CategorySelection = () => {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await categoriesRepository.createCategory(data);
+      await productsService.createCategory(data);
       setCreateModalOpen(false);
       setSnackbarOpen(true);
       fetchCategories(searchTerm);

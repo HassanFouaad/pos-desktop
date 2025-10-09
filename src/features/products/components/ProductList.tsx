@@ -1,13 +1,16 @@
 import { CircularProgress, Grid, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
+import { container } from "tsyringe";
 import { StoreDto } from "../../stores/types";
-import { productsRepository } from "../repositories/products.repository";
+import { ProductsService } from "../services/products.service";
 import { CategoryDTO } from "../types/category.dto";
 import { VariantDetailDTO } from "../types/variant-detail.dto";
 import { CategoryHeader } from "./CategoryHeader";
 import { ProductSearch } from "./ProductSearch";
 import { VariantListItem } from "./VariantListItem";
+
+const productsService = container.resolve(ProductsService);
 
 const LIMIT = 20;
 
@@ -31,7 +34,7 @@ export const ProductList = ({ category, store }: ProductListProps) => {
 
   const handleCategoryUpdated = useCallback(async () => {
     try {
-      const updatedCategory = await productsRepository.getCategoryById(
+      const updatedCategory = await productsService.getCategoryById(
         category.id
       );
       if (updatedCategory) {
@@ -47,7 +50,7 @@ export const ProductList = ({ category, store }: ProductListProps) => {
       setLoading(true);
       setError(null);
       try {
-        const fetchedVariants = await productsRepository.getVariantsByCategory(
+        const fetchedVariants = await productsService.getVariantsByCategory(
           category.id,
           store.id,
           search,

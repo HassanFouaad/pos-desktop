@@ -15,20 +15,30 @@ import {
   useTheme,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import { container } from "tsyringe";
 import { ActionCard } from "../../../components/cards/ActionCard";
 import { InfoCard } from "../../../components/cards/InfoCard";
 import { CenteredPageLayout } from "../../../components/layouts/CenteredPageLayout";
 import { UnpairConfirmDialog } from "../../../components/layouts/UnpairConfirmDialog";
-import { storesRepository } from "../../stores/repositories/stores.repository";
-import { PosDTO, StoreDto, TenantDto } from "../../stores/types";
+import { useAppSelector } from "../../../store/hooks";
+import { StoresService } from "../../stores/services";
+import { PosDTO, TenantDto } from "../../stores/types";
+
+const storesService = container.resolve(StoresService);
 
 export const PreLoginPage = () => {
   const [unpairDialogOpen, setUnpairDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<TenantDto | null>(null);
-  const [store, setStore] = useState<StoreDto | null>(null);
+
   const [pos, setPos] = useState<PosDTO | null>(null);
+
+  const { isPaired, pairingCheckComplete } = useAppSelector(
+    (state) => state.global.pairing
+  );
+
+  const store = useAppSelector((state) => state.global.store);
 
   const navigate = useNavigate();
   const theme = useTheme();
@@ -37,18 +47,19 @@ export const PreLoginPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        if (!isPaired || !pairingCheckComplete) return;
+
         setLoading(true);
 
         // Fetch tenant and store from database
-        const [tenantData, storeData, posData] = await Promise.all([
-          storesRepository.getCurrentTenant(),
-          storesRepository.getCurrentStore(),
-          storesRepository.getCurrentPos(),
+        const [tenantData, posData] = await Promise.all([
+          storesService.getCurrentTenant(),
+          storesService.getCurrentPos(),
         ]);
 
         setTenant(tenantData);
-        setStore(storeData);
         setPos(posData);
+        setLoading(false);
       } catch (error) {
         console.error("Failed to fetch tenant/store data:", error);
       } finally {
@@ -57,7 +68,7 @@ export const PreLoginPage = () => {
     };
 
     fetchData();
-  }, []);
+  }, [isPaired, pairingCheckComplete]);
 
   const handleLogin = () => {
     navigate("/login");
@@ -76,8 +87,18 @@ export const PreLoginPage = () => {
     setUnpairDialogOpen(false);
   };
 
+  if (!isPaired && pairingCheckComplete) {
+    return <Navigate to="/pair" />;
+  }
+
+  console.log({
+    loading,
+    pairingCheckComplete,
+    store,
+  });
+
   // Show loading state
-  if (loading) {
+  if (loading || !pairingCheckComplete || !store) {
     return (
       <CenteredPageLayout>
         <Grid size={{ xs: 12 }} sx={{ textAlign: "center", py: 8 }}>

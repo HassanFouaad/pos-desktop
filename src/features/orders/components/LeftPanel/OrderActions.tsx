@@ -1,13 +1,16 @@
 import { Payment as PaymentIcon } from "@mui/icons-material";
 import { Alert, Box, Button, Snackbar, useTheme } from "@mui/material";
 import { useState } from "react";
+import { container } from "tsyringe";
 import { OrderSource, PaymentMethod } from "../../../../db/enums";
 import { useAppSelector } from "../../../../store/hooks";
 import { selectCartItems, selectPreview } from "../../../../store/orderSlice";
-import { ordersService } from "../../services/orders.service";
+import { OrdersService } from "../../services/orders.service";
 import { OrderDto } from "../../types/order.types";
 import { OrderCompleteDialog } from "../Modals/OrderCompleteDialog";
 import { PaymentModal } from "../Modals/PaymentModal";
+
+const ordersService = container.resolve(OrdersService);
 
 interface OrderActionsProps {
   storeId: string;
@@ -113,13 +116,9 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
   const handleVoid = async () => {
     if (!createdOrder) return;
 
-    const confirmed = confirm("Are you sure you want to void this order?");
-    if (!confirmed) return;
-
     try {
       await ordersService.voidOrder({
         orderId: createdOrder.id,
-        reason: "User voided order",
       });
 
       showSnackbar("Order voided successfully!", "success");

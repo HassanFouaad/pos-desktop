@@ -63,3 +63,35 @@ export interface ReserveStockParams {
   currentUserId: string;
   tenantId: string;
 }
+
+// Consume Stock Parameters
+export interface ConsumeStockParams {
+  variantId: string;
+  storeId: string;
+  quantity: number;
+  referenceId: string;
+  currentUserId: string;
+  tenantId: string;
+}
+
+// Release Stock Parameters
+export interface ReleaseStockParams {
+  variantId: string;
+  storeId: string;
+  quantity: number;
+  referenceId: string;
+  currentUserId: string;
+  tenantId: string;
+}
+
+// Return Stock Parameters
+export interface ReturnStockParams {
+  variantId: string;
+  storeId: string;
+  quantity: number;
+  referenceId: string;
+  referenceType: string;
+  currentUserId: string;
+  tenantId: string;
+  reason?: string;
+}

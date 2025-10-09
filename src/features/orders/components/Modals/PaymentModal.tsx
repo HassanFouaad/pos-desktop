@@ -75,7 +75,7 @@ export const PaymentModal = ({
     <ResponsiveDialog
       open={open}
       onClose={onClose}
-      maxWidth="sm"
+      maxWidth="md"
       title={
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           Process Payment

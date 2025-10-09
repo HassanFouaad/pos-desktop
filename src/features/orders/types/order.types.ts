@@ -150,7 +150,6 @@ export interface CompleteOrderDto {
 // Void Order DTO
 export interface VoidOrderDto {
   orderId: string;
-  reason?: string;
 }
 
 // Order with items for local state
