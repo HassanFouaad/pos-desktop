@@ -1,5 +1,5 @@
 import { Add, Category } from "@mui/icons-material";
-import { Alert, CircularProgress, Grid, Snackbar } from "@mui/material";
+import { CircularProgress, Grid } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { container } from "tsyringe";
@@ -22,7 +22,6 @@ export const CategorySelection = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const fetchCategories = useCallback(async (search: string) => {
     try {
@@ -48,7 +47,6 @@ export const CategorySelection = () => {
     try {
       await productsService.createCategory(data);
       setCreateModalOpen(false);
-      setSnackbarOpen(true);
       fetchCategories(searchTerm);
     } catch (err: unknown) {
       const errorMessage =
@@ -115,19 +113,6 @@ export const CategorySelection = () => {
         isLoading={isSubmitting}
         error={submitError}
       />
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
-      >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity="success"
-          sx={{ width: "100%" }}
-        >
-          Category created successfully
-        </Alert>
-      </Snackbar>
     </Grid>
   );
 };

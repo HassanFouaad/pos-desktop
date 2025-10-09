@@ -1,3 +1,4 @@
+import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { inject, injectable } from "tsyringe";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
@@ -8,10 +9,11 @@ import {
   OrderType,
   PaymentStatus,
 } from "../../../db/enums";
+import { DatabaseSchema } from "../../../db/schemas";
 import { CustomersService } from "../../customers/services/customers.service";
 import { InventoryService } from "../../inventory/services/inventory.service";
 import { StoresService } from "../../stores/services/stores.service";
-import { usersRepository } from "../../users/repositories/users.repository";
+import { UsersRepository } from "../../users/repositories/users.repository";
 import { OrderHistoryRepository } from "../repositories/order-history.repository";
 import { OrdersRepository } from "../repositories/orders.repository";
 import {
@@ -40,7 +42,9 @@ export class OrdersService {
     @inject(InventoryService)
     private readonly inventoryService: InventoryService,
     @inject(StoresService)
-    private readonly storesService: StoresService
+    private readonly storesService: StoresService,
+    @inject(UsersRepository)
+    private readonly usersRepository: UsersRepository
   ) {}
   /**
    * Preview a sales order without saving to database
@@ -104,7 +108,7 @@ export class OrdersService {
       throw new Error("Store not found");
     }
 
-    const user = await usersRepository.getLoggedInUser();
+    const user = await this.usersRepository.getLoggedInUser();
     const tenant = await this.storesService.getCurrentTenant();
     const localId = uuidv4();
 
@@ -239,7 +243,7 @@ export class OrdersService {
   async completeOrder(data: CompleteOrderDto): Promise<OrderDto> {
     const tenant = await this.storesService.getCurrentTenant();
     const order = await this.ordersRepository.findById(data.orderId);
-    const user = await usersRepository.getLoggedInUser();
+    const user = await this.usersRepository.getLoggedInUser();
 
     if (!order) {
       throw new Error("Order not found");
@@ -329,7 +333,7 @@ export class OrdersService {
   async voidOrder(data: VoidOrderDto): Promise<void> {
     const tenant = await this.storesService.getCurrentTenant();
     const order = await this.ordersRepository.findById(data.orderId);
-    const user = await usersRepository.getLoggedInUser();
+    const user = await this.usersRepository.getLoggedInUser();
 
     if (!order) {
       throw new Error("Order not found");
@@ -381,6 +385,14 @@ export class OrdersService {
    */
   async getOrderById(orderId: string): Promise<OrderDto | null> {
     return this.ordersRepository.findById(orderId);
+  }
+
+  async updateOrder(
+    id: string,
+    data: Partial<Omit<OrderDto, "id" | "createdAt" | "updatedAt" | "items">>,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<void> {
+    return this.ordersRepository.updateOrder(id, data, manager);
   }
 
   // Private helper methods

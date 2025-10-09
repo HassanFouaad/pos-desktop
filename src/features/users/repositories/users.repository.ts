@@ -1,11 +1,12 @@
 import { eq } from "drizzle-orm";
+import { container } from "tsyringe";
 import { drizzleDb } from "../../../db";
 import { users } from "../../../db/schemas";
 import { AuthResponse } from "../../auth/api/auth";
 
 type UserSchema = typeof users.$inferInsert;
 
-class UsersRepository {
+export class UsersRepository {
   /**
    * Inserts or updates a user in the local database.
    * Also ensures all other users are marked as not logged in.
@@ -92,4 +93,4 @@ class UsersRepository {
   }
 }
 
-export const usersRepository = new UsersRepository();
+container.registerSingleton(UsersRepository);

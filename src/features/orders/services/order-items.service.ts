@@ -179,4 +179,14 @@ export class OrderItemsService {
   async findByOrderId(orderId: string): Promise<OrderItemDto[]> {
     return this.orderItemsRepository.findByOrderId(orderId);
   }
+
+  /**
+   * Update multiple items in bulk
+   */
+  async bulkUpdate(
+    updates: Array<{ id: string; data: Partial<OrderItemDto> }>,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<void> {
+    return this.orderItemsRepository.bulkUpdate(updates, manager);
+  }
 }

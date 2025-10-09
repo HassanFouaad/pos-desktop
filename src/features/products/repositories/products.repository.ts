@@ -16,14 +16,8 @@ import type {
 } from "../types/variant-detail.dto";
 
 export class ProductsRepository {
-  private db: typeof drizzleDb;
-
-  constructor() {
-    this.db = drizzleDb;
-  }
-
   async getCategories(searchTerm?: string): Promise<CategoryDTO[]> {
-    const query = this.db.select().from(categories);
+    const query = drizzleDb.select().from(categories);
 
     if (searchTerm) {
       query.where(like(categories.name, `%${searchTerm}%`));
@@ -33,7 +27,7 @@ export class ProductsRepository {
   }
 
   async getCategoryById(categoryId: string): Promise<CategoryDTO | undefined> {
-    const result = await this.db
+    const result = await drizzleDb
       .select()
       .from(categories)
       .where(eq(categories.id, categoryId))
@@ -56,7 +50,7 @@ export class ProductsRepository {
     limit: number,
     offset: number
   ): Promise<VariantDetailDTO[]> {
-    const results = await this.db
+    const results = await drizzleDb
       .select({
         // Explicitly select all columns to shape the DTO correctly
         id: productVariants.id,
@@ -118,7 +112,7 @@ export class ProductsRepository {
     variantId: string,
     storeId: string
   ): Promise<VariantDetailDTO | undefined> {
-    const results = await this.db
+    const results = await drizzleDb
       .select({
         id: productVariants.id,
         productId: productVariants.productId,
@@ -179,7 +173,7 @@ export class ProductsRepository {
   async findVariantById(
     variantId: string
   ): Promise<ProductVariantDTO | undefined> {
-    const result = await this.db
+    const result = await drizzleDb
       .select()
       .from(productVariants)
       .where(eq(productVariants.id, variantId))
@@ -190,7 +184,7 @@ export class ProductsRepository {
   }
 
   async findProductById(productId: string): Promise<ProductDTO | undefined> {
-    const result = await this.db
+    const result = await drizzleDb
       .select()
       .from(products)
       .where(eq(products.id, productId))

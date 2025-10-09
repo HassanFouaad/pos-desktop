@@ -1,5 +1,6 @@
 import { fetch } from "@tauri-apps/plugin-http";
-import { posDeviceRepository } from "../../features/auth/repositories/pos-device.repository";
+import { container } from "tsyringe";
+import { PosDeviceRepository } from "../../features/auth/repositories/pos-device.repository";
 import {
   dbTokenStorage,
   TokenType,
@@ -7,6 +8,7 @@ import {
 import { endpoints, getConfig } from "./config";
 import { ApiResponse } from "./types";
 
+const posDeviceRepository = container.resolve(PosDeviceRepository);
 /**
  * A high-performance HTTP client using Tauri's plugin-http
  * This executes requests through the Rust backend for better performance

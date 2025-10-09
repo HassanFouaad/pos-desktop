@@ -1,13 +1,19 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { desc, eq, like, or } from "drizzle-orm";
-import { container } from "tsyringe";
+import { container, inject, singleton } from "tsyringe";
 import { v4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { DatabaseSchema, customers } from "../../../db/schemas";
-import { usersRepository } from "../../users/repositories/users.repository";
+import { UsersRepository } from "../../users/repositories/users.repository";
 import { CustomerDTO } from "../types/customer.dto";
 
+@singleton()
 export class CustomersRepository {
+  constructor(
+    @inject(UsersRepository)
+    private readonly usersRepository: UsersRepository
+  ) {}
+
   /**
    * Get customers with optional search and pagination
    */
@@ -46,7 +52,7 @@ export class CustomersRepository {
     },
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<CustomerDTO> {
-    const loggedInUser = await usersRepository.getLoggedInUser();
+    const loggedInUser = await this.usersRepository.getLoggedInUser();
     const localId = v4();
     const now = new Date();
 

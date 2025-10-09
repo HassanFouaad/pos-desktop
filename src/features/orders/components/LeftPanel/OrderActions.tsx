@@ -1,5 +1,5 @@
 import { Payment as PaymentIcon } from "@mui/icons-material";
-import { Alert, Box, Button, Snackbar, useTheme } from "@mui/material";
+import { Box, Button, useTheme } from "@mui/material";
 import { useState } from "react";
 import { container } from "tsyringe";
 import { OrderSource, PaymentMethod } from "../../../../db/enums";
@@ -28,20 +28,9 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     PaymentMethod.CASH
   );
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
-    "success"
-  );
 
   const hasItems = cartItems.length > 0;
   const totalAmount = preview?.totalAmount || 0;
-
-  const showSnackbar = (message: string, severity: "success" | "error") => {
-    setSnackbarMessage(message);
-    setSnackbarSeverity(severity);
-    setSnackbarOpen(true);
-  };
 
   const handlePayClick = () => {
     setPaymentModalOpen(true);
@@ -59,7 +48,6 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
       // Validate cart has items
       if (cartItems.length === 0 || !method) {
         console.error("Cannot create order without items");
-        showSnackbar("Cannot create order without items", "error");
         return;
       }
 
@@ -83,12 +71,7 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
       setPaymentModalOpen(false);
       setCompleteDialogOpen(true);
     } catch (error: any) {
-      console.log("error", error);
       console.error("Failed to process payment:", error);
-      showSnackbar(
-        error.message || "Failed to process payment. Please try again.",
-        "error"
-      );
     }
   };
 
@@ -102,14 +85,9 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
         amountPaid: paymentAmount,
       });
 
-      showSnackbar("Order completed successfully!", "success");
       setCompleteDialogOpen(false);
     } catch (error: any) {
       console.error("Failed to complete order:", error);
-      showSnackbar(
-        error.message || "Failed to complete order. Please try again.",
-        "error"
-      );
     }
   };
 
@@ -121,16 +99,10 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
         orderId: createdOrder.id,
       });
 
-      showSnackbar("Order voided successfully!", "success");
-
       setPaymentModalOpen(false);
       setCompleteDialogOpen(false);
     } catch (error: any) {
       console.error("Failed to void order:", error);
-      showSnackbar(
-        error.message || "Failed to void order. Please try again.",
-        "error"
-      );
     }
   };
 
@@ -178,21 +150,6 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
         onComplete={handleComplete}
         onVoid={handleVoid}
       />
-
-      {/* Success/Error Snackbar */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
-      >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity={snackbarSeverity}
-          sx={{ width: "100%" }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
     </>
   );
 };

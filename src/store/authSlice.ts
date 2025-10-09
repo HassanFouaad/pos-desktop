@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { container } from "tsyringe";
 import {
   login as apiLogin,
   AuthResponse,
@@ -9,8 +10,10 @@ import {
   dbTokenStorage,
   TokenType,
 } from "../features/auth/services/db-token-storage";
-import { usersRepository } from "../features/users/repositories/users.repository";
+import { UsersRepository } from "../features/users/repositories/users.repository";
 import { removeLocalStorage, setLocalStorage } from "../utils/storage";
+
+const usersRepository = container.resolve(UsersRepository);
 
 /**
  * User model interface

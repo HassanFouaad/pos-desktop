@@ -1,8 +1,9 @@
+import { container, inject, injectable } from "tsyringe";
 import { OrderStatus, PaymentMethod, RefundMethod } from "../../../db/enums";
-import { orderItemsRepository } from "../repositories/order-items.repository";
-import { ordersRepository } from "../repositories/orders.repository";
-import { returnItemsRepository } from "../repositories/return-items.repository";
-import { returnsRepository } from "../repositories/returns.repository";
+import { OrderItemsRepository } from "../repositories/order-items.repository";
+import { OrdersRepository } from "../repositories/orders.repository";
+import { ReturnItemsRepository } from "../repositories/return-items.repository";
+import { ReturnsRepository } from "../repositories/returns.repository";
 import { OrderItemDto } from "../types/order.types";
 import {
   ProcessRefundDto,
@@ -13,7 +14,18 @@ import {
   ReturnDto,
 } from "../types/return.types";
 
+@injectable()
 export class RefundService {
+  constructor(
+    @inject(ReturnsRepository)
+    private readonly returnsRepository: ReturnsRepository,
+    @inject(ReturnItemsRepository)
+    private readonly returnItemsRepository: ReturnItemsRepository,
+    @inject(OrdersRepository)
+    private readonly ordersRepository: OrdersRepository,
+    @inject(OrderItemsRepository)
+    private readonly orderItemsRepository: OrderItemsRepository
+  ) {}
   /**
    * Calculate refund amount for return items
    * @param returnId ID of the return
@@ -21,18 +33,20 @@ export class RefundService {
    */
   async calculateRefund(returnId: string): Promise<RefundCalculationResultDto> {
     // Get the return and associated items
-    const returnRecord = await returnsRepository.findById(returnId);
+    const returnRecord = await this.returnsRepository.findById(returnId);
     if (!returnRecord) {
       throw new Error("Return not found");
     }
 
-    const returnItems = await returnItemsRepository.findByReturnId(returnId);
+    const returnItems = await this.returnItemsRepository.findByReturnId(
+      returnId
+    );
     if (!returnItems || returnItems.length === 0) {
       throw new Error("No return items found");
     }
 
     // Get the original order to determine payment methods
-    const originalOrder = await ordersRepository.findById(
+    const originalOrder = await this.ordersRepository.findById(
       returnRecord.originalOrderId
     );
     if (!originalOrder) {
@@ -123,7 +137,7 @@ export class RefundService {
   ): Promise<RefundResultDto> {
     try {
       // Get the return
-      const returnRecord = await returnsRepository.findById(
+      const returnRecord = await this.returnsRepository.findById(
         processRefundDto.returnId
       );
 
@@ -170,7 +184,7 @@ export class RefundService {
       }
 
       // Update the return with refund details
-      await returnsRepository.update(returnRecord.id, {
+      await this.returnsRepository.update(returnRecord.id, {
         refundMethod: processRefundDto.refundMethod,
         refundAmount,
         notes: processRefundDto.notes || returnRecord.notes,
@@ -178,18 +192,18 @@ export class RefundService {
       });
 
       // Update the status of the original order
-      const originalOrder = await ordersRepository.findById(
+      const originalOrder = await this.ordersRepository.findById(
         returnRecord.originalOrderId
       );
 
       if (originalOrder) {
         // Check if all items in the order are fully returned
-        const orderItems = await orderItemsRepository.findByOrderId(
+        const orderItems = await this.orderItemsRepository.findByOrderId(
           originalOrder.id
         );
 
         // Get return items for this order to calculate total returned quantities
-        const returns = await returnsRepository.findByOriginalOrderId(
+        const returns = await this.returnsRepository.findByOriginalOrderId(
           originalOrder.id
         );
 
@@ -226,7 +240,7 @@ export class RefundService {
         }
 
         // Update the order status
-        await ordersRepository.updateOrder(originalOrder.id, {
+        await this.ordersRepository.updateOrder(originalOrder.id, {
           status: isFullReturn
             ? OrderStatus.REFUNDED
             : OrderStatus.PARTIALLY_REFUNDED,
@@ -402,4 +416,4 @@ export class RefundService {
   }
 }
 
-export const refundService = new RefundService();
+container.registerSingleton(RefundService);

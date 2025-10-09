@@ -1,5 +1,6 @@
-import { usersRepository } from "../../users/repositories/users.repository";
-import { posDeviceRepository } from "../repositories/pos-device.repository";
+import { container, inject, injectable } from "tsyringe";
+import { UsersRepository } from "../../users/repositories/users.repository";
+import { PosDeviceRepository } from "../repositories/pos-device.repository";
 
 /**
  * Token type enum for differentiating between POS and user tokens
@@ -19,7 +20,16 @@ export type ClearTokenType = TokenType | "all";
  * Replaces Stronghold secure storage with local database storage
  * Maintains same interface for backward compatibility
  */
+
+@injectable()
 class DbTokenStorage {
+  constructor(
+    @inject(UsersRepository)
+    private readonly usersRepository: UsersRepository,
+    @inject(PosDeviceRepository)
+    private readonly posDeviceRepository: PosDeviceRepository
+  ) {}
+
   /**
    * Store a token in the database
    * @param key The key for the token (accessToken, refreshToken, deviceInfo, pairingData)
@@ -41,18 +51,18 @@ class DbTokenStorage {
         // Store POS tokens in pos_devices table
         switch (key) {
           case "accessToken":
-            await posDeviceRepository.updateAccessToken(token as string);
+            await this.posDeviceRepository.updateAccessToken(token as string);
             break;
           case "refreshToken":
-            await posDeviceRepository.updateRefreshToken(token as string);
+            await this.posDeviceRepository.updateRefreshToken(token as string);
             break;
           case "deviceInfo":
-            await posDeviceRepository.storeDeviceInfo(
+            await this.posDeviceRepository.storeDeviceInfo(
               token as Record<string, unknown>
             );
             break;
           case "pairingData":
-            await posDeviceRepository.storePairingData(
+            await this.posDeviceRepository.storePairingData(
               token as Record<string, unknown>
             );
             break;
@@ -61,7 +71,7 @@ class DbTokenStorage {
         }
       } else {
         // Store USER tokens in users table (current logged-in user)
-        const currentUser = await usersRepository.getLoggedInUser();
+        const currentUser = await this.usersRepository.getLoggedInUser();
         if (!currentUser) {
           throw new Error("No logged-in user found to store token");
         }
@@ -79,7 +89,7 @@ class DbTokenStorage {
             return;
         }
 
-        await usersRepository.upsertUser(
+        await this.usersRepository.upsertUser(
           { id: currentUser.id, ...updates },
           updates.accessToken as string | undefined,
           updates.refreshToken as string | undefined
@@ -107,7 +117,7 @@ class DbTokenStorage {
     try {
       if (type === TokenType.POS) {
         // Get POS tokens from pos_devices table
-        const device = await posDeviceRepository.getPosDevice();
+        const device = await this.posDeviceRepository.getPosDevice();
         if (!device) return null;
 
         switch (key) {
@@ -116,16 +126,16 @@ class DbTokenStorage {
           case "refreshToken":
             return device.refreshToken || null;
           case "deviceInfo":
-            return await posDeviceRepository.getDeviceInfo();
+            return await this.posDeviceRepository.getDeviceInfo();
           case "pairingData":
-            return await posDeviceRepository.getPairingData();
+            return await this.posDeviceRepository.getPairingData();
           default:
             console.warn(`Unknown POS token key: ${key}`);
             return null;
         }
       } else {
         // Get USER tokens from users table
-        const currentUser = await usersRepository.getLoggedInUser();
+        const currentUser = await this.usersRepository.getLoggedInUser();
         if (!currentUser) return null;
 
         switch (key) {
@@ -173,14 +183,14 @@ class DbTokenStorage {
     try {
       if (type === "all") {
         // Clear both POS and user tokens
-        await posDeviceRepository.clearTokens();
-        await usersRepository.logoutAllUsers();
+        await this.posDeviceRepository.clearTokens();
+        await this.usersRepository.logoutAllUsers();
       } else if (type === TokenType.POS) {
         // Clear POS tokens only
-        await posDeviceRepository.clearTokens();
+        await this.posDeviceRepository.clearTokens();
       } else {
         // Clear USER tokens only
-        await usersRepository.logoutAllUsers();
+        await this.usersRepository.logoutAllUsers();
       }
 
       console.info(`Cleared tokens for type: ${type}`);
@@ -195,4 +205,4 @@ class DbTokenStorage {
 }
 
 // Export singleton instance
-export const dbTokenStorage = new DbTokenStorage();
+export const dbTokenStorage = container.resolve(DbTokenStorage);

@@ -1,19 +1,19 @@
 import { eq } from "drizzle-orm";
-import { container } from "tsyringe";
+import { container, inject, singleton } from "tsyringe";
 import { v4 } from "uuid";
 import { drizzleDb } from "../../../db";
 import { categories } from "../../../db/schemas";
-import { usersRepository } from "../../users/repositories/users.repository";
+import { UsersRepository } from "../../users/repositories/users.repository";
 
+@singleton()
 export class CategoriesRepository {
-  private db: typeof drizzleDb;
-
-  constructor() {
-    this.db = drizzleDb;
-  }
+  constructor(
+    @inject(UsersRepository)
+    private readonly usersRepository: UsersRepository
+  ) {}
 
   async createCategory(categoryData: { name: string }): Promise<void> {
-    const loggedInUser = await usersRepository.getLoggedInUser();
+    const loggedInUser = await this.usersRepository.getLoggedInUser();
 
     const id = v4();
     const payload = {
@@ -24,14 +24,14 @@ export class CategoriesRepository {
       updatedAt: new Date(),
     };
 
-    await this.db.insert(categories).values(payload).execute();
+    await drizzleDb.insert(categories).values(payload).execute();
   }
 
   async updateCategory(categoryData: {
     id: string;
     name: string;
   }): Promise<void> {
-    await this.db
+    await drizzleDb
       .update(categories)
       .set({
         name: categoryData.name,

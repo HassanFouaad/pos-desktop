@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { container } from "tsyringe";
 import { drizzleDb } from "../../../db";
 import { posDevices } from "../../../db/schemas";
 
@@ -8,7 +9,7 @@ type PosDeviceSchema = typeof posDevices.$inferInsert;
  * Repository for managing POS device data in local database
  * Replaces Stronghold secure storage for POS device tokens
  */
-class PosDeviceRepository {
+export class PosDeviceRepository {
   private readonly DEVICE_ID = "current_device";
 
   /**
@@ -160,5 +161,4 @@ class PosDeviceRepository {
       .execute();
   }
 }
-
-export const posDeviceRepository = new PosDeviceRepository();
+container.registerSingleton(PosDeviceRepository);

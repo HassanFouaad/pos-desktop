@@ -86,7 +86,7 @@ function App() {
   }
 
   return (
-    <Box sx={{ height: "100vh", width: 1, overflow: "hidden" }}>
+    <Box sx={{ height: "100vh", width: 1, overflow: "auto" }}>
       {/* Real-time store status blocker - monitors store.isActive */}
       <StoreInactiveBlocker />
 

@@ -1,11 +1,5 @@
 import { Add } from "@mui/icons-material";
-import {
-  Alert,
-  CircularProgress,
-  Grid,
-  Snackbar,
-  Typography,
-} from "@mui/material";
+import { CircularProgress, Grid, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { container } from "tsyringe";
@@ -30,7 +24,6 @@ export const CustomerList = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const fetchCustomers = useCallback(async (search: string, offset: number) => {
     setLoading(true);
@@ -69,8 +62,7 @@ export const CustomerList = () => {
     try {
       await customersService.createCustomer(data);
       setCreateModalOpen(false);
-      setSnackbarOpen(true);
-      // Re-fetch the list to show the new pending customer if desired
+      // Re-fetch the list to show the new customer
       fetchCustomers(searchTerm, 0);
     } catch (err: any) {
       setSubmitError(err.message || "Failed to create customer.");
@@ -160,19 +152,6 @@ export const CustomerList = () => {
         isLoading={isSubmitting}
         error={submitError}
       />
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
-      >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity="success"
-          sx={{ width: "100%" }}
-        >
-          Customer created successfully
-        </Alert>
-      </Snackbar>
     </Grid>
   );
 };

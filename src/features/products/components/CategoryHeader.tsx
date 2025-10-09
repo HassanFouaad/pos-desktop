@@ -1,5 +1,5 @@
 import { Edit } from "@mui/icons-material";
-import { Alert, Card, Grid, Snackbar, Typography } from "@mui/material";
+import { Card, Grid, Typography } from "@mui/material";
 import { useState } from "react";
 import { container } from "tsyringe";
 import { TouchButton } from "../../../components/common/TouchButton";
@@ -22,7 +22,6 @@ export const CategoryHeader = ({
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const handleUpdateCategory = async (data: UpdateCategoryDTO) => {
     setSubmitting(true);
@@ -30,7 +29,6 @@ export const CategoryHeader = ({
     try {
       await productsService.updateCategory(data);
       setEditModalOpen(false);
-      setSnackbarOpen(true);
       onCategoryUpdated();
     } catch (err: unknown) {
       const errorMessage =
@@ -77,20 +75,6 @@ export const CategoryHeader = ({
         error={submitError}
         category={category}
       />
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
-      >
-        <Alert
-          onClose={() => setSnackbarOpen(false)}
-          severity="success"
-          sx={{ width: "100%" }}
-        >
-          Category updated successfully
-        </Alert>
-      </Snackbar>
     </>
   );
 };

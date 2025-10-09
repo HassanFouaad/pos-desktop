@@ -3,9 +3,6 @@ import { OrderStatus } from "../../../db/enums";
 import { InventoryReferenceType } from "../../inventory/enums/inventory-reference-type";
 import { InventoryService } from "../../inventory/services/inventory.service";
 import { StoresService } from "../../stores/services/stores.service";
-import { OrderItemsRepository } from "../repositories/order-items.repository";
-import { OrdersRepository } from "../repositories/orders.repository";
-import { ReturnItemsRepository } from "../repositories/return-items.repository";
 import { ReturnsRepository } from "../repositories/returns.repository";
 import { OrderItemDto } from "../types/order.types";
 import {
@@ -15,7 +12,10 @@ import {
   ReturnDto,
   ReturnItemDto,
 } from "../types/return.types";
+import { OrderItemsService } from "./order-items.service";
+import { OrdersService } from "./orders.service";
 import { RefundService } from "./refund.service";
+import { ReturnItemsService } from "./return-items.service";
 import { ReturnValidationService } from "./return-validation.service";
 
 @injectable()
@@ -23,12 +23,6 @@ export class ReturnsService {
   constructor(
     @inject(ReturnsRepository)
     private readonly returnsRepository: ReturnsRepository,
-    @inject(ReturnItemsRepository)
-    private readonly returnItemsRepository: ReturnItemsRepository,
-    @inject(OrderItemsRepository)
-    private readonly orderItemsRepository: OrderItemsRepository,
-    @inject(OrdersRepository)
-    private readonly ordersRepository: OrdersRepository,
     @inject(InventoryService)
     private readonly inventoryService: InventoryService,
     @inject(RefundService)
@@ -36,7 +30,13 @@ export class ReturnsService {
     @inject(ReturnValidationService)
     private readonly returnValidationService: ReturnValidationService,
     @inject(StoresService)
-    private readonly storesService: StoresService
+    private readonly storesService: StoresService,
+    @inject(ReturnItemsService)
+    private readonly returnItemsService: ReturnItemsService,
+    @inject(OrderItemsService)
+    private readonly orderItemsService: OrderItemsService,
+    @inject(OrdersService)
+    private readonly ordersService: OrdersService
   ) {}
   /**
    * Find return by ID
@@ -72,7 +72,7 @@ export class ReturnsService {
    */
   async create(createDto: CreateReturnDto, userId: string): Promise<ReturnDto> {
     // Fetch the original order with necessary details
-    const originalOrder = await this.ordersRepository.findById(
+    const originalOrder = await this.ordersService.getOrderById(
       createDto.originalOrderId
     );
 
@@ -103,7 +103,7 @@ export class ReturnsService {
       let totalRefundAmount = 0;
 
       // Get all order items in a single query for better performance
-      const orderItems = await this.orderItemsRepository.findByOrderId(
+      const orderItems = await this.orderItemsService.findByOrderId(
         originalOrder.id
       );
 
@@ -167,7 +167,7 @@ export class ReturnsService {
       }
 
       // Bulk create return items for better performance
-      const createdReturnItems = await this.returnItemsRepository.createBulk(
+      const createdReturnItems = await this.returnItemsService.createBulk(
         returnItemsToCreate.map((item) => ({
           ...item,
           storeId: originalOrder.storeId,
@@ -175,7 +175,7 @@ export class ReturnsService {
       );
 
       // Bulk update order items for better performance
-      await this.orderItemsRepository.bulkUpdate(orderItemsToUpdate);
+      await this.orderItemsService.bulkUpdate(orderItemsToUpdate);
 
       // Process inventory for returned items
       await this.processInventoryReturn({
@@ -206,7 +206,7 @@ export class ReturnsService {
       }
 
       // Update original order status
-      await this.ordersRepository.updateOrder(originalOrder.id, {
+      await this.ordersService.updateOrder(originalOrder.id, {
         status: isFullReturn
           ? OrderStatus.REFUNDED
           : OrderStatus.PARTIALLY_REFUNDED,
@@ -258,7 +258,7 @@ export class ReturnsService {
         }
 
         // Get the order items to access the variant ID
-        const orderItems = await this.orderItemsRepository.findByOrderId(
+        const orderItems = await this.orderItemsService.findByOrderId(
           returnRecord.originalOrderId
         );
 
@@ -374,7 +374,7 @@ export class ReturnsService {
     createDto: CreateReturnDto,
     userId: string
   ): Promise<ReturnDto> {
-    const originalOrder = await this.ordersRepository.findById(
+    const originalOrder = await this.ordersService.getOrderById(
       createDto.originalOrderId
     );
 
