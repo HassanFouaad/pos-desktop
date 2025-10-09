@@ -14,7 +14,7 @@
       {
         "label": "main",
         "title": "desktop-pos",
-        "fullscreen": true,
+        "fullscreen": false,
         "decorations": false
       }
     ],

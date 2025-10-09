@@ -10,7 +10,6 @@ export const inventory = sqliteTable("inventory", {
   quantityAvailable: integer("quantityAvailable"),
   reorderPoint: integer("reorderPoint"),
   maxStockLevel: integer("maxStockLevel"),
-  lastCountedAt: integer("lastCountedAt", { mode: "timestamp" }),
   costPerUnit: real("costPerUnit"),
   totalValue: real("totalValue"),
   createdAt: integer("createdAt", { mode: "timestamp" }),

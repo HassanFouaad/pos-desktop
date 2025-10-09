@@ -8,6 +8,7 @@ import {
   DialogTitle,
   Grid,
   Typography,
+  useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { useState } from "react";
@@ -33,6 +34,7 @@ export const UnpairConfirmDialog = ({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("lg"));
 
   const handleConfirm = async () => {
     try {
@@ -73,6 +75,7 @@ export const UnpairConfirmDialog = ({
       onClose={loading ? undefined : handleCancel}
       maxWidth="sm"
       fullWidth
+      fullScreen={fullScreen}
     >
       <DialogTitle sx={{ textAlign: "center" }}>
         <Grid container direction="column" alignItems="center" spacing={2}>

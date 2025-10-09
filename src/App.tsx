@@ -16,6 +16,7 @@ import { LoginPage } from "./features/auth/pages/LoginPage";
 import { PairDevicePage } from "./features/auth/pages/PairDevicePage";
 import { PreLoginPage } from "./features/auth/pages/PreLoginPage";
 import CustomersPage from "./features/customers/pages";
+import { CreateOrderPage } from "./features/orders";
 import ProductsPage from "./features/products/pages";
 import ProductListPage from "./features/products/pages/ProductListPage";
 import { initAuth } from "./store/authSlice";
@@ -117,10 +118,8 @@ function App() {
             <Route
               path="/sales/*"
               element={
-                <GridLayout title="Sales">
-                  <Grid>
-                    <ModulePlaceholder title="Sales" />
-                  </Grid>
+                <GridLayout>
+                  <CreateOrderPage />
                   <FloatingNavigation showBackButton />
                 </GridLayout>
               }

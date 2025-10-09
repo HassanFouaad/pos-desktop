@@ -20,18 +20,14 @@ import { ActionCard } from "../../../components/cards/ActionCard";
 import { InfoCard } from "../../../components/cards/InfoCard";
 import { CenteredPageLayout } from "../../../components/layouts/CenteredPageLayout";
 import { UnpairConfirmDialog } from "../../../components/layouts/UnpairConfirmDialog";
-import {
-  PosDTO,
-  StoreDTO,
-  storesRepository,
-  TenantDTO,
-} from "../../stores/repositories/stores.repository";
+import { storesRepository } from "../../stores/repositories/stores.repository";
+import { PosDTO, StoreDto, TenantDto } from "../../stores/types";
 
 export const PreLoginPage = () => {
   const [unpairDialogOpen, setUnpairDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [tenant, setTenant] = useState<TenantDTO | null>(null);
-  const [store, setStore] = useState<StoreDTO | null>(null);
+  const [tenant, setTenant] = useState<TenantDto | null>(null);
+  const [store, setStore] = useState<StoreDto | null>(null);
   const [pos, setPos] = useState<PosDTO | null>(null);
 
   const navigate = useNavigate();

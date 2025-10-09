@@ -1,10 +1,8 @@
 import { CircularProgress, Grid, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import {
-  StoreDTO,
-  storesRepository,
-} from "../../stores/repositories/stores.repository";
+import { storesRepository } from "../../stores/repositories/stores.repository";
+import { StoreDto } from "../../stores/types";
 import { ProductList } from "../components/ProductList";
 import { productsRepository } from "../repositories/products.repository";
 import { CategoryDTO } from "../types/category.dto";
@@ -12,7 +10,7 @@ import { CategoryDTO } from "../types/category.dto";
 const ProductListPage = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
   const [category, setCategory] = useState<CategoryDTO | null>(null);
-  const [store, setStore] = useState<StoreDTO | null>(null);
+  const [store, setStore] = useState<StoreDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

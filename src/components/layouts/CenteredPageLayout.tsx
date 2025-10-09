@@ -18,7 +18,7 @@ export const CenteredPageLayout = ({
     <Container
       maxWidth={maxWidth}
       sx={{
-        minHeight: "100vh",
+        height: 1,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

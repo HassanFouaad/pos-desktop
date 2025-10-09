@@ -1,7 +1,7 @@
 import { CircularProgress, Grid, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { StoreDTO } from "../../stores/repositories/stores.repository";
+import { StoreDto } from "../../stores/types";
 import { productsRepository } from "../repositories/products.repository";
 import { CategoryDTO } from "../types/category.dto";
 import { VariantDetailDTO } from "../types/variant-detail.dto";
@@ -13,7 +13,7 @@ const LIMIT = 20;
 
 interface ProductListProps {
   category: CategoryDTO;
-  store: StoreDTO;
+  store: StoreDto;
 }
 
 export const ProductList = ({ category, store }: ProductListProps) => {

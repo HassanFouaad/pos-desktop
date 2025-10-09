@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { drizzleDb } from "../db";
 import { powerSyncDb } from "../db/database";
 import { stores } from "../db/schemas";
-import { StoreDTO } from "../features/stores/repositories/stores.repository";
+import { StoreDto } from "../features/stores/types";
 import { useAppSelector } from "../store/hooks";
 
 interface StoreStatus {
@@ -87,7 +87,7 @@ export const useStoreStatus = (): UseStoreStatusReturn => {
           [storeId],
           {
             onResult: (result: any) => {
-              result = result as StoreDTO;
+              result = result as StoreDto;
               if (!isMounted) return;
 
               setLoading(false);

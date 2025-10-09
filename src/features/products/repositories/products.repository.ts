@@ -8,7 +8,11 @@ import {
   storePrices,
 } from "../../../db/schemas";
 import type { CategoryDTO } from "../types/category.dto";
-import type { VariantDetailDTO } from "../types/variant-detail.dto";
+import type {
+  ProductDTO,
+  ProductVariantDTO,
+  VariantDetailDTO,
+} from "../types/variant-detail.dto";
 
 export class ProductsRepository {
   private db: typeof drizzleDb;
@@ -65,11 +69,8 @@ export class ProductsRepository {
         createdAt: productVariants.createdAt,
         updatedAt: productVariants.updatedAt,
         inventory: inventory,
-        product: {
-          id: products.id,
-          name: products.name,
-        },
         storePrice: storePrices.price,
+        product: products,
       })
       .from(productVariants)
       .leftJoin(products, eq(productVariants.productId, products.id))
@@ -103,8 +104,99 @@ export class ProductsRepository {
       if (storePrice !== null && storePrice !== undefined) {
         variantData.baseSellingPrice = storePrice;
       }
+      console.log(variantData);
       return variantData as VariantDetailDTO;
     });
+  }
+
+  /**
+   * Get variant by ID with product details and store-specific pricing
+   * This joins all necessary data in a single query
+   */
+  async getVariantWithDetails(
+    variantId: string,
+    storeId: string
+  ): Promise<VariantDetailDTO | undefined> {
+    const results = await this.db
+      .select({
+        id: productVariants.id,
+        productId: productVariants.productId,
+        tenantId: productVariants.tenantId,
+        name: productVariants.name,
+        unitOfMeasure: productVariants.unitOfMeasure,
+        sku: productVariants.sku,
+        baseSellingPrice: productVariants.baseSellingPrice,
+        basePurchasePrice: productVariants.basePurchasePrice,
+        createdAt: productVariants.createdAt,
+        updatedAt: productVariants.updatedAt,
+        inventory: inventory,
+        product: {
+          id: products.id,
+          name: products.name,
+          categoryId: products.categoryId,
+          status: products.status,
+          taxRate: products.taxRate,
+          taxIncluded: products.taxIncluded,
+        },
+        storePrice: storePrices.price,
+      })
+      .from(productVariants)
+      .leftJoin(products, eq(productVariants.productId, products.id))
+      .leftJoin(
+        inventory,
+        and(
+          eq(inventory.variantId, productVariants.id),
+          eq(inventory.storeId, storeId)
+        )
+      )
+      .leftJoin(
+        storePrices,
+        and(
+          eq(storePrices.variantId, productVariants.id),
+          eq(storePrices.storeId, storeId)
+        )
+      )
+      .where(eq(productVariants.id, variantId))
+      .limit(1)
+      .execute();
+
+    if (!results || results.length === 0) {
+      return undefined;
+    }
+
+    const row = results[0];
+    const { storePrice, ...variantData } = row;
+
+    // If a store-specific price exists, override the baseSellingPrice
+    if (storePrice !== null && storePrice !== undefined) {
+      variantData.baseSellingPrice = storePrice;
+    }
+
+    return variantData as VariantDetailDTO;
+  }
+
+  async findVariantById(
+    variantId: string
+  ): Promise<ProductVariantDTO | undefined> {
+    const result = await this.db
+      .select()
+      .from(productVariants)
+      .where(eq(productVariants.id, variantId))
+      .limit(1)
+      .execute();
+
+    return result[0];
+  }
+
+  async findProductById(productId: string): Promise<ProductDTO | undefined> {
+    const result = await this.db
+      .select()
+      .from(products)
+      .where(eq(products.id, productId))
+      .limit(1)
+      .execute();
+
+    return result[0];
   }
 }
 

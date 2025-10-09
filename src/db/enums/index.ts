@@ -8,6 +8,3 @@ export { PaymentStatus } from "./payment-status.enum";
 export { RefundMethod } from "./refund-method.enum";
 export { ReturnReason } from "./return-reason.enum";
 export { ReturnType } from "./return-type.enum";
-export { SyncLogStatus } from "./sync-log-status.enum";
-export { SyncOperation } from "./sync-operation.enum";
-export { SyncStatus } from "./sync-status.enum";

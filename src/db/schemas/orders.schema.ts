@@ -28,8 +28,6 @@ export const orders = sqliteTable("orders", {
   notes: text("notes"),
   internalNotes: text("internalNotes"),
   localId: text("localId"),
-  syncStatus: text("syncStatus"), // 'pending', 'synced', 'conflict'
-  lastSyncAt: integer("lastSyncAt", { mode: "timestamp" }),
   orderDate: integer("orderDate", { mode: "timestamp" }),
   completedAt: integer("completedAt", { mode: "timestamp" }),
   createdAt: integer("createdAt", { mode: "timestamp" }),

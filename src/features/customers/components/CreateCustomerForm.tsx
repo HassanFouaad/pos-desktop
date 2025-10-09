@@ -8,6 +8,8 @@ import {
   Grid,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Controller, useForm } from "react-hook-form";
 import { TouchButton } from "../../../components/common/TouchButton";
@@ -48,7 +50,13 @@ export function CreateCustomerForm({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={{ xs: true, md: true, lg: false }}
+    >
       <DialogContent>
         <Grid container spacing={3}>
           <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>

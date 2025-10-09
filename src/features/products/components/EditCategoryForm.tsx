@@ -61,7 +61,13 @@ export function EditCategoryForm({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={{ xs: true, md: true, lg: false }}
+    >
       <DialogContent>
         <Grid container spacing={3}>
           <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>

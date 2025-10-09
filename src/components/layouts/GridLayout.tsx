@@ -23,7 +23,7 @@ export const GridLayout = ({
     <Container
       maxWidth={maxWidth}
       sx={{
-        minHeight: "100vh",
+        height: 1,
         display: "flex",
         flexDirection: "column",
         py: 2,
