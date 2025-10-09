@@ -63,8 +63,6 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
       // Convert cart items to CreateOrderItemDto (remove tempId)
       const orderItems = cartItems.map(({ tempId, ...item }) => item);
 
-      console.log("orderItems", orderItems);
-
       // Create order with all items - this will reserve inventory
       const order = await ordersService.createOrder({
         storeId,
@@ -73,7 +71,6 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
         source: OrderSource.POS,
         paymentMethod: method,
       });
-      console.log("order", order);
 
       setCreatedOrder(order);
       setPaymentAmount(amountPaid);
@@ -103,6 +100,7 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
       });
 
       showSnackbar("Order completed successfully!", "success");
+      setCompleteDialogOpen(false);
     } catch (error: any) {
       console.error("Failed to complete order:", error);
       showSnackbar(
@@ -125,6 +123,9 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
       });
 
       showSnackbar("Order voided successfully!", "success");
+
+      setPaymentModalOpen(false);
+      setCompleteDialogOpen(false);
     } catch (error: any) {
       console.error("Failed to void order:", error);
       showSnackbar(

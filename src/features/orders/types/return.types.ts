@@ -54,6 +54,20 @@ export interface CreateReturnDto {
   returnDate: Date;
 }
 
+// Create Return Data (for repository)
+export interface CreateReturnDataDto {
+  originalOrderId: string;
+  storeId: string;
+  tenantId?: string;
+  returnType: ReturnType;
+  returnReason?: string;
+  processedBy?: string;
+  requiresApproval?: boolean;
+  refundMethod?: string;
+  refundAmount?: number;
+  notes?: string;
+}
+
 // Return Eligibility DTO
 export interface ReturnEligibilityDto {
   eligible: boolean;

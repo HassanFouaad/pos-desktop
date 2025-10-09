@@ -2,26 +2,16 @@ import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
-import { OrderStatus } from "../../../db/enums";
 import { DatabaseSchema } from "../../../db/schemas";
 import { orderHistory } from "../../../db/schemas/order-history.schema";
-import { OrderHistoryDto } from "../types/order.types";
-
-export interface CreateOrderHistoryData {
-  orderId: string;
-  userId?: string;
-  fromStatus: OrderStatus;
-  toStatus: OrderStatus;
-  storeId: string;
-  tenantId: string;
-}
+import { CreateOrderHistoryDto, OrderHistoryDto } from "../types/order.types";
 
 export class OrderHistoryRepository {
   /**
    * Create a new order history entry
    */
   async create(
-    data: CreateOrderHistoryData,
+    data: CreateOrderHistoryDto,
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<void> {
     const now = new Date();

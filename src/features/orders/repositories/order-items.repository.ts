@@ -11,9 +11,9 @@ export class OrderItemsRepository {
    * Create a new order item
    */
   async createItem(
-    data: OrderItemDto,
+    data: Omit<OrderItemDto, "id" | "createdAt" | "updatedAt">,
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
-  ): Promise<void> {
+  ): Promise<string> {
     const now = new Date();
     const itemId = uuidv4();
 
@@ -42,44 +42,58 @@ export class OrderItemsRepository {
     };
 
     await (manager ?? drizzleDb).insert(orderItems).values(itemData);
+    return itemId;
   }
 
   /**
    * Create multiple order items in bulk
    */
   async createBulk(
-    items: OrderItemDto[],
+    items: Omit<OrderItemDto, "id" | "createdAt" | "updatedAt">[],
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
-  ): Promise<void> {
-    const now = new Date();
+  ): Promise<string[]> {
+    if (items.length === 0) {
+      return [];
+    }
 
-    const itemsData = items.map((item) => ({
-      id: uuidv4(),
-      orderId: item.orderId,
-      storeId: item.storeId,
-      tenantId: item.tenantId,
-      variantId: item.variantId,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      originalUnitPrice: item.originalUnitPrice || item.unitPrice,
-      lineSubtotal: item.lineSubtotal,
-      lineDiscount: item.lineDiscount || 0,
-      lineTotalBeforeTax: item.lineTotalBeforeTax,
-      productName: item.productName,
-      variantName: item.variantName,
-      productSku: item.productSku,
-      variantAttributes: item.variantAttributes,
-      stockType: item.stockType,
-      isReturned: false,
-      returnedQuantity: 0,
-      lineTotal: item.lineTotal,
-      createdAt: now,
-      updatedAt: now,
-    }));
+    const now = new Date();
+    const ids: string[] = [];
+
+    const itemsData = items.map((item) => {
+      const id = uuidv4();
+      ids.push(id);
+      return {
+        id,
+        orderId: item.orderId,
+        storeId: item.storeId,
+        tenantId: item.tenantId,
+        variantId: item.variantId,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        originalUnitPrice: item.originalUnitPrice || item.unitPrice,
+        lineSubtotal: item.lineSubtotal,
+        lineDiscount: item.lineDiscount || 0,
+        lineTotalBeforeTax: item.lineTotalBeforeTax,
+        productName: item.productName,
+        variantName: item.variantName,
+        productSku: item.productSku,
+        variantAttributes: item.variantAttributes,
+        stockType: item.stockType,
+        isReturned: false,
+        returnedQuantity: 0,
+        lineTotal: item.lineTotal,
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
 
     await (manager ?? drizzleDb).insert(orderItems).values(itemsData);
+    return ids;
   }
 
+  /**
+   * Find multiple items by their IDs
+   */
   async findManyByIds(
     ids: string[],
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
@@ -92,7 +106,16 @@ export class OrderItemsRepository {
       .select()
       .from(orderItems)
       .where(inArray(orderItems.id, ids));
-    return items as OrderItemDto[];
+
+    return items.map((item) => ({
+      ...item,
+      variantAttributes: item.variantAttributes as
+        | Record<string, string>
+        | undefined,
+      isReturned: Boolean(item.isReturned),
+      createdAt: new Date(item.createdAt!),
+      updatedAt: new Date(item.updatedAt!),
+    })) as OrderItemDto[];
   }
 
   /**

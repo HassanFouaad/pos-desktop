@@ -3,12 +3,13 @@ import { drizzleDb } from "../../../db";
 import { orders } from "../../../db/schemas/orders.schema";
 
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
+import { container } from "tsyringe";
 import { DatabaseSchema, orderItems } from "../../../db/schemas";
 import { OrderDto } from "../types/order.types";
 
 export class OrdersRepository {
   /**
-   * Create a new order in PENDING status
+   * Create a new order
    */
   async createOrder(
     data: typeof orders.$inferInsert,
@@ -24,7 +25,7 @@ export class OrdersRepository {
       .insert(orders)
       .values({
         ...data,
-        orderDate: now,
+        orderDate: data.orderDate || now,
         orderNumber,
         createdAt: now,
         updatedAt: now,
@@ -35,27 +36,46 @@ export class OrdersRepository {
   }
 
   /**
-   * Find order by ID with items
+   * Find order by ID
    */
   async findById(
     id: string,
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<OrderDto | null> {
-    const [order] = await (manager ?? drizzleDb)
+    const result = await (manager ?? drizzleDb)
       .select()
       .from(orders)
       .where(eq(orders.id, id))
-      .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
       .limit(1);
 
-    if (!order) {
+    if (!result || result.length === 0) {
       return null;
     }
 
+    const order = result[0];
+
+    // Get order items separately
+    const items = await (manager ?? drizzleDb)
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, id));
+
     return {
-      ...order.orders,
-      items: order.order_items,
-    } as any as OrderDto;
+      ...order,
+      orderDate: new Date(order.orderDate!),
+      completedAt: order.completedAt ? new Date(order.completedAt) : undefined,
+      createdAt: new Date(order.createdAt!),
+      updatedAt: new Date(order.updatedAt!),
+      items: items.map((item) => ({
+        ...item,
+        variantAttributes: item.variantAttributes as
+          | Record<string, string>
+          | undefined,
+        isReturned: Boolean(item.isReturned),
+        createdAt: new Date(item.createdAt!),
+        updatedAt: new Date(item.updatedAt!),
+      })),
+    } as OrderDto;
   }
 
   /**
@@ -63,19 +83,15 @@ export class OrdersRepository {
    */
   async updateOrder(
     id: string,
-    data: Partial<OrderDto>,
+    data: Partial<Omit<OrderDto, "id" | "createdAt" | "updatedAt" | "items">>,
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<void> {
-    const updateData = {
-      ...data,
-      updatedAt: new Date(),
-      orderDate: data.orderDate ? data.orderDate : undefined,
-      completedAt: data.completedAt ? data.completedAt : undefined,
-    };
-
     await (manager ?? drizzleDb)
       .update(orders)
-      .set(updateData)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
       .where(eq(orders.id, id));
   }
 
@@ -93,5 +109,7 @@ export class OrdersRepository {
     return `SO-${storeCode}-${numbers}`;
   }
 }
+
+container.registerSingleton(OrdersRepository);
 
 export const ordersRepository = new OrdersRepository();

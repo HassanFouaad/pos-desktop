@@ -8,13 +8,16 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
+import { container } from "tsyringe";
 import { TouchButton } from "../../../components/common/TouchButton";
-import { customersRepository } from "../repositories/customers.repository";
 import { CreateCustomerDTO } from "../schemas/create-customer.schema";
+import { CustomersService } from "../services";
 import { CustomerDTO } from "../types/customer.dto";
 import { CreateCustomerForm } from "./CreateCustomerForm";
 import { CustomerListItem } from "./CustomerListItem";
 import { CustomerSearch } from "./CustomerSearch";
+
+const customersService = container.resolve(CustomersService);
 
 const LIMIT = 20;
 
@@ -33,7 +36,7 @@ export const CustomerList = () => {
     setLoading(true);
     setError(null);
     try {
-      const fetchedCustomers = await customersRepository.getCustomers(
+      const fetchedCustomers = await customersService.getCustomers(
         search,
         LIMIT,
         offset
@@ -64,7 +67,7 @@ export const CustomerList = () => {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      await customersRepository.createCustomer(data);
+      await customersService.createCustomer(data);
       setCreateModalOpen(false);
       setSnackbarOpen(true);
       // Re-fetch the list to show the new pending customer if desired

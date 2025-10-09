@@ -2,31 +2,17 @@ import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { desc, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
-import { ReturnType } from "../../../db/enums";
 import { DatabaseSchema } from "../../../db/schemas";
 import { returnItems } from "../../../db/schemas/return-items.schema";
 import { returns } from "../../../db/schemas/returns.schema";
-import { ReturnDto } from "../types/return.types";
-
-export interface CreateReturnData {
-  originalOrderId: string;
-  storeId: string;
-  tenantId?: string;
-  returnType: ReturnType;
-  returnReason?: string;
-  processedBy?: string;
-  requiresApproval?: boolean;
-  refundMethod?: string;
-  refundAmount?: number;
-  notes?: string;
-}
+import { CreateReturnDataDto, ReturnDto } from "../types/return.types";
 
 export class ReturnsRepository {
   /**
    * Create a new return record
    */
   async create(
-    data: CreateReturnData,
+    data: CreateReturnDataDto,
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<ReturnDto> {
     const now = new Date();
@@ -50,7 +36,7 @@ export class ReturnsRepository {
 
     await (manager ?? drizzleDb).insert(returns).values(returnData);
 
-    return this.findById(id) as Promise<ReturnDto>;
+    return (await this.findById(id, manager))!;
   }
 
   /**
@@ -96,17 +82,15 @@ export class ReturnsRepository {
    */
   async update(
     id: string,
-    data: Partial<ReturnDto>,
+    data: Partial<Omit<ReturnDto, "id" | "createdAt" | "updatedAt" | "items">>,
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<void> {
-    const updateData = {
-      ...data,
-      updatedAt: new Date(),
-    };
-
     await (manager ?? drizzleDb)
       .update(returns)
-      .set(updateData)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
       .where(eq(returns.id, id));
   }
 
@@ -125,7 +109,7 @@ export class ReturnsRepository {
 
     return Promise.all(
       returnRecords.map(
-        (record) => this.findById(record.id) as Promise<ReturnDto>
+        (record) => this.findById(record.id, manager) as Promise<ReturnDto>
       )
     );
   }

@@ -171,3 +171,13 @@ export interface OrderHistoryDto {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// Create Order History Data
+export interface CreateOrderHistoryDto {
+  orderId: string;
+  userId?: string;
+  fromStatus: OrderStatus;
+  toStatus: OrderStatus;
+  storeId: string;
+  tenantId: string;
+}

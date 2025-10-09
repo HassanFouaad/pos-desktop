@@ -1,6 +1,8 @@
+import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
+import { DatabaseSchema } from "../../../db/schemas";
 import { returnItems } from "../../../db/schemas/return-items.schema";
 import { ReturnItemDto } from "../types/return.types";
 
@@ -8,33 +10,39 @@ export class ReturnItemsRepository {
   /**
    * Create a new return item
    */
-  async create(data: ReturnItemDto): Promise<ReturnItemDto> {
+  async create(
+    data: Omit<ReturnItemDto, "id" | "createdAt">,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<ReturnItemDto> {
     const now = new Date();
     const id = uuidv4();
 
     const itemData = {
       id,
-      storeId: data.storeId ?? "",
+      storeId: data.storeId,
       returnId: data.returnId,
       tenantId: data.tenantId,
-      originalOrderItemId: data.originalOrderItemId ?? "",
-      quantityReturned: data.quantityReturned ?? 0,
-      unitRefundAmount: data.unitRefundAmount ?? 0,
-      totalRefundAmount: data.totalRefundAmount ?? 0,
-      returnToInventory: data.returnToInventory ?? false,
-      inventoryAdjustmentId: data.inventoryAdjustmentId ?? "",
+      originalOrderItemId: data.originalOrderItemId,
+      quantityReturned: data.quantityReturned,
+      unitRefundAmount: data.unitRefundAmount,
+      totalRefundAmount: data.totalRefundAmount,
+      returnToInventory: data.returnToInventory,
+      inventoryAdjustmentId: data.inventoryAdjustmentId,
       createdAt: now,
     };
 
-    await drizzleDb.insert(returnItems).values(itemData);
+    await (manager ?? drizzleDb).insert(returnItems).values(itemData);
 
-    return this.findById(id) as Promise<ReturnItemDto>;
+    return (await this.findById(id, manager))!;
   }
 
   /**
    * Create multiple return items in bulk
    */
-  async createBulk(items: ReturnItemDto[]): Promise<ReturnItemDto[]> {
+  async createBulk(
+    items: Omit<ReturnItemDto, "id" | "createdAt">[],
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<ReturnItemDto[]> {
     const now = new Date();
 
     const itemsData = items.map((item) => ({
@@ -51,18 +59,23 @@ export class ReturnItemsRepository {
       createdAt: now,
     }));
 
-    await drizzleDb.insert(returnItems).values(itemsData);
+    await (manager ?? drizzleDb).insert(returnItems).values(itemsData);
 
     return Promise.all(
-      itemsData.map((item) => this.findById(item.id) as Promise<ReturnItemDto>)
+      itemsData.map(
+        (item) => this.findById(item.id, manager) as Promise<ReturnItemDto>
+      )
     );
   }
 
   /**
    * Find return item by ID
    */
-  async findById(id: string): Promise<ReturnItemDto | null> {
-    const items = await drizzleDb
+  async findById(
+    id: string,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<ReturnItemDto | null> {
+    const items = await (manager ?? drizzleDb)
       .select()
       .from(returnItems)
       .where(eq(returnItems.id, id))
@@ -83,8 +96,11 @@ export class ReturnItemsRepository {
   /**
    * Find all return items for a return
    */
-  async findByReturnId(returnId: string): Promise<ReturnItemDto[]> {
-    const items = await drizzleDb
+  async findByReturnId(
+    returnId: string,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<ReturnItemDto[]> {
+    const items = await (manager ?? drizzleDb)
       .select()
       .from(returnItems)
       .where(eq(returnItems.returnId, returnId));
@@ -99,8 +115,11 @@ export class ReturnItemsRepository {
   /**
    * Count return items for a return
    */
-  async countByReturnId(returnId: string): Promise<number> {
-    const items = await this.findByReturnId(returnId);
+  async countByReturnId(
+    returnId: string,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<number> {
+    const items = await this.findByReturnId(returnId, manager);
     return items.length;
   }
 

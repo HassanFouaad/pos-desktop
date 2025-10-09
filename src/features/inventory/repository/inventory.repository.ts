@@ -7,39 +7,11 @@ import { inventoryAdjustments } from "../../../db/schemas/inventory-adjustments.
 import { inventory } from "../../../db/schemas/inventory.schema";
 import { InventoryAdjustmentType } from "../enums/inventory-adjustment-type.enum";
 import { InventoryReferenceType } from "../enums/inventory-reference-type";
-
-export interface InventoryDto {
-  id: string;
-  tenantId?: string;
-  storeId: string;
-  variantId: string;
-  quantityOnHand: number;
-  quantityCommitted: number;
-  quantityAvailable: number;
-  reorderPoint?: number;
-  maxStockLevel?: number;
-  costPerUnit?: number;
-  totalValue?: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface CreateInventoryAdjustmentData {
-  tenantId: string;
-  storeId: string;
-  variantId: string;
-  adjustmentType: string;
-  quantityChange: number;
-  quantityBefore?: number;
-  quantityAfter?: number;
-  unitCost?: number;
-  totalCost?: number;
-  reason?: string;
-  referenceType?: string;
-  referenceId?: string;
-  adjustedBy?: string;
-  adjustedAt?: Date;
-}
+import {
+  CreateInventoryAdjustmentDto,
+  InventoryDto,
+  ReserveStockParams,
+} from "../types/inventory.types";
 
 export class InventoryRepository {
   /**
@@ -75,23 +47,17 @@ export class InventoryRepository {
    * Used when adding items to order
    */
   async reserveStock(
-    {
+    params: ReserveStockParams,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<void> {
+    const {
       variantId,
       storeId,
       quantity,
       referenceId,
       currentUserId,
       tenantId,
-    }: {
-      variantId: string;
-      storeId: string;
-      quantity: number;
-      referenceId: string;
-      currentUserId: string;
-      tenantId: string;
-    },
-    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
-  ): Promise<void> {
+    } = params;
     console.log("Reserving stock for variant", variantId);
     const item = await this.findByVariantAndStore(variantId, storeId, manager);
 
@@ -361,7 +327,7 @@ export class InventoryRepository {
    * Create inventory adjustment record
    */
   private async createAdjustment(
-    data: CreateInventoryAdjustmentData,
+    data: CreateInventoryAdjustmentDto,
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<void> {
     const now = new Date();

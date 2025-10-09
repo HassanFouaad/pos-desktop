@@ -7,7 +7,7 @@ import {
   OrderType,
   PaymentStatus,
 } from "../../../db/enums";
-import { customersRepository } from "../../customers/repositories/customers.repository";
+import { customersService } from "../../customers/services/customers.service";
 import { inventoryRepository } from "../../inventory/repository/inventory.repository";
 import { storesRepository } from "../../stores/repositories/stores.repository";
 import { usersRepository } from "../../users/repositories/users.repository";
@@ -279,7 +279,7 @@ export class OrdersService {
       // Update customer visit data if customer is associated
       if (order.customerId) {
         try {
-          await customersRepository.updateVisitData(
+          await customersService.updateVisitData(
             order.customerId,
             order.totalAmount
           );
