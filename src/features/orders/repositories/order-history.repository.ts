@@ -1,0 +1,86 @@
+import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
+import { eq } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
+import { drizzleDb } from "../../../db";
+import { OrderStatus } from "../../../db/enums";
+import { DatabaseSchema } from "../../../db/schemas";
+import { orderHistory } from "../../../db/schemas/order-history.schema";
+import { OrderHistoryDto } from "../types/order.types";
+
+export interface CreateOrderHistoryData {
+  orderId: string;
+  userId?: string;
+  fromStatus: OrderStatus;
+  toStatus: OrderStatus;
+  storeId: string;
+  tenantId: string;
+}
+
+export class OrderHistoryRepository {
+  /**
+   * Create a new order history entry
+   */
+  async create(
+    data: CreateOrderHistoryData,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<void> {
+    const now = new Date();
+    const id = uuidv4();
+
+    const historyData = {
+      id,
+      ...data,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await (manager ?? drizzleDb).insert(orderHistory).values(historyData);
+  }
+
+  /**
+   * Find order history by ID
+   */
+  async findById(
+    id: string,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<OrderHistoryDto | null> {
+    const history = await (manager ?? drizzleDb)
+      .select()
+      .from(orderHistory)
+      .where(eq(orderHistory.id, id))
+      .limit(1);
+
+    if (!history || history.length === 0) {
+      return null;
+    }
+
+    const item = history[0];
+    return {
+      ...item,
+      createdAt: new Date(item.createdAt!),
+      updatedAt: new Date(item.updatedAt!),
+    } as OrderHistoryDto;
+  }
+
+  /**
+   * Find all history entries for an order
+   */
+  async findByOrderId(
+    orderId: string,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<OrderHistoryDto[]> {
+    const history = await (manager ?? drizzleDb)
+      .select()
+      .from(orderHistory)
+      .where(eq(orderHistory.orderId, orderId))
+      .orderBy(orderHistory.createdAt);
+
+    return history.map((item) => ({
+      ...item,
+      createdAt: new Date(item.createdAt!),
+      updatedAt: new Date(item.updatedAt!),
+    })) as OrderHistoryDto[];
+  }
+}
+
+export const orderHistoryRepository = new OrderHistoryRepository();

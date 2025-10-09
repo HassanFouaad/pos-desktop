@@ -3,8 +3,8 @@ import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export const returns = sqliteTable("returns", {
   id: text("id").primaryKey(),
   tenantId: text("tenantId"),
-  originalOrderId: text("originalOrderId"),
   storeId: text("storeId"),
+  originalOrderId: text("originalOrderId"),
   returnType: text("returnType"), // 'full_return', 'partial_return', 'exchange', 'store_credit'
   returnReason: text("returnReason"),
   processedBy: text("processedBy"),
@@ -15,6 +15,6 @@ export const returns = sqliteTable("returns", {
   refundAmount: real("refundAmount"),
   exchangeOrderId: text("exchangeOrderId"),
   notes: text("notes"),
-  createdAt: integer("createdAt", { mode: "timestamp" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
 });

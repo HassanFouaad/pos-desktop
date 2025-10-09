@@ -1,15 +1,9 @@
-import { and, desc, eq } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
+import { eq } from "drizzle-orm";
 import { drizzleDb } from "../../../db";
-import { orderItems } from "../../../db/schemas/order-items.schema";
 import { orders } from "../../../db/schemas/orders.schema";
 
-import {
-  OrderSource,
-  OrderStatus,
-  OrderType,
-  PaymentStatus,
-} from "../../../db/enums";
+import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
+import { DatabaseSchema, orderItems } from "../../../db/schemas";
 import { OrderDto } from "../types/order.types";
 
 export class OrdersRepository {
@@ -18,89 +12,60 @@ export class OrdersRepository {
    */
   async createOrder(
     data: typeof orders.$inferInsert,
-    storeCode: string
+    storeCode: string,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<string> {
     const now = new Date();
-    const orderId = uuidv4();
 
     // Generate order number (will be replaced with server number on sync)
     const orderNumber = this.generateOrderNumber(storeCode);
 
-    const orderData = {
-      id: orderId,
-      tenantId: data.tenantId,
-      storeId: data.storeId,
-      customerId: data.customerId,
-      orderNumber,
-      orderType: OrderType.SALE,
-      status: OrderStatus.PENDING,
-      source: OrderSource.POS,
-      subtotal: 0,
-      totalDiscount: 0,
-      totalTax: 0,
-      totalAmount: 0,
-      paymentStatus: PaymentStatus.PENDING,
-      amountPaid: data.amountPaid || 0,
-      amountDue: 0,
-      changeGiven: 0,
-      cashierId: data.cashierId,
-      shiftId: data.shiftId,
-      registerId: data.registerId,
-      notes: data.notes,
-      localId: orderId,
-      orderDate: now,
-      createdAt: now,
-      updatedAt: now,
-    };
+    await (manager ?? drizzleDb)
+      .insert(orders)
+      .values({
+        ...data,
+        orderDate: now,
+        orderNumber,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .execute();
 
-    await drizzleDb.insert(orders).values(orderData).execute();
-
-    return orderId;
+    return data.id;
   }
 
   /**
    * Find order by ID with items
    */
-  async findById(id: string): Promise<OrderDto | null> {
-    const order = await drizzleDb
+  async findById(
+    id: string,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<OrderDto | null> {
+    const [order] = await (manager ?? drizzleDb)
       .select()
       .from(orders)
       .where(eq(orders.id, id))
+      .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
       .limit(1);
 
-    if (!order || order.length === 0) {
+    if (!order) {
       return null;
     }
 
-    const items = await drizzleDb
-      .select()
-      .from(orderItems)
-      .where(eq(orderItems.orderId, id));
-
     return {
-      ...order[0],
-      items: items.map((item) => ({
-        ...item,
-        variantAttributes: item.variantAttributes as
-          | Record<string, string>
-          | undefined,
-        isReturned: Boolean(item.isReturned),
-        createdAt: new Date(item.createdAt!),
-        updatedAt: new Date(item.updatedAt!),
-      })),
-      orderDate: new Date(order[0].orderDate!),
-      createdAt: new Date(order[0].createdAt!),
-      updatedAt: new Date(order[0].updatedAt!),
-      completedAt: order[0].completedAt
-        ? new Date(order[0].completedAt)
-        : undefined,
-    } as OrderDto;
+      ...order.orders,
+      items: order.order_items,
+    } as any as OrderDto;
   }
 
   /**
    * Update order
    */
-  async updateOrder(id: string, data: Partial<OrderDto>): Promise<void> {
+  async updateOrder(
+    id: string,
+    data: Partial<OrderDto>,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<void> {
     const updateData = {
       ...data,
       updatedAt: new Date(),
@@ -108,18 +73,10 @@ export class OrdersRepository {
       completedAt: data.completedAt ? data.completedAt : undefined,
     };
 
-    await drizzleDb.update(orders).set(updateData).where(eq(orders.id, id));
-  }
-
-  /**
-   * Delete order (for voided orders)
-   */
-  async deleteOrder(id: string): Promise<void> {
-    // Delete order items first
-    await drizzleDb.delete(orderItems).where(eq(orderItems.orderId, id));
-
-    // Delete order
-    await drizzleDb.delete(orders).where(eq(orders.id, id));
+    await (manager ?? drizzleDb)
+      .update(orders)
+      .set(updateData)
+      .where(eq(orders.id, id));
   }
 
   /**
@@ -134,23 +91,6 @@ export class OrdersRepository {
     }
 
     return `SO-${storeCode}-${numbers}`;
-  }
-
-  /**
-   * Get pending orders for current store
-   */
-  async getPendingOrders(storeId: string): Promise<OrderDto[]> {
-    const pendingOrders = await drizzleDb
-      .select()
-      .from(orders)
-      .where(
-        and(eq(orders.storeId, storeId), eq(orders.status, OrderStatus.PENDING))
-      )
-      .orderBy(desc(orders.createdAt));
-
-    return Promise.all(
-      pendingOrders.map((order) => this.findById(order.id) as Promise<OrderDto>)
-    );
   }
 }
 

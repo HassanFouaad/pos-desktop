@@ -11,6 +11,7 @@ import {
 export interface OrderItemDto {
   id: string;
   orderId: string;
+  storeId: string;
   tenantId?: string;
   variantId?: string;
   quantity: number;
@@ -157,4 +158,16 @@ export interface LocalOrder {
   order: Partial<OrderDto>;
   items: CreateOrderItemDto[];
   preview?: PreviewOrderDto;
+}
+
+export interface OrderHistoryDto {
+  id: string;
+  orderId: string;
+  storeId: string;
+  tenantId: string;
+  userId?: string;
+  fromStatus: string;
+  toStatus: string;
+  createdAt: Date;
+  updatedAt: Date;
 }

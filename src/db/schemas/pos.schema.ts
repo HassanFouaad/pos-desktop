@@ -12,10 +12,10 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const pos = sqliteTable("pos", {
   id: text("id").primaryKey(),
-  tenantId: text("tenantId"),
   storeId: text("storeId"),
+  tenantId: text("tenantId"),
   name: text("name"),
   status: text("status"),
-  createdAt: integer("createdAt", { mode: "timestamp" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
 });

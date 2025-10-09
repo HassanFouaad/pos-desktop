@@ -80,6 +80,41 @@ export class CustomersRepository {
       })
       .execute();
   }
+
+  /**
+   * Update customer visit data after a purchase
+   * @param id Customer ID
+   * @param amount Purchase amount
+   */
+  async updateVisitData(id: string, amount: number): Promise<void> {
+    const customer = await this.db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, id))
+      .limit(1)
+      .execute();
+
+    if (!customer || customer.length === 0) {
+      throw new Error(`Customer not found: ${id}`);
+    }
+
+    const customerData = customer[0];
+    const totalVisits = (customerData.totalVisits || 0) + 1;
+    const totalSpent = (customerData.totalSpent || 0) + amount;
+    const averageOrderValue = totalSpent / totalVisits;
+
+    await this.db
+      .update(customers)
+      .set({
+        totalVisits,
+        totalSpent,
+        averageOrderValue,
+        lastVisitAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(customers.id, id))
+      .execute();
+  }
 }
 
 export const customersRepository = new CustomersRepository();

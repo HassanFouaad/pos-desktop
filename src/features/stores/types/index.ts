@@ -59,6 +59,6 @@ export interface TenantDto {
   accentColor: text("accentColor"),
   storesCount: integer("storesCount"),
   isActive: integer("isActive", { mode: "boolean" }),
-  createdAt: integer("createdAt", { mode: "timestamp" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
 */

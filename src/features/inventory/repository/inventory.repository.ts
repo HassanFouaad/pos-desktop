@@ -1,6 +1,8 @@
+import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
 import { and, eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import { drizzleDb } from "../../../db";
+import { DatabaseSchema } from "../../../db/schemas";
 import { inventoryAdjustments } from "../../../db/schemas/inventory-adjustments.schema";
 import { inventory } from "../../../db/schemas/inventory.schema";
 import { InventoryAdjustmentType } from "../enums/inventory-adjustment-type.enum";
@@ -45,9 +47,10 @@ export class InventoryRepository {
    */
   async findByVariantAndStore(
     variantId: string,
-    storeId: string
+    storeId: string,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<InventoryDto | null> {
-    const items = await drizzleDb
+    const items = await (manager ?? drizzleDb)
       .select()
       .from(inventory)
       .where(
@@ -72,15 +75,25 @@ export class InventoryRepository {
    * Used when adding items to order
    */
   async reserveStock(
-    variantId: string,
-    storeId: string,
-    quantity: number,
-    referenceId: string,
-    currentUserId: string,
-    tenantId: string
+    {
+      variantId,
+      storeId,
+      quantity,
+      referenceId,
+      currentUserId,
+      tenantId,
+    }: {
+      variantId: string;
+      storeId: string;
+      quantity: number;
+      referenceId: string;
+      currentUserId: string;
+      tenantId: string;
+    },
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<void> {
     console.log("Reserving stock for variant", variantId);
-    const item = await this.findByVariantAndStore(variantId, storeId);
+    const item = await this.findByVariantAndStore(variantId, storeId, manager);
 
     if (!item) {
       throw new Error(
@@ -107,7 +120,8 @@ export class InventoryRepository {
       variantId,
       tenantId,
     });
-    await drizzleDb
+
+    await (manager ?? drizzleDb)
       .update(inventory)
       .set({
         quantityCommitted: newCommitted,
@@ -117,20 +131,23 @@ export class InventoryRepository {
       .where(eq(inventory.id, item.id));
 
     // Create adjustment record
-    await this.createAdjustment({
-      tenantId,
-      storeId,
-      variantId,
-      adjustmentType: InventoryAdjustmentType.SALE,
-      quantityChange: 0, // Physical quantity doesn't change
-      quantityBefore: item.quantityOnHand,
-      quantityAfter: item.quantityOnHand,
-      reason: `Stock reserved for order ${referenceId}`,
-      referenceType: InventoryReferenceType.ORDER,
-      referenceId,
-      adjustedAt: new Date(),
-      adjustedBy: currentUserId,
-    });
+    await this.createAdjustment(
+      {
+        tenantId,
+        storeId,
+        variantId,
+        adjustmentType: InventoryAdjustmentType.SALE,
+        quantityChange: 0, // Physical quantity doesn't change
+        quantityBefore: item.quantityOnHand,
+        quantityAfter: item.quantityOnHand,
+        reason: `Stock reserved for order ${referenceId}`,
+        referenceType: InventoryReferenceType.ORDER,
+        referenceId,
+        adjustedAt: new Date(),
+        adjustedBy: currentUserId,
+      },
+      manager
+    );
   }
 
   /**
@@ -143,9 +160,10 @@ export class InventoryRepository {
     quantity: number,
     referenceId: string,
     currentUserId: string,
-    tenantId: string
+    tenantId: string,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<void> {
-    const item = await this.findByVariantAndStore(variantId, storeId);
+    const item = await this.findByVariantAndStore(variantId, storeId, manager);
 
     if (!item) {
       throw new Error(
@@ -164,7 +182,7 @@ export class InventoryRepository {
     const newCommitted = item.quantityCommitted - quantity;
     const newAvailable = newOnHand - newCommitted;
 
-    await drizzleDb
+    await (manager ?? drizzleDb)
       .update(inventory)
       .set({
         quantityOnHand: newOnHand,
@@ -178,22 +196,25 @@ export class InventoryRepository {
       .where(eq(inventory.id, item.id));
 
     // Create adjustment record
-    await this.createAdjustment({
-      tenantId,
-      storeId,
-      variantId,
-      adjustmentType: InventoryAdjustmentType.SALE,
-      quantityChange: -quantity,
-      quantityBefore: item.quantityOnHand,
-      quantityAfter: newOnHand,
-      unitCost: item.costPerUnit,
-      totalCost: item.costPerUnit ? quantity * item.costPerUnit : undefined,
-      reason: `Stock consumed for order ${referenceId}`,
-      referenceType: InventoryReferenceType.ORDER,
-      referenceId,
-      adjustedAt: new Date(),
-      adjustedBy: currentUserId,
-    });
+    await this.createAdjustment(
+      {
+        tenantId,
+        storeId,
+        variantId,
+        adjustmentType: InventoryAdjustmentType.SALE,
+        quantityChange: -quantity,
+        quantityBefore: item.quantityOnHand,
+        quantityAfter: newOnHand,
+        unitCost: item.costPerUnit,
+        totalCost: item.costPerUnit ? quantity * item.costPerUnit : undefined,
+        reason: `Stock consumed for order ${referenceId}`,
+        referenceType: InventoryReferenceType.ORDER,
+        referenceId,
+        adjustedAt: new Date(),
+        adjustedBy: currentUserId,
+      },
+      manager
+    );
   }
 
   /**
@@ -206,9 +227,10 @@ export class InventoryRepository {
     quantity: number,
     referenceId: string,
     currentUserId: string,
-    tenantId: string
+    tenantId: string,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<void> {
-    const item = await this.findByVariantAndStore(variantId, storeId);
+    const item = await this.findByVariantAndStore(variantId, storeId, manager);
 
     if (!item) {
       throw new Error(
@@ -226,7 +248,7 @@ export class InventoryRepository {
     const newCommitted = item.quantityCommitted - quantity;
     const newAvailable = item.quantityOnHand - newCommitted;
 
-    await drizzleDb
+    await (manager ?? drizzleDb)
       .update(inventory)
       .set({
         quantityCommitted: newCommitted,
@@ -236,31 +258,115 @@ export class InventoryRepository {
       .where(eq(inventory.id, item.id));
 
     // Create adjustment record
-    await this.createAdjustment({
-      tenantId,
-      storeId,
-      variantId,
-      adjustmentType: InventoryAdjustmentType.RELEASE,
-      quantityChange: 0, // Physical quantity doesn't change
-      quantityBefore: item.quantityOnHand,
-      quantityAfter: item.quantityOnHand,
-      reason: `Stock released from voided order ${referenceId}`,
-      referenceType: InventoryReferenceType.ORDER,
-      referenceId,
-      adjustedAt: new Date(),
-      adjustedBy: currentUserId,
-    });
+    await this.createAdjustment(
+      {
+        tenantId,
+        storeId,
+        variantId,
+        adjustmentType: InventoryAdjustmentType.RELEASE,
+        quantityChange: 0, // Physical quantity doesn't change
+        quantityBefore: item.quantityOnHand,
+        quantityAfter: item.quantityOnHand,
+        reason: `Stock released from voided order ${referenceId}`,
+        referenceType: InventoryReferenceType.ORDER,
+        referenceId,
+        adjustedAt: new Date(),
+        adjustedBy: currentUserId,
+      },
+      manager
+    );
+  }
+
+  /**
+   * Return stock to inventory (increase on-hand quantity)
+   * Used when processing returns
+   */
+  async returnStock(
+    variantId: string,
+    storeId: string,
+    quantity: number,
+    referenceId: string,
+    referenceType: string,
+    currentUserId: string,
+    tenantId: string,
+    reason?: string,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<void> {
+    if (quantity <= 0) {
+      throw new Error("Invalid quantity: must be greater than 0");
+    }
+
+    // Find or create inventory record
+    let item = await this.findByVariantAndStore(variantId, storeId, manager);
+
+    if (!item) {
+      // Create inventory record if it doesn't exist
+      const now = new Date();
+      const id = uuidv4();
+
+      await (manager ?? drizzleDb).insert(inventory).values({
+        id,
+        tenantId,
+        storeId,
+        variantId,
+        quantityOnHand: quantity,
+        quantityCommitted: 0,
+        quantityAvailable: quantity,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      item = (await this.findByVariantAndStore(variantId, storeId, manager))!;
+    } else {
+      // Update existing inventory
+      const newOnHand = item.quantityOnHand + quantity;
+      const newAvailable = newOnHand - item.quantityCommitted;
+
+      await (manager ?? drizzleDb)
+        .update(inventory)
+        .set({
+          quantityOnHand: newOnHand,
+          quantityAvailable: newAvailable,
+          totalValue: item.costPerUnit
+            ? newOnHand * item.costPerUnit
+            : item.totalValue,
+          updatedAt: new Date(),
+        })
+        .where(eq(inventory.id, item.id));
+    }
+
+    // Create adjustment record
+    await this.createAdjustment(
+      {
+        tenantId,
+        storeId,
+        variantId,
+        adjustmentType: InventoryAdjustmentType.RETURN,
+        quantityChange: quantity,
+        quantityBefore: item.quantityOnHand,
+        quantityAfter: item.quantityOnHand + quantity,
+        unitCost: item.costPerUnit,
+        totalCost: item.costPerUnit ? quantity * item.costPerUnit : undefined,
+        reason: reason || `Stock returned from ${referenceType} ${referenceId}`,
+        referenceType,
+        referenceId,
+        adjustedAt: new Date(),
+        adjustedBy: currentUserId,
+      },
+      manager
+    );
   }
 
   /**
    * Create inventory adjustment record
    */
   private async createAdjustment(
-    data: CreateInventoryAdjustmentData
+    data: CreateInventoryAdjustmentData,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<void> {
     const now = new Date();
 
-    await drizzleDb.insert(inventoryAdjustments).values({
+    await (manager ?? drizzleDb).insert(inventoryAdjustments).values({
       id: uuidv4(),
       tenantId: data.tenantId,
       storeId: data.storeId,

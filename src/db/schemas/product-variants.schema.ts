@@ -9,7 +9,7 @@ export const productVariants = sqliteTable("product_variants", {
   sku: text("sku"),
   baseSellingPrice: real("baseSellingPrice"),
   basePurchasePrice: real("basePurchasePrice"),
-  createdAt: integer("createdAt", { mode: "timestamp" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
   latestPriceSnapshotId: text("latestPriceSnapshotId"),
 });

@@ -75,12 +75,6 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
       });
       console.log("order", order);
 
-      // Update order with payment info
-      await ordersService.updateOrderPayment(order.id, {
-        amountPaid,
-        paymentMethod: method,
-      });
-
       setCreatedOrder(order);
       setPaymentAmount(amountPaid);
       setPaymentMethod(method);
@@ -109,11 +103,6 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
       });
 
       showSnackbar("Order completed successfully!", "success");
-
-      // Reload page to start new order after a short delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
     } catch (error: any) {
       console.error("Failed to complete order:", error);
       showSnackbar(
@@ -136,11 +125,6 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
       });
 
       showSnackbar("Order voided successfully!", "success");
-
-      // Reload page to start fresh after a short delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
     } catch (error: any) {
       console.error("Failed to void order:", error);
       showSnackbar(

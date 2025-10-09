@@ -8,7 +8,7 @@ export const users = sqliteTable("users", {
   role: text("role"),
   permissions: text("permissions", { mode: "json" }), // Store arrays as JSON in SQLite
   isLoggedIn: integer("isLoggedIn", { mode: "boolean" }).default(false), // SQLite booleans are stored as integers
-  lastLoginAt: integer("lastLoginAt", { mode: "timestamp" }), // SQLite timestamps as integers
+  lastLoginAt: integer("lastLoginAt", { mode: "timestamp_ms" }), // SQLite timestamps as integers
   refreshToken: text("refreshToken"),
   hashedPassword: text("hashedPassword"),
   username: text("username"),

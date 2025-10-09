@@ -1,4 +1,7 @@
+import { relations } from "drizzle-orm";
 import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { customers } from "./customers.schema";
+import { orderItems } from "./order-items.schema";
 
 export const orders = sqliteTable("orders", {
   id: text("id").primaryKey(),
@@ -28,8 +31,13 @@ export const orders = sqliteTable("orders", {
   notes: text("notes"),
   internalNotes: text("internalNotes"),
   localId: text("localId"),
-  orderDate: integer("orderDate", { mode: "timestamp" }),
-  completedAt: integer("completedAt", { mode: "timestamp" }),
-  createdAt: integer("createdAt", { mode: "timestamp" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+  orderDate: integer("orderDate", { mode: "timestamp_ms" }),
+  completedAt: integer("completedAt", { mode: "timestamp_ms" }),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
 });
+
+relations(orders, ({ many, one }) => ({
+  items: many(orderItems),
+  customer: one(customers),
+}));

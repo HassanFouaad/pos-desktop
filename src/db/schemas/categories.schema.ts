@@ -4,6 +4,6 @@ export const categories = sqliteTable("categories", {
   id: text("id").primaryKey(),
   tenantId: text("tenantId"),
   name: text("name"),
-  createdAt: integer("createdAt", { mode: "timestamp" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
 });

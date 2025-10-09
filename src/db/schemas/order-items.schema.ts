@@ -2,6 +2,7 @@ import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const orderItems = sqliteTable("order_items", {
   id: text("id").primaryKey(),
+  storeId: text("storeId"),
   orderId: text("orderId"),
   tenantId: text("tenantId"),
   variantId: text("variantId"),
@@ -21,6 +22,6 @@ export const orderItems = sqliteTable("order_items", {
   returnedQuantity: integer("returnedQuantity"),
   returnReason: text("returnReason"),
   lineTotal: real("lineTotal"),
-  createdAt: integer("createdAt", { mode: "timestamp" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp" }),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
 });
