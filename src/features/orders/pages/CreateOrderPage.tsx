@@ -1,9 +1,9 @@
-import { Box, Grid, useTheme } from "@mui/material";
+import { Grid } from "@mui/material";
 import { useEffect, useState } from "react";
 import { container } from "tsyringe";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import {
-  resetOrder,
+  ensureActiveTab,
   selectCartItems,
   updatePreview,
 } from "../../../store/orderSlice";
@@ -12,38 +12,27 @@ import { StoreDto } from "../../stores/types";
 import { OrderActions } from "../components/LeftPanel/OrderActions";
 import { OrderCart } from "../components/LeftPanel/OrderCart";
 import { OrderTotals } from "../components/LeftPanel/OrderTotals";
+import { OrderTabBar } from "../components/OrderTabBar";
 import { CategoryGrid } from "../components/RightPanel/CategoryGrid";
 import { ProductGrid } from "../components/RightPanel/ProductGrid";
 import { OrdersService } from "../services/orders.service";
 
 const ordersService = container.resolve(OrdersService);
 const storesService = container.resolve(StoresService);
+
 export const CreateOrderPage = () => {
-  const theme = useTheme();
   const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
   const [store, setStore] = useState<StoreDto | null>(null);
-
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null
   );
 
-  // Load store on mount
   useEffect(() => {
-    const loadStore = async () => {
-      const store = await storesService.getCurrentStore();
-      setStore(store);
-    };
-
-    loadStore();
-
-    return () => {
-      // Cleanup on unmount
-      dispatch(resetOrder());
-    };
+    dispatch(ensureActiveTab());
+    storesService.getCurrentStore().then(setStore);
   }, [dispatch]);
 
-  // Update preview when cart items change
   useEffect(() => {
     const updateOrderPreview = async () => {
       if (!store?.id || cartItems.length === 0) {
@@ -74,117 +63,58 @@ export const CreateOrderPage = () => {
   }, [cartItems, store?.id, dispatch]);
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        height: { xs: "auto", md: "100vh" },
-        bgcolor: theme.palette.background.default,
-        display: "flex",
-        flexDirection: "column",
-        overflow: { xs: "auto", md: "hidden" },
-      }}
-    >
+    <Grid container rowSpacing={1} size={12} direction="column">
+      <Grid size={12}>
+        <OrderTabBar />
+      </Grid>
+
       <Grid
+        size={12}
         container
-        sx={{
-          height: { xs: "auto", md: "100%" },
-          flexGrow: 1,
-        }}
-        columnSpacing={{ xs: 0, md: 1 }}
+        sx={{ overflow: "hidden", flex: 1 }}
+        spacing={1}
       >
-        {/* Left Panel - Order Details */}
+        {/* Left Panel */}
         <Grid
-          size={{
-            xs: 12,
-            sm: 12,
-            md: 5,
-            lg: 4,
-          }}
           sx={{
-            minHeight: { xs: "50vh", md: "100%" },
-            height: { xs: "auto", md: "100%" },
-            display: "flex",
-            flexDirection: "column",
-            borderRight: {
-              xs: "none",
-              md: `1px solid ${theme.palette.divider}`,
-            },
-            borderBottom: {
-              xs: `1px solid ${theme.palette.divider}`,
-              md: "none",
-            },
-            bgcolor: theme.palette.background.paper,
-            overflow: "hidden",
+            borderRight: 1,
+            borderColor: "divider",
+            bgcolor: "background.paper",
           }}
-        >
-          {/* Cart Items - Scrollable */}
-          <Box
-            sx={{
-              flex: 1,
-              overflow: "auto",
-              p: 2,
-              minHeight: { xs: "200px", md: "auto" },
-            }}
-          >
-            <OrderCart />
-          </Box>
-
-          {/* Totals - Fixed at bottom */}
-          <Box
-            sx={{
-              borderTop: `1px solid ${theme.palette.divider}`,
-              bgcolor: theme.palette.background.paper,
-            }}
-          >
-            <OrderTotals />
-            {store?.id && <OrderActions storeId={store.id} />}
-          </Box>
-        </Grid>
-
-        {/* Right Panel - Products */}
-        <Grid
-          size={{
-            xs: 12,
-            sm: 12,
-            md: 7,
-            lg: 8,
-          }}
+          direction="column"
+          display="flex"
+          size={{ xs: 12, md: 5, lg: 4 }}
           container
-          sx={{
-            height: { xs: "auto", md: "100%" },
-            minHeight: { xs: "50vh", md: "auto" },
-          }}
-          rowSpacing={{ xs: 1, md: 0 }}
         >
-          {/* Category Grid - Top section */}
-          <Grid
-            size={{ xs: 12 }}
-            sx={{
-              height: { xs: "auto", md: "30%" },
-              minHeight: { xs: "150px", md: "auto" },
-            }}
-          >
-            <Box
-              sx={{
-                borderBottom: `1px solid ${theme.palette.divider}`,
-                bgcolor: theme.palette.background.paper,
-                p: 2,
-                height: "100%",
-                overflow: "auto",
-              }}
-            >
-              <CategoryGrid onCategorySelect={setSelectedCategoryId} />
-            </Box>
+          <Grid size={12}>
+            <OrderCart />
           </Grid>
 
-          {/* Product Grid - Bottom section */}
+          <Grid size={12}>
+            <OrderTotals />
+          </Grid>
+
+          <Grid size={12}>
+            <OrderActions storeId={store?.id ?? ""} />
+          </Grid>
+        </Grid>
+
+        {/* Right Panel */}
+        <Grid size={{ xs: 12, md: 7, lg: 8 }} container direction="column">
           <Grid
             size={{ xs: 12 }}
             sx={{
-              height: { xs: "auto", md: "70%" },
-              minHeight: { xs: "300px", md: "auto" },
+              borderBottom: 1,
+              borderColor: "divider",
+              bgcolor: "background.paper",
+              p: 2,
+              overflow: "auto",
+              maxHeight: "30vh",
             }}
           >
+            <CategoryGrid onCategorySelect={setSelectedCategoryId} />
+          </Grid>
+          <Grid size={{ xs: 12 }} sx={{ flex: 1, overflow: "auto" }}>
             {store?.id && (
               <ProductGrid
                 categoryId={selectedCategoryId}
@@ -195,6 +125,6 @@ export const CreateOrderPage = () => {
           </Grid>
         </Grid>
       </Grid>
-    </Box>
+    </Grid>
   );
 };

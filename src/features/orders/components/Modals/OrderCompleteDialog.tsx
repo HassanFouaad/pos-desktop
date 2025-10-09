@@ -5,6 +5,7 @@ import {
 } from "@mui/icons-material";
 import { Box, Button, Typography } from "@mui/material";
 import { ResponsiveDialog } from "../../../../components/common/ResponsiveDialog";
+import { PaymentMethod } from "../../../../db/enums";
 
 interface OrderCompleteDialogProps {
   open: boolean;
@@ -12,7 +13,7 @@ interface OrderCompleteDialogProps {
   totalAmount: number;
   changeAmount: number;
   orderNumber: string;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   onComplete: () => void;
   onVoid: () => void;
 }

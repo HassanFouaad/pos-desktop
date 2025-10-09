@@ -142,9 +142,6 @@ export interface PreviewOrderDto {
 // Complete Order DTO
 export interface CompleteOrderDto {
   orderId: string;
-  paymentMethod: PaymentMethod;
-  amountPaid: number;
-  orderDate?: Date;
 }
 
 // Void Order DTO

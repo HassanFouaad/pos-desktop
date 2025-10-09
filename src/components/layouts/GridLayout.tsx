@@ -29,7 +29,7 @@ export const GridLayout = ({
         py: 2,
       }}
     >
-      <Grid container spacing={2}>
+      <Grid container rowSpacing={2}>
         {/* Header */}
         {title && (
           <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>

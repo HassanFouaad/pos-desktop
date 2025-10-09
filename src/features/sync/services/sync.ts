@@ -1,14 +1,12 @@
-import { PowerSyncDatabase } from "@powersync/core";
-import { inject, injectable } from "tsyringe";
+import { container, singleton } from "tsyringe";
 import { powerSyncDb } from "../../../db";
-import BackendConnector from "./connector";
+import { PosDeviceRepository } from "../../auth/repositories/pos-device.repository";
+import { BackendConnector } from "./connector";
 
-@injectable()
+const posDeviceRepository = container.resolve(PosDeviceRepository);
+@singleton()
 class SyncService {
-  private powerSync: PowerSyncDatabase | null = null;
-  constructor(
-    @inject(BackendConnector) private readonly connector: BackendConnector
-  ) {}
+  constructor() {}
 
   async init() {
     try {
@@ -17,7 +15,8 @@ class SyncService {
 
       console.log("PowerSync initialized");
 
-      await powerSyncDb.connect(this.connector);
+      const connector = new BackendConnector(posDeviceRepository);
+      await powerSyncDb.connect(connector);
 
       console.log("PowerSync setup successfully");
     } catch (error) {
@@ -26,5 +25,7 @@ class SyncService {
     }
   }
 }
+
+container.registerSingleton(SyncService);
 
 export default SyncService;

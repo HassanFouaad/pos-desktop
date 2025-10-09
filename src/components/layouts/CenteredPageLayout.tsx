@@ -25,7 +25,7 @@ export const CenteredPageLayout = ({
         py: 2,
       }}
     >
-      <Grid container spacing={4} sx={{ width: "100%" }}>
+      <Grid container spacing={1} sx={{ width: 1, height: 1 }}>
         {children}
       </Grid>
     </Container>

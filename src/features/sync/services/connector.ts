@@ -1,16 +1,16 @@
 import {
   AbstractPowerSyncDatabase,
   PowerSyncBackendConnector,
-} from "@powersync/core";
-import { container, injectable } from "tsyringe";
+} from "@powersync/web";
+
+import { PosDeviceRepository } from "../../auth/repositories/pos-device.repository";
 import { getSyncData, uploadSyncData } from "../api";
 
-@injectable()
-export default class BackendConnector implements PowerSyncBackendConnector {
-  constructor() {}
+export class BackendConnector implements PowerSyncBackendConnector {
+  constructor(private readonly posDeviceRepository: PosDeviceRepository) {}
 
   async fetchCredentials() {
-    const posToken = await getPosAccessToken();
+    const posToken = await this.posDeviceRepository.getPosDevice();
 
     if (!posToken) {
       throw new Error("No POS token found");
@@ -56,5 +56,3 @@ export default class BackendConnector implements PowerSyncBackendConnector {
     }
   }
 }
-
-container.registerSingleton(BackendConnector);

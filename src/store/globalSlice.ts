@@ -116,8 +116,12 @@ export const checkPairingStatus = createAsyncThunk(
       ]);
 
       if (pos) {
-        pos.createdAt = new Date(pos.createdAt).toISOString() as any as Date;
-        pos.updatedAt = new Date(pos.updatedAt).toISOString() as any as Date;
+        pos.createdAt = new Date(
+          pos.createdAt ?? new Date()
+        ).toISOString() as any as Date;
+        pos.updatedAt = new Date(
+          pos.updatedAt ?? new Date()
+        ).toISOString() as any as Date;
       }
 
       if (store) {

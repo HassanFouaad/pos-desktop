@@ -20,7 +20,6 @@ export class PosDeviceRepository {
     const deviceData: PosDeviceSchema = {
       id: this.DEVICE_ID,
       ...data,
-      lastUpdatedAt: new Date(),
     };
 
     const existingDevice = await drizzleDb
@@ -156,7 +155,6 @@ export class PosDeviceRepository {
       .set({
         accessToken: null,
         refreshToken: null,
-        lastUpdatedAt: new Date(),
       })
       .where(eq(posDevices.id, this.DEVICE_ID))
       .execute();

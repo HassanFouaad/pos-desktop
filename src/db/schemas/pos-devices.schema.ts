@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 // Local-only table for POS device authentication
 export const posDevices = sqliteTable("pos_devices", {
@@ -7,5 +7,4 @@ export const posDevices = sqliteTable("pos_devices", {
   refreshToken: text("refreshToken"),
   deviceInfo: text("deviceInfo", { mode: "json" }), // Device information as JSON
   pairingData: text("pairingData", { mode: "json" }), // Store/tenant pairing info as JSON
-  lastUpdatedAt: integer("lastUpdatedAt", { mode: "timestamp_ms" }),
 });

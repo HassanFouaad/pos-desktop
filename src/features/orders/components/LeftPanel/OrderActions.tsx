@@ -3,8 +3,13 @@ import { Box, Button, useTheme } from "@mui/material";
 import { useState } from "react";
 import { container } from "tsyringe";
 import { OrderSource, PaymentMethod } from "../../../../db/enums";
-import { useAppSelector } from "../../../../store/hooks";
-import { selectCartItems, selectPreview } from "../../../../store/orderSlice";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
+import {
+  completeOrder as completeOrderAction,
+  selectCartItems,
+  selectPreview,
+  voidOrder as voidOrderAction,
+} from "../../../../store/orderSlice";
 import { OrdersService } from "../../services/orders.service";
 import { OrderDto } from "../../types/order.types";
 import { OrderCompleteDialog } from "../Modals/OrderCompleteDialog";
@@ -18,19 +23,16 @@ interface OrderActionsProps {
 
 export const OrderActions = ({ storeId }: OrderActionsProps) => {
   const theme = useTheme();
+  const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
   const preview = useAppSelector(selectPreview);
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<OrderDto | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    PaymentMethod.CASH
-  );
 
   const hasItems = cartItems.length > 0;
-  const totalAmount = preview?.totalAmount || 0;
+  const totalAmount = createdOrder?.totalAmount || preview?.totalAmount || 0;
 
   const handlePayClick = () => {
     setPaymentModalOpen(true);
@@ -61,11 +63,10 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
         orderDate: new Date(),
         source: OrderSource.POS,
         paymentMethod: method,
+        amountPaid: amountPaid,
       });
 
       setCreatedOrder(order);
-      setPaymentAmount(amountPaid);
-      setPaymentMethod(method);
 
       // Close payment modal and show completion dialog
       setPaymentModalOpen(false);
@@ -79,13 +80,16 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
     if (!createdOrder) return;
 
     try {
-      await ordersService.completeOrder({
+      const completedOrder = await ordersService.completeOrder({
         orderId: createdOrder.id,
-        paymentMethod: paymentMethod as any,
-        amountPaid: paymentAmount,
       });
 
+      // Close dialog first
       setCompleteDialogOpen(false);
+      setCreatedOrder(null);
+
+      // Then close the tab
+      dispatch(completeOrderAction(completedOrder));
     } catch (error: any) {
       console.error("Failed to complete order:", error);
     }
@@ -99,14 +103,22 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
         orderId: createdOrder.id,
       });
 
+      // Close dialogs first
       setPaymentModalOpen(false);
       setCompleteDialogOpen(false);
+      setCreatedOrder(null);
+
+      // Then close the tab
+      dispatch(voidOrderAction());
     } catch (error: any) {
       console.error("Failed to void order:", error);
     }
   };
 
-  const changeAmount = Math.max(0, paymentAmount - totalAmount);
+  const handleDialogClose = () => {
+    // When dialog is closed without action, just close the dialog
+    setCompleteDialogOpen(false);
+  };
 
   return (
     <>
@@ -142,11 +154,11 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
       {/* Order Complete Dialog */}
       <OrderCompleteDialog
         open={completeDialogOpen}
-        onClose={() => setCompleteDialogOpen(false)}
+        onClose={handleDialogClose}
         totalAmount={totalAmount}
-        changeAmount={changeAmount}
+        changeAmount={createdOrder?.changeGiven || 0}
         orderNumber={createdOrder?.orderNumber || ""}
-        paymentMethod={paymentMethod}
+        paymentMethod={createdOrder?.paymentMethod ?? PaymentMethod.CASH}
         onComplete={handleComplete}
         onVoid={handleVoid}
       />
