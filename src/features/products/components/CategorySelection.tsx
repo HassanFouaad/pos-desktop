@@ -1,5 +1,5 @@
 import { Add, Category } from "@mui/icons-material";
-import { CircularProgress, Grid } from "@mui/material";
+import { Grid } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { container } from "tsyringe";
@@ -8,6 +8,7 @@ import { TouchButton } from "../../../components/common/TouchButton";
 import { CreateCategoryDTO } from "../schemas/create-category.schema";
 import { ProductsService } from "../services/products.service";
 import { CategoryDTO } from "../types/category.dto";
+import { CategorySkeleton } from "./CategorySkeleton";
 import { CreateCategoryForm } from "./CreateCategoryForm";
 import { ProductSearch } from "./ProductSearch";
 
@@ -112,13 +113,10 @@ export const CategorySelection = () => {
         }}
       >
         {loading ? (
-          <Grid
-            container
-            justifyContent="center"
-            alignItems="center"
-            sx={{ p: 4 }}
-          >
-            <CircularProgress />
+          <Grid container spacing={1}>
+            {[...Array(8)].map((_, index) => (
+              <CategorySkeleton key={index} />
+            ))}
           </Grid>
         ) : (
           <Grid container spacing={1}>

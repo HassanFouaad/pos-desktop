@@ -6,6 +6,7 @@ import {
 
 import { PowerSyncDatabase } from "@powersync/web";
 
+import { config } from "../config";
 import { DatabaseSchema } from "./schemas";
 
 export const AppSchema = new DrizzleAppSchema({
@@ -32,21 +33,16 @@ export const AppSchema = new DrizzleAppSchema({
 
 export const powerSyncDb = new PowerSyncDatabase({
   database: {
-    dbFilename: "powersync1.db",
+    dbFilename: config.DATABASE_NAME,
   },
-  /*  database: new WASQLiteOpenFactory({
-    dbFilename: "powersync.db",
-    vfs: WASQLiteVFS.OPFSCoopSyncVFS,
-    debugMode: true,
-    flags: {
-      enableMultiTabs: typeof SharedWorker !== "undefined",
-      useWebWorker: typeof SharedWorker !== "undefined",
-    },
-  }), */
+
   flags: {
     useWebWorker: false,
   },
+
   schema: AppSchema,
+
+  encryptionKey: config.SYNC_DB_ENCRYPTION_KEY,
 });
 
 // This is the DB you will use in queries

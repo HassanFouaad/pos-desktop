@@ -19,7 +19,11 @@ import {
   Typography,
 } from "@mui/material";
 import dayjs from "dayjs";
-import { PaymentMethod, PaymentStatus } from "../../../../db/enums";
+import {
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+} from "../../../../db/enums";
 import { formatCurrency } from "../../../products/utils/pricing";
 import { OrderDto } from "../../types/order.types";
 
@@ -66,7 +70,9 @@ const getPaymentMethodIcon = (method?: PaymentMethod) => {
   }
 };
 
-const getPaymentMethodColor = (method?: PaymentMethod): string => {
+const getPaymentMethodColor = (
+  method?: PaymentMethod
+): "success" | "primary" | "default" => {
   switch (method) {
     case PaymentMethod.CASH:
       return "success";
@@ -103,7 +109,7 @@ export const OrderListItem = ({ order, onClick }: OrderListItemProps) => {
     order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
   const cardContent = (
-    <Grid container spacing={2}>
+    <Grid container spacing={2} sx={{ p: 2 }}>
       {/* Header Row */}
       <Grid size={{ xs: 12 }}>
         <Grid container spacing={1} alignItems="center">
@@ -116,12 +122,13 @@ export const OrderListItem = ({ order, onClick }: OrderListItemProps) => {
             <Chip
               label={order.status}
               size="small"
+              variant="outlined"
               color={
-                order.status === "completed"
+                order.status === OrderStatus.COMPLETED
                   ? "success"
-                  : order.status === "pending"
+                  : order.status === OrderStatus.PENDING
                   ? "warning"
-                  : order.status === "voided"
+                  : order.status === OrderStatus.VOIDED
                   ? "error"
                   : "default"
               }
@@ -212,7 +219,7 @@ export const OrderListItem = ({ order, onClick }: OrderListItemProps) => {
               label={order.paymentMethod || "N/A"}
               size="small"
               variant="outlined"
-              color={getPaymentMethodColor(order.paymentMethod) as any}
+              color={getPaymentMethodColor(order.paymentMethod)}
               sx={{ fontWeight: 600 }}
             />
           </Grid>
@@ -220,6 +227,7 @@ export const OrderListItem = ({ order, onClick }: OrderListItemProps) => {
             <Chip
               label={order.paymentStatus}
               size="small"
+              variant="outlined"
               color={getPaymentStatusColor(order.paymentStatus)}
               sx={{ fontWeight: 600 }}
             />
@@ -231,7 +239,7 @@ export const OrderListItem = ({ order, onClick }: OrderListItemProps) => {
 
   return (
     <Grid size={{ xs: 12 }}>
-      <Card sx={{ p: 2 }}>
+      <Card>
         {onClick ? (
           <CardActionArea onClick={handleClick}>{cardContent}</CardActionArea>
         ) : (

@@ -10,6 +10,7 @@ import { CustomerDTO } from "../types/customer.dto";
 import { CreateCustomerForm } from "./CreateCustomerForm";
 import { CustomerListItem } from "./CustomerListItem";
 import { CustomerSearch } from "./CustomerSearch";
+import { CustomerSkeleton } from "./CustomerSkeleton";
 
 const customersService = container.resolve(CustomersService);
 
@@ -116,13 +117,10 @@ export const CustomerList = () => {
         }}
       >
         {loading && customers.length === 0 ? (
-          <Grid
-            container
-            justifyContent="center"
-            alignItems="center"
-            sx={{ height: 1 }}
-          >
-            <CircularProgress />
+          <Grid container spacing={2} sx={{ p: 2 }}>
+            {[...Array(5)].map((_, index) => (
+              <CustomerSkeleton key={index} />
+            ))}
           </Grid>
         ) : error ? (
           <Grid

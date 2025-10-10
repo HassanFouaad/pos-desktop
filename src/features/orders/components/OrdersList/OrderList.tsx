@@ -6,6 +6,7 @@ import { OrdersService } from "../../services/orders.service";
 import { OrderDto } from "../../types/order.types";
 import { OrderListItem } from "./OrderListItem";
 import { OrderSearch } from "./OrderSearch";
+import { OrderSkeleton } from "./OrderSkeleton";
 
 const ordersService = container.resolve(OrdersService);
 
@@ -87,13 +88,10 @@ export const OrderList = () => {
         }}
       >
         {loading && orders.length === 0 ? (
-          <Grid
-            container
-            justifyContent="center"
-            alignItems="center"
-            sx={{ height: 1 }}
-          >
-            <CircularProgress />
+          <Grid container spacing={2} sx={{ p: 2 }}>
+            {[...Array(5)].map((_, index) => (
+              <OrderSkeleton key={index} />
+            ))}
           </Grid>
         ) : error ? (
           <Grid

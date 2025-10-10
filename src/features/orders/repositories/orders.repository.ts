@@ -1,5 +1,5 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, like } from "drizzle-orm";
 import { singleton } from "tsyringe";
 import { drizzleDb } from "../../../db";
 import { DatabaseSchema, orderItems } from "../../../db/schemas";
@@ -111,11 +111,9 @@ export class OrdersRepository {
       .offset(offset)
       .orderBy(desc(orders.orderDate));
 
-    // If search term provided, filter by order number or customer name/phone
+    // If search term provided, filter by order number (partial match)
     if (searchTerm) {
-      // Note: For customer name/phone, we'd need to join with customers table
-      // For now, just search by order number
-      query = query.where(eq(orders.orderNumber, searchTerm)) as any;
+      query = query.where(like(orders.orderNumber, `%${searchTerm}%`)) as any;
     }
 
     const result = await query.execute();

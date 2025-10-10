@@ -1022,6 +1022,13 @@
   dependencies:
     "@tauri-apps/api" "^2.8.0"
 
+"@tauri-apps/plugin-sql@~2":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-sql/-/plugin-sql-2.3.0.tgz#36a5fca276877c051380df4a506622aaddedbcf9"
+  integrity sha512-JYwIocfsLaDWa41LMiZWuzts7yCJR+EpZPRmgpO7Gd7XiAS9S67dKz306j/k/d9XntB0YopMRBol2OIWMschuA==
+  dependencies:
+    "@tauri-apps/api" "^2.6.0"
+
 "@tauri-apps/plugin-store@^2.4.0":
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/@tauri-apps/plugin-store/-/plugin-store-2.4.0.tgz#925cd626de28895d30a11c33321276cc4a3728ee"

@@ -11,6 +11,7 @@ import { formatCurrency } from "../utils/pricing";
 import { CategoryHeader } from "./CategoryHeader";
 import { ProductCard } from "./ProductCard";
 import { ProductSearch } from "./ProductSearch";
+import { ProductSkeleton } from "./ProductSkeleton";
 
 const productsService = container.resolve(ProductsService);
 
@@ -125,13 +126,10 @@ export const ProductList = ({
         }}
       >
         {loading && variants.length === 0 ? (
-          <Grid
-            container
-            justifyContent="center"
-            alignItems="center"
-            sx={{ height: 1 }}
-          >
-            <CircularProgress />
+          <Grid container spacing={1} sx={{ p: 2 }}>
+            {[...Array(8)].map((_, index) => (
+              <ProductSkeleton key={index} showInventory={true} />
+            ))}
           </Grid>
         ) : error ? (
           <Grid

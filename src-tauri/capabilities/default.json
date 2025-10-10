@@ -65,6 +65,7 @@
       ]
     },
     "store:default",
-    "stronghold:default"
+    "stronghold:default",
+    "sql:default"
   ]
 }
