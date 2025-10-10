@@ -78,6 +78,7 @@ export const CreateOrderPage = () => {
         flexDirection: "column",
         overflow: "hidden",
       }}
+      rowSpacing={1}
     >
       {/* Tab Bar Row */}
       <Grid size={12} sx={{ flexShrink: 0 }}>
@@ -90,9 +91,8 @@ export const CreateOrderPage = () => {
           {/* Left Panel */}
           {(!isMdOnly || mobileView === "cart") && (
             <Grid
-              size={isMdOnly ? 12 : { xs: 12, sm: 12, md: 5, lg: 4, xl: 3 }}
+              size={isMdOnly ? 12 : { xs: 12, sm: 12, md: 5, lg: 4 }}
               sx={{
-                borderRight: { xs: 0, md: 1 },
                 borderColor: "divider",
                 bgcolor: "background.paper",
                 height: 1,
@@ -152,7 +152,7 @@ export const CreateOrderPage = () => {
           {/* Right Panel */}
           {(!isMdOnly || mobileView === "products") && (
             <Grid
-              size={isMdOnly ? 12 : { xs: 12, sm: 12, md: 7, lg: 8, xl: 9 }}
+              size={isMdOnly ? 12 : { xs: 12, sm: 12, md: 7, lg: 8 }}
               sx={{
                 height: 1,
                 display: "flex",

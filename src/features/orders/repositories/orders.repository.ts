@@ -1,5 +1,5 @@
 import { PowerSyncSQLiteDatabase } from "@powersync/drizzle-driver";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { singleton } from "tsyringe";
 import { drizzleDb } from "../../../db";
 import { DatabaseSchema, orderItems } from "../../../db/schemas";
@@ -93,6 +93,63 @@ export class OrdersRepository {
         updatedAt: new Date(),
       })
       .where(eq(orders.id, id));
+  }
+
+  /**
+   * Get orders with optional search and pagination
+   */
+  async getOrders(
+    searchTerm: string | undefined,
+    limit: number,
+    offset: number,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<OrderDto[]> {
+    let query = (manager ?? drizzleDb)
+      .select()
+      .from(orders)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(orders.orderDate));
+
+    // If search term provided, filter by order number or customer name/phone
+    if (searchTerm) {
+      // Note: For customer name/phone, we'd need to join with customers table
+      // For now, just search by order number
+      query = query.where(eq(orders.orderNumber, searchTerm)) as any;
+    }
+
+    const result = await query.execute();
+
+    // Fetch items for each order
+    const ordersWithItems = await Promise.all(
+      result.map(async (order) => {
+        const items = await (manager ?? drizzleDb)
+          .select()
+          .from(orderItems)
+          .where(eq(orderItems.orderId, order.id));
+
+        return {
+          ...order,
+          orderDate: new Date(order.orderDate!),
+          completedAt: order.completedAt
+            ? new Date(order.completedAt)
+            : undefined,
+          createdAt: new Date(order.createdAt!),
+          updatedAt: new Date(order.updatedAt!),
+          items: items.map((item) => ({
+            ...item,
+            variantAttributes: item.variantAttributes as
+              | Record<string, string>
+              | undefined,
+            isReturned: Boolean(item.isReturned),
+            createdAt: new Date(item.createdAt!),
+            updatedAt: new Date(item.updatedAt!),
+          })),
+        } as OrderDto;
+      })
+    );
+
+    return ordersWithItems;
   }
 
   /**

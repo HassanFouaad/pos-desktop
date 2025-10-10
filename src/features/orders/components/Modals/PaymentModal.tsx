@@ -41,6 +41,15 @@ export const PaymentModal = ({
     }
   }, [open, totalAmount]);
 
+  // Update amount paid when payment method changes
+  useEffect(() => {
+    if (paymentMethod === PaymentMethod.CARD) {
+      // For card payments, amount must be exact
+      setAmountPaid(totalAmount.toFixed(2));
+      setError("");
+    }
+  }, [paymentMethod, totalAmount]);
+
   const handleAmountChange = (value: string) => {
     setAmountPaid(value);
     setError("");
@@ -159,7 +168,13 @@ export const PaymentModal = ({
         onChange={(e) => handleAmountChange(e.target.value)}
         type="number"
         error={!!error}
-        helperText={error}
+        helperText={
+          error ||
+          (paymentMethod === PaymentMethod.CARD
+            ? "Card payments must be exact amount"
+            : undefined)
+        }
+        disabled={paymentMethod === PaymentMethod.CARD}
         InputProps={{
           sx: {
             fontSize: "1.5rem",
@@ -169,41 +184,43 @@ export const PaymentModal = ({
         sx={{ mb: 2 }}
       />
 
-      {/* Quick Amount Buttons */}
-      <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => setAmountPaid(totalAmount.toFixed(2))}
-          sx={{ flex: 1 }}
-        >
-          Exact
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => handleQuickAmount(5)}
-          sx={{ flex: 1 }}
-        >
-          Round {formatCurrency(5, currency)}
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => handleQuickAmount(10)}
-          sx={{ flex: 1 }}
-        >
-          Round {formatCurrency(10, currency)}
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => handleQuickAmount(20)}
-          sx={{ flex: 1 }}
-        >
-          Round {formatCurrency(20, currency)}
-        </Button>
-      </Box>
+      {/* Quick Amount Buttons - Only for cash payments */}
+      {paymentMethod === PaymentMethod.CASH && (
+        <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setAmountPaid(totalAmount.toFixed(2))}
+            sx={{ flex: 1 }}
+          >
+            Exact
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleQuickAmount(5)}
+            sx={{ flex: 1 }}
+          >
+            Round {formatCurrency(5, currency)}
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleQuickAmount(10)}
+            sx={{ flex: 1 }}
+          >
+            Round {formatCurrency(10, currency)}
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleQuickAmount(20)}
+            sx={{ flex: 1 }}
+          >
+            Round {formatCurrency(20, currency)}
+          </Button>
+        </Box>
+      )}
     </ResponsiveDialog>
   );
 };

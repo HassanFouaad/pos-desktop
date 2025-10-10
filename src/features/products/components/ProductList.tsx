@@ -1,20 +1,15 @@
-import {
-  CheckCircleOutline,
-  HourglassEmpty,
-  Inventory,
-} from "@mui/icons-material";
+import { Inventory } from "@mui/icons-material";
 import { CircularProgress, Grid, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { container } from "tsyringe";
-import { ActionCard } from "../../../components/cards/ActionCard";
-import { InventoryChip } from "../../../components/common/InventoryChip";
 import { StoreDto } from "../../stores/types";
 import { ProductsService } from "../services/products.service";
 import { CategoryDTO } from "../types/category.dto";
 import { VariantDetailDTO } from "../types/variant-detail.dto";
 import { formatCurrency } from "../utils/pricing";
 import { CategoryHeader } from "./CategoryHeader";
+import { ProductCard } from "./ProductCard";
 import { ProductSearch } from "./ProductSearch";
 
 const productsService = container.resolve(ProductsService);
@@ -183,10 +178,11 @@ export const ProductList = ({
             >
               <Grid container spacing={1}>
                 {variants.map((variant) => (
-                  <ActionCard
+                  <ProductCard
                     key={variant.id}
                     title={variant.name || "Unnamed Variant"}
-                    subtitle={formatCurrency(
+                    subtitle={variant.product?.name ?? undefined}
+                    price={formatCurrency(
                       variant.baseSellingPrice,
                       store.currency || "EGP"
                     )}
@@ -194,33 +190,18 @@ export const ProductList = ({
                     onClick={
                       onVariantClick ? () => onVariantClick(variant) : undefined
                     }
-                    footer={
-                      variant.inventory && (
-                        <Grid container spacing={1} justifyContent="center">
-                          <Grid>
-                            <InventoryChip
-                              icon={<CheckCircleOutline fontSize="small" />}
-                              value={variant.inventory.quantityAvailable ?? 0}
-                              color="success"
-                            />
-                          </Grid>
-                          <Grid>
-                            <InventoryChip
-                              icon={<Inventory fontSize="small" />}
-                              value={variant.inventory.quantityOnHand ?? 0}
-                              color="info"
-                            />
-                          </Grid>
-                          <Grid>
-                            <InventoryChip
-                              icon={<HourglassEmpty fontSize="small" />}
-                              value={variant.inventory.quantityCommitted ?? 0}
-                              color="warning"
-                            />
-                          </Grid>
-                        </Grid>
-                      )
+                    inventory={
+                      variant.inventory
+                        ? {
+                            quantityAvailable:
+                              variant.inventory.quantityAvailable,
+                            quantityOnHand: variant.inventory.quantityOnHand,
+                            quantityCommitted:
+                              variant.inventory.quantityCommitted,
+                          }
+                        : undefined
                     }
+                    showInventory={true}
                     gridSize={{ xs: 12, sm: 6, md: 4, lg: 3 }}
                   />
                 ))}

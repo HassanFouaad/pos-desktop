@@ -183,29 +183,15 @@ export const OrderCart = ({ currency = "EGP" }: OrderCartProps) => {
                   <Typography
                     variant="caption"
                     sx={{
-                      color: theme.palette.text.secondary,
-                      fontSize: "0.75rem",
-                      lineHeight: 1.2,
-                      display: "block",
+                      color: theme.palette.text.primary,
+                      fontSize: "0.8rem",
+                      lineHeight: 1.3,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {previewItem?.productName || ""}
-                    {previewItem?.variantAttributes &&
-                      Object.keys(previewItem.variantAttributes).length > 0 &&
-                      " • " +
-                        Object.values(previewItem.variantAttributes).join(", ")}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: theme.palette.text.secondary,
-                      fontSize: "0.7rem",
-                    }}
-                  >
-                    {formatCurrency(previewItem?.unitPrice || 0, currency)} each
+                    {previewItem?.productName}
                   </Typography>
                 </Grid>
 
@@ -227,6 +213,15 @@ export const OrderCart = ({ currency = "EGP" }: OrderCartProps) => {
                     }}
                   >
                     {formatCurrency(previewItem?.lineTotal || 0, currency)}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    {formatCurrency(previewItem?.unitPrice || 0, currency)} each
                   </Typography>
                 </Grid>
 

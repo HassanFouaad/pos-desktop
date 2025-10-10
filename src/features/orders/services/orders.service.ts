@@ -389,6 +389,18 @@ export class OrdersService {
     return this.ordersRepository.findById(orderId);
   }
 
+  /**
+   * Get orders with optional search and pagination
+   */
+  async getOrders(
+    searchTerm: string | undefined,
+    limit: number,
+    offset: number,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<OrderDto[]> {
+    return this.ordersRepository.getOrders(searchTerm, limit, offset, manager);
+  }
+
   async updateOrder(
     id: string,
     data: Partial<Omit<OrderDto, "id" | "createdAt" | "updatedAt" | "items">>,

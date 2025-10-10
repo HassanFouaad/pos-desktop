@@ -1,13 +1,12 @@
-import { ShoppingCart as ProductIcon } from "@mui/icons-material";
+import { Inventory as ProductIcon } from "@mui/icons-material";
 import { CircularProgress, Grid, Typography, useTheme } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { ActionCard } from "../../../../components/cards/ActionCard";
-import { useAppDispatch } from "../../../../store/hooks";
-import { addCartItem } from "../../../../store/orderSlice";
-
 import { container } from "tsyringe";
 import { OrderItemStockType } from "../../../../db/enums";
+import { useAppDispatch } from "../../../../store/hooks";
+import { addCartItem } from "../../../../store/orderSlice";
+import { ProductCard } from "../../../products/components/ProductCard";
 import { ProductsService } from "../../../products/services";
 import type { VariantDetailDTO } from "../../../products/types/variant-detail.dto";
 import { formatCurrency } from "../../../products/utils/pricing";
@@ -158,15 +157,12 @@ export const ProductGrid = ({
     >
       <Grid container spacing={1} sx={{ p: 1.5 }}>
         {variantList.map((variant) => (
-          <ActionCard
+          <ProductCard
             key={variant.id}
             title={variant?.name || "Unknown Product"}
-            subtitle={`${variant.product?.name} - ${formatCurrency(
-              variant.baseSellingPrice,
-              store.currency
-            )}`}
+            subtitle={variant.product?.name ?? undefined}
+            price={formatCurrency(variant.baseSellingPrice, store.currency)}
             icon={<ProductIcon sx={{ fontSize: 32 }} />}
-            iconColor={theme.palette.primary.main}
             onClick={() => handleVariantClick(variant)}
             disabled={(variant.inventory?.quantityAvailable || 0) === 0}
             gridSize={{ xs: 6, sm: 4, md: 3, lg: 3, xl: 2 }}
