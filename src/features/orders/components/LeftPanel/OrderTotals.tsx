@@ -1,6 +1,6 @@
 import { Divider, Grid, Typography, useTheme } from "@mui/material";
 import { useAppSelector } from "../../../../store/hooks";
-import { selectCartItems, selectPreview } from "../../../../store/orderSlice";
+import { selectPreview } from "../../../../store/orderSlice";
 import { formatCurrency } from "../../../products/utils/pricing";
 
 interface OrderTotalsProps {
@@ -10,13 +10,11 @@ interface OrderTotalsProps {
 export const OrderTotals = ({ currency = "EGP" }: OrderTotalsProps) => {
   const theme = useTheme();
   const preview = useAppSelector(selectPreview);
-  const cartItems = useAppSelector(selectCartItems);
 
   const subtotal = preview?.subtotal || 0;
   const totalDiscount = preview?.totalDiscount || 0;
   const totalTax = preview?.totalTax || 0;
   const totalAmount = preview?.totalAmount || 0;
-  const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const TotalRow = ({
     label,
@@ -31,7 +29,7 @@ export const OrderTotals = ({ currency = "EGP" }: OrderTotalsProps) => {
     color?: string;
     bold?: boolean;
   }) => (
-    <Grid container sx={{ py: 0.75 }}>
+    <Grid container>
       <Grid size="grow">
         <Typography
           variant={variant}
@@ -60,15 +58,6 @@ export const OrderTotals = ({ currency = "EGP" }: OrderTotalsProps) => {
   return (
     <Grid container sx={{ p: 2 }}>
       <Grid size={12}>
-        {/* Item Count */}
-        <TotalRow
-          label="Items"
-          value={`${itemCount} ${itemCount === 1 ? "item" : "items"}`}
-          variant="body2"
-        />
-
-        <Divider sx={{ my: 1 }} />
-
         {/* Subtotal */}
         <TotalRow label="Subtotal" value={formatCurrency(subtotal, currency)} />
 

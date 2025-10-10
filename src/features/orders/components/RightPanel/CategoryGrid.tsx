@@ -89,19 +89,6 @@ export const CategoryGrid = ({ onCategorySelect }: CategoryGridProps) => {
   return (
     <Grid container>
       <Grid size={12}>
-        <Typography
-          variant="h6"
-          sx={{
-            mb: 2,
-            fontWeight: 600,
-            color: theme.palette.text.primary,
-          }}
-        >
-          Categories
-        </Typography>
-      </Grid>
-
-      <Grid size={12}>
         {loading && categoryList.length === 0 ? (
           <Box
             sx={{
@@ -172,7 +159,7 @@ export const CategoryGrid = ({ onCategorySelect }: CategoryGridProps) => {
                   iconColor={category.color || theme.palette.primary.main}
                   selected={selectedCategoryId === category.id}
                   onClick={() => handleCategoryClick(category.id)}
-                  gridSize={{ md: 4, lg: 2 }}
+                  gridSize={{ md: 4, lg: 2, xs: 3 }}
                 />
               ))}
               {loading && (

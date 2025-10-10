@@ -7,7 +7,9 @@ import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import {
   completeOrder as completeOrderAction,
   selectCartItems,
+  selectNotes,
   selectPreview,
+  selectSelectedCustomer,
   voidOrder as voidOrderAction,
 } from "../../../../store/orderSlice";
 import { OrdersService } from "../../services/orders.service";
@@ -30,6 +32,8 @@ export const OrderActions = ({
   const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
   const preview = useAppSelector(selectPreview);
+  const selectedCustomer = useAppSelector(selectSelectedCustomer);
+  const notes = useAppSelector(selectNotes);
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
@@ -68,6 +72,8 @@ export const OrderActions = ({
         source: OrderSource.POS,
         paymentMethod: method,
         amountPaid: amountPaid,
+        customerId: selectedCustomer.id || undefined,
+        notes: notes || undefined,
       });
 
       setCreatedOrder(order);

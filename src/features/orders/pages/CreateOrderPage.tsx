@@ -13,8 +13,10 @@ import {
 } from "../../../store/orderSlice";
 import { StoresService } from "../../stores/services";
 import { StoreDto } from "../../stores/types";
+import { CustomerSelection } from "../components/LeftPanel/CustomerSelection";
 import { OrderActions } from "../components/LeftPanel/OrderActions";
 import { OrderCart } from "../components/LeftPanel/OrderCart";
+import { OrderNote } from "../components/LeftPanel/OrderNote";
 import { OrderTotals } from "../components/LeftPanel/OrderTotals";
 import { OrderTabBar } from "../components/OrderTabBar";
 import { CategoryGrid } from "../components/RightPanel/CategoryGrid";
@@ -33,7 +35,7 @@ export const CreateOrderPage = () => {
     null
   );
   const [mobileView, setMobileView] = useState<"cart" | "products">("cart");
-  const isMdOnly = useMediaQuery(theme.breakpoints.only("md"));
+  const isMobileView = useMediaQuery(theme.breakpoints.down("lg"));
 
   useEffect(() => {
     dispatch(ensureActiveTab());
@@ -89,9 +91,9 @@ export const CreateOrderPage = () => {
       <Grid size={12} sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <Grid container spacing={1} sx={{ height: 1 }}>
           {/* Left Panel */}
-          {(!isMdOnly || mobileView === "cart") && (
+          {(!isMobileView || mobileView === "cart") && (
             <Grid
-              size={isMdOnly ? 12 : { xs: 12, sm: 12, md: 5, lg: 4 }}
+              size={isMobileView ? 12 : { xs: 12, sm: 12, md: 5, lg: 4 }}
               sx={{
                 borderColor: "divider",
                 bgcolor: "background.paper",
@@ -100,6 +102,16 @@ export const CreateOrderPage = () => {
                 flexDirection: "column",
               }}
             >
+              {/* Fixed Customer Selection */}
+              <Grid size={12} sx={{ flexShrink: 0 }}>
+                <CustomerSelection />
+              </Grid>
+
+              {/* Fixed Order Note */}
+              <Grid size={12} sx={{ flexShrink: 0 }}>
+                <OrderNote />
+              </Grid>
+
               {/* Scrollable Cart Area - Takes remaining space */}
               <Grid
                 size={12}
@@ -114,8 +126,8 @@ export const CreateOrderPage = () => {
                 <OrderCart currency={store?.currency} />
               </Grid>
 
-              {/* Browse Products Button - Only visible on md breakpoint */}
-              {isMdOnly && (
+              {/* Browse Products Button - Only visible on mobile view */}
+              {isMobileView && (
                 <Grid size={12} sx={{ flexShrink: 0, px: 2, pb: 1 }}>
                   <Button
                     fullWidth
@@ -150,17 +162,17 @@ export const CreateOrderPage = () => {
           )}
 
           {/* Right Panel */}
-          {(!isMdOnly || mobileView === "products") && (
+          {(!isMobileView || mobileView === "products") && (
             <Grid
-              size={isMdOnly ? 12 : { xs: 12, sm: 12, md: 7, lg: 8 }}
+              size={isMobileView ? 12 : { xs: 12, sm: 12, md: 7, lg: 8 }}
               sx={{
                 height: 1,
                 display: "flex",
                 flexDirection: "column",
               }}
             >
-              {/* Done Button - Only visible on md breakpoint */}
-              {isMdOnly && (
+              {/* Done Button - Only visible on mobile view */}
+              {isMobileView && (
                 <Grid
                   size={12}
                   sx={{
