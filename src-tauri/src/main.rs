@@ -6,6 +6,7 @@ use argon2::{Algorithm, Argon2, ParamsBuilder, Version};
 async fn main() {
     // Then start the Tauri app
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(

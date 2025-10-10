@@ -25,7 +25,7 @@ export { inventory } from "./inventory.schema";
 export { orderHistory } from "./order-history.schema";
 export { orderItems } from "./order-items.schema";
 export { orders } from "./orders.schema";
-export { posDevices } from "./pos-devices.schema";
+export { posDevices, type ConnectionStatus } from "./pos-devices.schema";
 export { pos } from "./pos.schema";
 export { productVariants } from "./product-variants.schema";
 export { products } from "./products.schema";

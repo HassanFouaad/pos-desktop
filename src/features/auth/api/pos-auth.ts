@@ -1,26 +1,47 @@
+import { container } from "tsyringe";
 import { z } from "zod";
 import httpClient, { ApiResponse, endpoints } from "../../../api";
 import { PairPosRequest, PosAuthResponse } from "../../../types/pos-auth.types";
 import { dbTokenStorage, TokenType } from "../services/db-token-storage";
+import { DeviceFingerprintService } from "../services/device-fingerprint.service";
 
+const deviceFingerprintService = container.resolve(DeviceFingerprintService);
 /**
  * POS pairing request schema
  */
 export const pairPosSchema = z.object({
   otp: z.string().length(6, "OTP must be 6 digits"),
-  deviceId: z.string().optional(),
+  posId: z.string().optional(),
 });
 
 /**
  * Pair POS device with backend using OTP
+ * Now includes device fingerprint for enhanced security
  */
 export const pairPosDevice = async (
   request: PairPosRequest
 ): Promise<ApiResponse<PosAuthResponse>> => {
   try {
+    // Collect device fingerprint for secure pairing
+    let deviceFingerprint;
+    try {
+      deviceFingerprint =
+        await deviceFingerprintService.collectDeviceFingerprint();
+      console.info("Device fingerprint collected for pairing");
+    } catch (fpError) {
+      console.warn("Failed to collect device fingerprint:", fpError);
+      // Continue without fingerprint - backend will handle gracefully
+    }
+
+    // Include device fingerprint in pairing request
+    const pairingRequest = {
+      ...request,
+      deviceFingerprint,
+    };
+
     const response = await httpClient.post<PosAuthResponse>(
       endpoints.pos.pair,
-      request
+      pairingRequest
     );
 
     if (response.success && response.data) {
@@ -38,7 +59,6 @@ export const pairPosDevice = async (
 
       // Store pairing data for app state restoration
       const pairingData = {
-        posDeviceId: response.data.device.id,
         posDeviceName: response.data.device.name,
         storeId: response.data.store.id,
         storeName: response.data.store.name,

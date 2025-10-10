@@ -7,6 +7,7 @@ import { OrderItemStockType } from "../../../../db/enums";
 import { useAppDispatch } from "../../../../store/hooks";
 import { addCartItem } from "../../../../store/orderSlice";
 import { ProductCard } from "../../../products/components/ProductCard";
+import { ProductSkeleton } from "../../../products/components/ProductSkeleton";
 import { ProductsService } from "../../../products/services";
 import type { VariantDetailDTO } from "../../../products/types/variant-detail.dto";
 import { formatCurrency } from "../../../products/utils/pricing";
@@ -104,10 +105,13 @@ export const ProductGrid = ({
 
   if (loading && variantList.length === 0) {
     return (
-      <Grid container sx={{ minHeight: 200 }}>
-        <Grid size={12} sx={{ textAlign: "center", p: 4 }}>
-          <CircularProgress />
-        </Grid>
+      <Grid container spacing={1} sx={{ p: 1.5 }}>
+        {[...Array(8)].map((_, index) => (
+          <ProductSkeleton
+            key={index}
+            gridSize={{ xs: 6, sm: 4, md: 3, lg: 3, xl: 2 }}
+          />
+        ))}
       </Grid>
     );
   }

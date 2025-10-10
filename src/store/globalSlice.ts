@@ -1,5 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { container } from "tsyringe";
+import { ConnectionStatus } from "../db/schemas/pos-devices.schema";
+import { PosDeviceRepository } from "../features/auth/repositories/pos-device.repository";
 import {
   dbTokenStorage,
   TokenType,
@@ -16,7 +18,6 @@ export type ThemeMode = "light" | "dark";
 export interface DevicePairingState {
   isPaired: boolean;
   isLoading: boolean;
-  posDeviceId: string | null;
   posDeviceName: string | null;
   storeId: string | null;
   storeName: string | null;
@@ -35,9 +36,11 @@ export interface GlobalState {
   store: StoreDto | null;
   tenant: TenantDto | null;
   pos: PosDTO | null;
+  connectionStatus: ConnectionStatus;
 }
 
 const storesService = container.resolve(StoresService);
+const posDeviceRepository = container.resolve(PosDeviceRepository);
 
 const initialState: GlobalState = {
   theme: {
@@ -47,7 +50,6 @@ const initialState: GlobalState = {
 
   pairing: {
     isPaired: false,
-    posDeviceId: null,
     posDeviceName: null,
     storeId: null,
     storeName: null,
@@ -61,6 +63,7 @@ const initialState: GlobalState = {
   pos: null,
   store: null,
   tenant: null,
+  connectionStatus: "offline",
 };
 
 /**
@@ -87,6 +90,7 @@ export const checkPairingStatus = createAsyncThunk(
           pairing: null,
           tenant: null,
           pos: null,
+          connectionStatus: "offline" as ConnectionStatus,
         };
       }
 
@@ -103,6 +107,7 @@ export const checkPairingStatus = createAsyncThunk(
           pairing: null,
           tenant: null,
           pos: null,
+          connectionStatus: "offline" as ConnectionStatus,
         };
       }
 
@@ -111,11 +116,12 @@ export const checkPairingStatus = createAsyncThunk(
           ? JSON.parse(pairingDataResult)
           : pairingDataResult;
 
-      // Step 3: Fetch all device data in parallel
-      const [pos, store, tenant] = await Promise.all([
+      // Step 3: Fetch all device data in parallel including connection status
+      const [pos, store, tenant, connectionStatus] = await Promise.all([
         storesService.getCurrentPos(),
         storesService.getCurrentStore(),
         storesService.getCurrentTenant(),
+        posDeviceRepository.getConnectionStatus(),
       ]);
 
       // Helper to normalize date fields
@@ -141,6 +147,7 @@ export const checkPairingStatus = createAsyncThunk(
         pairing: pairingData,
         pos: normalizeDates(pos),
         tenant: normalizeDates(tenant),
+        connectionStatus,
       };
     } catch (error) {
       console.error("Failed to check pairing status", error);
@@ -195,7 +202,6 @@ const globalSlice = createSlice({
     clearPairingData: (state) => {
       state.pairing = {
         isPaired: false,
-        posDeviceId: null,
         posDeviceName: null,
         storeId: null,
         storeName: null,
@@ -207,11 +213,15 @@ const globalSlice = createSlice({
         isLoading: false,
       };
     },
+    setConnectionStatus: (state, action: PayloadAction<ConnectionStatus>) => {
+      state.connectionStatus = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(checkPairingStatus.fulfilled, (state, action) => {
-        const { store, pos, tenant, pairing } = action.payload || {};
+        const { store, pos, tenant, pairing, connectionStatus } =
+          action.payload || {};
 
         if (store) {
           state.store = store;
@@ -223,6 +233,10 @@ const globalSlice = createSlice({
 
         if (pos) {
           state.pos = pos;
+        }
+
+        if (connectionStatus) {
+          state.connectionStatus = connectionStatus;
         }
 
         if (pairing) {
@@ -261,5 +275,6 @@ export const {
   setPos,
   setStore,
   setTenant,
+  setConnectionStatus,
 } = globalSlice.actions;
 export default globalSlice.reducer;

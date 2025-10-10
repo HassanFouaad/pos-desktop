@@ -19,6 +19,7 @@ import CustomersPage from "./features/customers/pages";
 import { CreateOrderPage, OrdersListPage } from "./features/orders";
 import ProductsPage from "./features/products/pages";
 import ProductListPage from "./features/products/pages/ProductListPage";
+import { SettingsPage } from "./features/settings";
 import { initAuth } from "./store/authSlice";
 import { checkPairingStatus } from "./store/globalSlice";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
@@ -39,7 +40,7 @@ const ModulePlaceholder = ({ title }: ModulePlaceholderProps) => (
     container
     justifyContent="flex-start"
     alignItems="center"
-    sx={{ height: "100%" }}
+    sx={{ height: 1 }}
   >
     <Grid>
       <Typography variant="h5" textAlign="center">
@@ -217,9 +218,7 @@ function App() {
               path="/settings"
               element={
                 <GridLayout title="Settings">
-                  <Grid>
-                    <ModulePlaceholder title="Settings" />
-                  </Grid>
+                  <SettingsPage />
                   <FloatingNavigation showBackButton />
                 </GridLayout>
               }

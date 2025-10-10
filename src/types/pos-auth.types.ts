@@ -38,11 +38,26 @@ export interface PosRefreshTokenResponse {
 }
 
 /**
+ * Device fingerprint for security validation
+ */
+export interface DeviceFingerprint {
+  macAddress: string;
+  hostname: string;
+  osVersion: string;
+  cpuModel: string;
+  totalRAM: string;
+  screenResolution: string;
+  timezone: string;
+  collectedAt: string;
+}
+
+/**
  * POS pairing request payload
  */
 export interface PairPosRequest {
   otp: string;
-  deviceId?: string;
+  posId?: string;
+  deviceFingerprint?: DeviceFingerprint;
 }
 
 /**

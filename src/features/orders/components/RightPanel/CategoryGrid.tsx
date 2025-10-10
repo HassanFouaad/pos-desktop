@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ActionCard } from "../../../../components/cards/ActionCard";
 import { drizzleDb } from "../../../../db";
 import { categories } from "../../../../db/schemas/categories.schema";
+import { CategorySkeleton } from "../../../products/components/CategorySkeleton";
 
 const LIMIT = 10; // Load 10 categories at a time
 
@@ -85,23 +86,6 @@ export const CategoryGrid = ({ onCategorySelect }: CategoryGridProps) => {
     onCategorySelect?.(categoryId);
   };
 
-  if (categoryList.length === 0 && !loading) {
-    return (
-      <Grid container>
-        <Grid size={12} sx={{ textAlign: "center", p: 4 }}>
-          <Typography
-            variant="body2"
-            sx={{
-              color: theme.palette.text.disabled,
-            }}
-          >
-            No categories available
-          </Typography>
-        </Grid>
-      </Grid>
-    );
-  }
-
   return (
     <Grid container>
       <Grid size={12}>
@@ -118,49 +102,90 @@ export const CategoryGrid = ({ onCategorySelect }: CategoryGridProps) => {
       </Grid>
 
       <Grid size={12}>
-        <Box
-          ref={scrollContainerRef}
-          sx={{
-            overflowX: "auto",
-            overflowY: "hidden",
-            WebkitOverflowScrolling: "touch",
-            "&::-webkit-scrollbar": {
-              height: 8,
-            },
-            "&::-webkit-scrollbar-thumb": {
-              bgcolor: "divider",
-              borderRadius: 1,
-            },
-          }}
-        >
-          <Grid
-            container
-            spacing={1.5}
-            wrap="nowrap"
-            sx={{ minWidth: "max-content" }}
+        {loading && categoryList.length === 0 ? (
+          <Box
+            sx={{
+              overflowX: "auto",
+              overflowY: "hidden",
+              WebkitOverflowScrolling: "touch",
+              "&::-webkit-scrollbar": {
+                height: 8,
+              },
+              "&::-webkit-scrollbar-thumb": {
+                bgcolor: "divider",
+                borderRadius: 1,
+              },
+            }}
           >
-            {categoryList.map((category) => (
-              <ActionCard
-                key={category.id}
-                title={category.name}
-                subtitle={category.description}
-                icon={<CategoryIcon sx={{ fontSize: 32 }} />}
-                iconColor={category.color || theme.palette.primary.main}
-                selected={selectedCategoryId === category.id}
-                onClick={() => handleCategoryClick(category.id)}
-                gridSize={{ md: 4, lg: 2 }}
-              />
-            ))}
-            {loading && (
-              <Grid
-                size="auto"
-                sx={{ display: "flex", alignItems: "center", px: 2 }}
+            <Grid
+              container
+              spacing={1.5}
+              wrap="nowrap"
+              sx={{ minWidth: "max-content" }}
+            >
+              {[...Array(6)].map((_, index) => (
+                <CategorySkeleton key={index} gridSize={{ md: 4, lg: 2 }} />
+              ))}
+            </Grid>
+          </Box>
+        ) : categoryList.length === 0 ? (
+          <Grid container>
+            <Grid size={12} sx={{ textAlign: "center", p: 4 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: theme.palette.text.disabled,
+                }}
               >
-                <CircularProgress size={24} />
-              </Grid>
-            )}
+                No categories available
+              </Typography>
+            </Grid>
           </Grid>
-        </Box>
+        ) : (
+          <Box
+            ref={scrollContainerRef}
+            sx={{
+              overflowX: "auto",
+              overflowY: "hidden",
+              WebkitOverflowScrolling: "touch",
+              "&::-webkit-scrollbar": {
+                height: 8,
+              },
+              "&::-webkit-scrollbar-thumb": {
+                bgcolor: "divider",
+                borderRadius: 1,
+              },
+            }}
+          >
+            <Grid
+              container
+              spacing={1.5}
+              wrap="nowrap"
+              sx={{ minWidth: "max-content" }}
+            >
+              {categoryList.map((category) => (
+                <ActionCard
+                  key={category.id}
+                  title={category.name}
+                  subtitle={category.description}
+                  icon={<CategoryIcon sx={{ fontSize: 32 }} />}
+                  iconColor={category.color || theme.palette.primary.main}
+                  selected={selectedCategoryId === category.id}
+                  onClick={() => handleCategoryClick(category.id)}
+                  gridSize={{ md: 4, lg: 2 }}
+                />
+              ))}
+              {loading && (
+                <Grid
+                  size="auto"
+                  sx={{ display: "flex", alignItems: "center", px: 2 }}
+                >
+                  <CircularProgress size={24} />
+                </Grid>
+              )}
+            </Grid>
+          </Box>
+        )}
       </Grid>
     </Grid>
   );

@@ -5,6 +5,7 @@ import {
   dbTokenStorage,
   TokenType,
 } from "../../features/auth/services/db-token-storage";
+import { DeviceFingerprintService } from "../../features/auth/services/device-fingerprint.service";
 import { endpoints, getConfig } from "./config";
 import { isTokenExpired } from "./token-utils";
 import { ApiResponse } from "./types";
@@ -18,6 +19,7 @@ export interface AuthStateEvent {
 }
 
 const posDeviceRepository = container.resolve(PosDeviceRepository);
+const deviceFingerprintService = container.resolve(DeviceFingerprintService);
 /**
  * A high-performance HTTP client using Tauri's plugin-http
  * This executes requests through the Rust backend for better performance
@@ -327,6 +329,7 @@ class TauriHttpClient {
 
   /**
    * Actual token refresh logic for POS tokens
+   * Now includes device fingerprint for enhanced security
    */
   private async performPosTokenRefresh(): Promise<string | null> {
     try {
@@ -343,11 +346,25 @@ class TauriHttpClient {
         return null;
       }
 
+      // Collect device fingerprint for security validation
+      let deviceFingerprint;
+      try {
+        deviceFingerprint =
+          await deviceFingerprintService.collectDeviceFingerprint();
+        console.debug("Device fingerprint collected for token refresh");
+      } catch (fpError) {
+        console.warn("Failed to collect device fingerprint:", fpError);
+        // Continue without fingerprint - backend will handle gracefully
+      }
+
       const response = await fetch(
         `${this.baseUrl}${endpoints.pos.refreshToken}`,
         {
           method: "POST",
-          body: JSON.stringify({ refreshToken }),
+          body: JSON.stringify({
+            refreshToken,
+            deviceFingerprint,
+          }),
           headers: {
             "Content-Type": "application/json",
             Accept: "application/json",
@@ -373,6 +390,18 @@ class TauriHttpClient {
       // Handle non-OK responses
       const responseData = await response.json().catch(() => ({}));
 
+      // Check for device fingerprint mismatch (security event)
+      if (
+        responseData?.error?.code === "error_device_fingerprint_mismatch" ||
+        responseData?.error?.message?.includes("fingerprint")
+      ) {
+        console.warn(
+          "Device fingerprint mismatch detected - device may have been tampered with"
+        );
+        await this.handlePosAuthFailure("token_invalid");
+        return null;
+      }
+
       // Only unpair on actual auth failures (401), not on network errors
       if (response.status === 401 || responseData?.error?.code === "ERR_401") {
         console.warn("POS refresh token expired or invalid");
@@ -384,6 +413,16 @@ class TauriHttpClient {
       console.warn("POS token refresh failed with status:", response.status);
       return null;
     } catch (error: any) {
+      // Check for fingerprint mismatch in error
+      if (
+        error?.code === "error_device_fingerprint_mismatch" ||
+        error?.message?.includes("fingerprint")
+      ) {
+        console.warn("Device fingerprint mismatch detected");
+        await this.handlePosAuthFailure("token_invalid");
+        return null;
+      }
+
       // Only unpair on auth-specific errors, not network errors
       if (
         error?.message === "Unauthorized" ||

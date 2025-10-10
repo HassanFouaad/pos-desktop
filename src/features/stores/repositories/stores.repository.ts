@@ -1,6 +1,6 @@
 import { singleton } from "tsyringe";
 import { drizzleDb } from "../../../db";
-import { posDevices, stores, tenants } from "../../../db/schemas";
+import { pos, stores, tenants } from "../../../db/schemas";
 import { PosDTO, StoreDto, TenantDto } from "../types";
 
 @singleton()
@@ -24,11 +24,7 @@ export class StoresRepository {
   }
 
   async getCurrentPos(): Promise<PosDTO | null> {
-    const [posData] = await drizzleDb
-      .select()
-      .from(posDevices)
-      .limit(1)
-      .execute();
+    const [posData] = await drizzleDb.select().from(pos).limit(1).execute();
     return (posData as any as PosDTO) || null;
   }
 }

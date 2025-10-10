@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { singleton } from "tsyringe";
 import { drizzleDb } from "../../../db";
 import { posDevices } from "../../../db/schemas";
+import { ConnectionStatus } from "../../../db/schemas/pos-devices.schema";
 
 type PosDeviceSchema = typeof posDevices.$inferInsert;
 
@@ -158,5 +159,22 @@ export class PosDeviceRepository {
       })
       .where(eq(posDevices.id, this.DEVICE_ID))
       .execute();
+  }
+
+  /**
+   * Update connection status
+   */
+  async updateConnectionStatus(status: ConnectionStatus): Promise<void> {
+    await this.upsertPosDevice({
+      connectionStatus: status,
+    });
+  }
+
+  /**
+   * Get connection status
+   */
+  async getConnectionStatus(): Promise<ConnectionStatus> {
+    const device = await this.getPosDevice();
+    return device?.connectionStatus || "offline";
   }
 }
