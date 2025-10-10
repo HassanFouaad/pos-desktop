@@ -15,15 +15,24 @@ export interface GridLayoutProps {
  */
 export const GridLayout = ({
   children,
-  maxWidth = "xl",
+  maxWidth: _maxWidth = "xl",
   footer,
   title,
 }: GridLayoutProps) => {
   return (
-    <Grid container spacing={2} sx={{ height: "100vh", p: 1 }}>
+    <Grid
+      container
+      sx={{
+        height: "100vh",
+        p: 1,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       {/* Header */}
       {title && (
-        <Grid size={12} sx={{ textAlign: "center" }}>
+        <Grid size={12} sx={{ flexShrink: 0, textAlign: "center", pb: 2 }}>
           <Typography variant="h4">{title}</Typography>
         </Grid>
       )}
@@ -32,7 +41,8 @@ export const GridLayout = ({
       <Grid
         size={12}
         sx={{
-          height: 1,
+          flex: 1,
+          minHeight: 0,
           overflow: "hidden",
         }}
       >
@@ -40,7 +50,11 @@ export const GridLayout = ({
       </Grid>
 
       {/* Footer Section */}
-      {footer && <Grid size={12}>{footer}</Grid>}
+      {footer && (
+        <Grid size={12} sx={{ flexShrink: 0 }}>
+          {footer}
+        </Grid>
+      )}
     </Grid>
   );
 };

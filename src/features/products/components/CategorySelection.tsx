@@ -66,46 +66,75 @@ export const CategorySelection = () => {
   }
 
   return (
-    <Grid container spacing={2}>
-      <Grid size={{ xs: 12, sm: 9, md: 10 }} sx={{ mb: 2 }}>
-        <ProductSearch
-          onSearch={setSearchTerm}
-          placeholder="Search categories..."
-        />
-      </Grid>
+    <Grid
+      container
+      sx={{
+        height: 1,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
+      {/* Search and Add Button - Fixed */}
+      <Grid size={12} sx={{ flexShrink: 0 }}>
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, sm: 9, md: 10 }}>
+            <ProductSearch
+              onSearch={setSearchTerm}
+              placeholder="Search categories..."
+            />
+          </Grid>
 
-      <Grid size={{ xs: 12, sm: 3, md: 2 }} sx={{ mb: 2 }}>
-        <TouchButton
-          variant="contained"
-          color="primary"
-          fullWidth
-          onClick={() => setCreateModalOpen(true)}
-          startIcon={<Add />}
-        >
-          New
-        </TouchButton>
-      </Grid>
-
-      {loading ? (
-        <Grid
-          container
-          justifyContent="center"
-          alignItems="center"
-          sx={{ p: 4 }}
-        >
-          <CircularProgress />
+          <Grid size={{ xs: 12, sm: 3, md: 2 }}>
+            <TouchButton
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={() => setCreateModalOpen(true)}
+              startIcon={<Add />}
+            >
+              New
+            </TouchButton>
+          </Grid>
         </Grid>
-      ) : (
-        categories.map((category) => (
-          <ActionCard
-            key={category.id}
-            title={category.name ?? "Unnamed Category"}
-            icon={<Category />}
-            onClick={() => navigate(`/products/${category.id}`)}
-            gridSize={{ xs: 12, sm: 12, md: 4, lg: 2 }}
-          />
-        ))
-      )}
+      </Grid>
+
+      {/* Scrollable Categories List - Takes remaining space */}
+      <Grid
+        size={12}
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          overflowX: "hidden",
+          WebkitOverflowScrolling: "touch",
+          pt: 2,
+        }}
+      >
+        {loading ? (
+          <Grid
+            container
+            justifyContent="center"
+            alignItems="center"
+            sx={{ p: 4 }}
+          >
+            <CircularProgress />
+          </Grid>
+        ) : (
+          <Grid container spacing={1}>
+            {categories.map((category) => (
+              <ActionCard
+                key={category.id}
+                title={category.name ?? "Unnamed Category"}
+                icon={<Category />}
+                onClick={() => navigate(`/products/${category.id}`)}
+                gridSize={{ xs: 12, sm: 12, md: 4, lg: 2 }}
+              />
+            ))}
+          </Grid>
+        )}
+      </Grid>
+
       <CreateCategoryForm
         open={isCreateModalOpen}
         onClose={() => setCreateModalOpen(false)}

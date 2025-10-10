@@ -1,4 +1,8 @@
-import { Grid } from "@mui/material";
+import {
+  Check as CheckIcon,
+  ShoppingCart as ShoppingCartIcon,
+} from "@mui/icons-material";
+import { Button, Grid, useMediaQuery, useTheme } from "@mui/material";
 import { useEffect, useState } from "react";
 import { container } from "tsyringe";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
@@ -21,12 +25,15 @@ const ordersService = container.resolve(OrdersService);
 const storesService = container.resolve(StoresService);
 
 export const CreateOrderPage = () => {
+  const theme = useTheme();
   const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
   const [store, setStore] = useState<StoreDto | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null
   );
+  const [mobileView, setMobileView] = useState<"cart" | "products">("cart");
+  const isMdOnly = useMediaQuery(theme.breakpoints.only("md"));
 
   useEffect(() => {
     dispatch(ensureActiveTab());
@@ -62,46 +69,43 @@ export const CreateOrderPage = () => {
     updateOrderPreview();
   }, [cartItems, store?.id, dispatch]);
 
-  // Fixed heights for left panel components
-  const ITEMS_HEIGHT = 360; // Approximate height for totals section
-  const TAB_BAR_HEIGHT = 64; // Approximate height for tab bar
-
   return (
     <Grid
       container
       sx={{
         height: 1,
-        alignItems: "flex-start",
-        justifyContent: "flex-start",
-        alignContent: "flex-start",
-        overflowY: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
       }}
-      rowSpacing={1}
     >
       {/* Tab Bar Row */}
-      <Grid size={12} sx={{ height: `${TAB_BAR_HEIGHT}px` }}>
+      <Grid size={12} sx={{ flexShrink: 0 }}>
         <OrderTabBar />
       </Grid>
 
       {/* Main Content Row */}
-      <Grid size={12} sx={{ height: `calc(100% - ${TAB_BAR_HEIGHT}px)` }}>
+      <Grid size={12} sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <Grid container spacing={1} sx={{ height: 1 }}>
           {/* Left Panel */}
-          <Grid
-            size={{ xs: 12, sm: 12, md: 5, lg: 4, xl: 3 }}
-            sx={{
-              borderRight: { xs: 0, md: 1 },
-              borderColor: "divider",
-              bgcolor: "background.paper",
-              height: 1,
-            }}
-          >
-            <Grid container sx={{ height: 1 }}>
+          {(!isMdOnly || mobileView === "cart") && (
+            <Grid
+              size={isMdOnly ? 12 : { xs: 12, sm: 12, md: 5, lg: 4, xl: 3 }}
+              sx={{
+                borderRight: { xs: 0, md: 1 },
+                borderColor: "divider",
+                bgcolor: "background.paper",
+                height: 1,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               {/* Scrollable Cart Area - Takes remaining space */}
               <Grid
                 size={12}
                 sx={{
-                  height: ITEMS_HEIGHT,
+                  flex: 1,
+                  minHeight: 0,
                   overflowY: "auto",
                   overflowX: "hidden",
                   WebkitOverflowScrolling: "touch",
@@ -110,34 +114,87 @@ export const CreateOrderPage = () => {
                 <OrderCart currency={store?.currency} />
               </Grid>
 
-              {/* Fixed Totals - Fixed height */}
-              <Grid size={12}>
+              {/* Browse Products Button - Only visible on md breakpoint */}
+              {isMdOnly && (
+                <Grid size={12} sx={{ flexShrink: 0, px: 2, pb: 1 }}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<ShoppingCartIcon />}
+                    onClick={() => setMobileView("products")}
+                    sx={{
+                      py: 1.5,
+                      fontWeight: 600,
+                      fontSize: "1rem",
+                    }}
+                  >
+                    Browse Products
+                  </Button>
+                </Grid>
+              )}
+
+              {/* Fixed Totals */}
+              <Grid size={12} sx={{ flexShrink: 0 }}>
                 <OrderTotals currency={store?.currency} />
               </Grid>
 
-              {/* Fixed Actions - Fixed height */}
-              <Grid size={12}>
+              {/* Fixed Actions */}
+              <Grid size={12} sx={{ flexShrink: 0 }}>
                 <OrderActions
                   storeId={store?.id ?? ""}
                   currency={store?.currency}
                 />
               </Grid>
             </Grid>
-          </Grid>
+          )}
 
           {/* Right Panel */}
-          <Grid
-            size={{ xs: 12, sm: 12, md: 7, lg: 8, xl: 9 }}
-            sx={{
-              height: 1,
-            }}
-          >
-            <Grid container sx={{ height: 1 }}>
-              {/* Categories Section - 25% of height */}
+          {(!isMdOnly || mobileView === "products") && (
+            <Grid
+              size={isMdOnly ? 12 : { xs: 12, sm: 12, md: 7, lg: 8, xl: 9 }}
+              sx={{
+                height: 1,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              {/* Done Button - Only visible on md breakpoint */}
+              {isMdOnly && (
+                <Grid
+                  size={12}
+                  sx={{
+                    flexShrink: 0,
+                    p: 2,
+                    bgcolor: "background.paper",
+                    borderBottom: 1,
+                    borderColor: "divider",
+                  }}
+                >
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    startIcon={<CheckIcon />}
+                    onClick={() => setMobileView("cart")}
+                    sx={{
+                      py: 1.5,
+                      fontWeight: 600,
+                      fontSize: "1rem",
+                    }}
+                  >
+                    Done
+                  </Button>
+                </Grid>
+              )}
+
+              {/* Categories Section - ~30% of available space */}
               <Grid
                 size={12}
                 sx={{
-                  height: "30%",
+                  flex: "0 0 auto",
+                  minHeight: "180px",
+                  maxHeight: "30vh",
                   borderBottom: 1,
                   borderColor: "divider",
                   bgcolor: "background.paper",
@@ -150,11 +207,12 @@ export const CreateOrderPage = () => {
                 <CategoryGrid onCategorySelect={setSelectedCategoryId} />
               </Grid>
 
-              {/* Products Section - 75% of height */}
+              {/* Products Section - Takes remaining space */}
               <Grid
                 size={12}
                 sx={{
-                  height: "70%",
+                  flex: 1,
+                  minHeight: 0,
                   overflowY: "auto",
                   overflowX: "hidden",
                   WebkitOverflowScrolling: "touch",
@@ -170,7 +228,7 @@ export const CreateOrderPage = () => {
                 )}
               </Grid>
             </Grid>
-          </Grid>
+          )}
         </Grid>
       </Grid>
     </Grid>

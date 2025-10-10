@@ -1,21 +1,11 @@
 import { Warning as WarningIcon } from "@mui/icons-material";
-import {
-  Alert,
-  Box,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Grid,
-  Typography,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
+import { Alert, Box, Grid, Typography, useTheme } from "@mui/material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { unpairPosDevice } from "../../features/auth/api/pos-auth";
 import { clearPairingData } from "../../store/globalSlice";
 import { useAppDispatch } from "../../store/hooks";
+import { ResponsiveDialog } from "../common/ResponsiveDialog";
 import { TouchButton } from "../common/TouchButton";
 
 export interface UnpairConfirmDialogProps {
@@ -34,7 +24,6 @@ export const UnpairConfirmDialog = ({
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("lg"));
 
   const handleConfirm = async () => {
     try {
@@ -70,14 +59,12 @@ export const UnpairConfirmDialog = ({
   };
 
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
-      onClose={loading ? undefined : handleCancel}
+      onClose={loading ? () => {} : handleCancel}
       maxWidth="sm"
       fullWidth
-      fullScreen={fullScreen}
-    >
-      <DialogTitle sx={{ textAlign: "center" }}>
+      title={
         <Grid container direction="column" alignItems="center" spacing={2}>
           <Grid>
             <WarningIcon
@@ -93,68 +80,67 @@ export const UnpairConfirmDialog = ({
             </Typography>
           </Grid>
         </Grid>
-      </DialogTitle>
-
-      <DialogContent>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12 }}>
-            <Typography variant="h6" color="text.secondary" textAlign="center">
-              This action will disconnect your device from the POS system.
-            </Typography>
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <Box
-              sx={{
-                p: 2,
-                backgroundColor: theme.palette.error.alpha8,
-              }}
+      }
+      actions={
+        <Grid container spacing={2} sx={{ width: 1 }}>
+          <Grid size={{ xs: 6 }}>
+            <TouchButton
+              size="large"
+              variant="outlined"
+              fullWidth
+              onClick={handleCancel}
+              disabled={loading}
             >
-              <Typography
-                variant="body1"
-                color="error.main"
-                fontWeight="medium"
-              >
-                ⚠️ Warning:
-              </Typography>
-              <Typography variant="body2" color="error.dark" sx={{ mt: 1 }}>
-                • You will need to re-pair this device to use it again
-                <br />
-                • Offline functionality will be disabled until re-paired
-                <br />• Any unsaved data may be lost
-              </Typography>
-            </Box>
+              Cancel
+            </TouchButton>
           </Grid>
-
-          {error && (
-            <Grid size={{ xs: 12 }}>
-              <Alert severity="error">{error}</Alert>
-            </Grid>
-          )}
+          <Grid size={{ xs: 6 }}>
+            <TouchButton
+              size="large"
+              variant="contained"
+              color="error"
+              fullWidth
+              onClick={handleConfirm}
+              disabled={loading}
+            >
+              {loading ? "Unpairing..." : "Yes, Unpair"}
+            </TouchButton>
+          </Grid>
         </Grid>
-      </DialogContent>
+      }
+    >
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12 }}>
+          <Typography variant="h6" color="text.secondary" textAlign="center">
+            This action will disconnect your device from the POS system.
+          </Typography>
+        </Grid>
 
-      <DialogActions>
-        <TouchButton
-          size="large"
-          variant="outlined"
-          fullWidth
-          onClick={handleCancel}
-          disabled={loading}
-        >
-          Cancel
-        </TouchButton>
-        <TouchButton
-          size="large"
-          variant="contained"
-          color="error"
-          fullWidth
-          onClick={handleConfirm}
-          disabled={loading}
-        >
-          {loading ? "Unpairing..." : "Yes, Unpair"}
-        </TouchButton>
-      </DialogActions>
-    </Dialog>
+        <Grid size={{ xs: 12 }}>
+          <Box
+            sx={{
+              p: 2,
+              backgroundColor: theme.palette.error.alpha8,
+            }}
+          >
+            <Typography variant="body1" color="error.main" fontWeight="medium">
+              ⚠️ Warning:
+            </Typography>
+            <Typography variant="body2" color="error.dark" sx={{ mt: 1 }}>
+              • You will need to re-pair this device to use it again
+              <br />
+              • Offline functionality will be disabled until re-paired
+              <br />• Any unsaved data may be lost
+            </Typography>
+          </Box>
+        </Grid>
+
+        {error && (
+          <Grid size={{ xs: 12 }}>
+            <Alert severity="error">{error}</Alert>
+          </Grid>
+        )}
+      </Grid>
+    </ResponsiveDialog>
   );
 };

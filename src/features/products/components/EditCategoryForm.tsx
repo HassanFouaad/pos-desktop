@@ -3,14 +3,13 @@ import {
   Alert,
   Box,
   CircularProgress,
-  Dialog,
-  DialogContent,
   Grid,
   TextField,
   Typography,
 } from "@mui/material";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { ResponsiveDialog } from "../../../components/common/ResponsiveDialog";
 import { TouchButton } from "../../../components/common/TouchButton";
 import {
   UpdateCategoryDTO,
@@ -60,70 +59,86 @@ export function EditCategoryForm({
     onSubmit(data);
   };
 
+  const handleClose = () => {
+    reset({
+      id: category.id,
+      name: category.name ?? "",
+    });
+    onClose();
+  };
+
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      fullScreen={{ xs: true, md: true, lg: false }}
-    >
-      <DialogContent>
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>
-            <Typography variant="h4" component="h2" fontWeight={700}>
-              Edit Category
-            </Typography>
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <Box
-              component="form"
-              onSubmit={handleSubmit(handleFormSubmit)}
-              noValidate
+      title={
+        <Typography variant="h4" component="h2" fontWeight={700}>
+          Edit Category
+        </Typography>
+      }
+      actions={
+        <Grid container spacing={2} sx={{ width: 1 }}>
+          <Grid size={{ xs: 6 }}>
+            <TouchButton
+              fullWidth
+              variant="outlined"
+              onClick={handleClose}
+              disabled={isLoading}
+              size="large"
             >
-              <Grid container spacing={3}>
-                <Grid size={{ xs: 12 }}>
-                  <Controller
-                    name="name"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Category Name"
-                        variant="outlined"
-                        fullWidth
-                        error={!!errors.name}
-                        helperText={errors.name?.message}
-                      />
-                    )}
-                  />
-                </Grid>
-                {error && (
-                  <Grid size={{ xs: 12 }}>
-                    <Alert severity="error">{error}</Alert>
-                  </Grid>
-                )}
-                <Grid size={{ xs: 12 }}>
-                  <TouchButton
-                    type="submit"
-                    size="large"
-                    fullWidth
-                    variant="contained"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <CircularProgress size={24} color="inherit" />
-                    ) : (
-                      "Update Category"
-                    )}
-                  </TouchButton>
-                </Grid>
-              </Grid>
-            </Box>
+              Cancel
+            </TouchButton>
+          </Grid>
+          <Grid size={{ xs: 6 }}>
+            <TouchButton
+              fullWidth
+              type="submit"
+              size="large"
+              variant="contained"
+              disabled={isLoading}
+              onClick={handleSubmit(handleFormSubmit)}
+            >
+              {isLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Update"
+              )}
+            </TouchButton>
           </Grid>
         </Grid>
-      </DialogContent>
-    </Dialog>
+      }
+    >
+      <Box
+        component="form"
+        onSubmit={handleSubmit(handleFormSubmit)}
+        noValidate
+      >
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12 }}>
+            <Controller
+              name="name"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Category Name"
+                  variant="outlined"
+                  fullWidth
+                  error={!!errors.name}
+                  helperText={errors.name?.message}
+                />
+              )}
+            />
+          </Grid>
+          {error && (
+            <Grid size={{ xs: 12 }}>
+              <Alert severity="error">{error}</Alert>
+            </Grid>
+          )}
+        </Grid>
+      </Box>
+    </ResponsiveDialog>
   );
 }

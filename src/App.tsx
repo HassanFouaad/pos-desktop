@@ -141,9 +141,7 @@ function App() {
               path="/products"
               element={
                 <GridLayout title="Products">
-                  <Grid>
-                    <ProductsPage />
-                  </Grid>
+                  <ProductsPage />
                   <FloatingNavigation showBackButton />
                 </GridLayout>
               }
@@ -154,9 +152,7 @@ function App() {
               path="/products/:categoryId"
               element={
                 <GridLayout title="Products">
-                  <Grid>
-                    <ProductListPage />
-                  </Grid>
+                  <ProductListPage />
                   <FloatingNavigation showBackButton />
                 </GridLayout>
               }

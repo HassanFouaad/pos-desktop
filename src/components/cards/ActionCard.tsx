@@ -18,6 +18,7 @@ export interface ActionCardProps {
   iconColor?: string;
   selected?: boolean;
   disabled?: boolean;
+  footer?: ReactNode;
   gridSize?: {
     xs?: number;
     sm?: number;
@@ -40,6 +41,7 @@ export const ActionCard = ({
   iconColor,
   selected = false,
   disabled = false,
+  footer,
   gridSize = { xs: 12, sm: 6, md: 4 },
 }: ActionCardProps) => {
   const theme = useTheme();
@@ -102,6 +104,11 @@ export const ActionCard = ({
               >
                 {subtitle}
               </Typography>
+            </Grid>
+          )}
+          {footer && (
+            <Grid size={{ xs: 12 }} sx={{ pt: 1 }}>
+              {footer}
             </Grid>
           )}
         </Grid>

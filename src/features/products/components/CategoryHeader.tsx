@@ -41,7 +41,7 @@ export const CategoryHeader = ({
 
   return (
     <>
-      <Grid size={{ xs: 12 }} sx={{ mb: 2 }}>
+      <Grid size={{ xs: 12 }}>
         <Card sx={{ p: 2 }}>
           <Grid container spacing={2} alignItems="center">
             <Grid size={{ xs: 12, sm: 9, md: 10 }}>
