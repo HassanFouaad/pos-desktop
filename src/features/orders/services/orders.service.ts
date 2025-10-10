@@ -110,7 +110,7 @@ export class OrdersService {
 
     const user = await this.usersRepository.getLoggedInUser();
     const tenant = await this.storesService.getCurrentTenant();
-    const localId = uuidv4();
+    const orderId = uuidv4();
 
     console.log("Getting preview for order");
 
@@ -125,104 +125,101 @@ export class OrdersService {
           data.amountPaid
         );
 
-      const orderId = await drizzleDb.transaction(
-        async (tx: any): Promise<string> => {
-          // Create order with calculated totals
-          const orderId = await this.ordersRepository.createOrder(
-            {
-              ...data,
-              storeId: store.id,
-              customerId: data.customerId,
-              orderType: OrderType.SALE,
-              source: data.source || OrderSource.POS,
-              status: OrderStatus.PENDING,
-              subtotal: previewOrder.subtotal,
-              totalDiscount: previewOrder.totalDiscount,
-              totalTax: previewOrder.totalTax,
-              totalAmount: previewOrder.totalAmount,
-              paymentMethod: data.paymentMethod,
-              paymentStatus: paymentStatus,
-              amountPaid: amountPaid,
-              amountDue: amountDue,
-              changeGiven: changeGiven,
-              notes: data.notes,
-              internalNotes: data.internalNotes,
-              orderDate: new Date(),
-              tenantId: tenant?.id ?? "",
-              localId,
-              id: localId,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-            store?.code ?? "",
-            tx
-          );
-          let toCreateOrderItems: OrderItemDto[] = [];
-          // Create order items
-          for (const previewItem of previewOrder.items) {
-            toCreateOrderItems.push({
-              orderId: orderId,
-              storeId: store.id ?? "",
-              tenantId: tenant?.id ?? "",
-              variantId: previewItem.variantId,
-              quantity: previewItem.quantity,
-              unitPrice: previewItem.unitPrice,
-              originalUnitPrice: previewItem.originalUnitPrice,
-              lineSubtotal: previewItem.lineSubtotal,
-              lineDiscount: previewItem.lineDiscount,
-              lineTotalBeforeTax: previewItem.lineTotalBeforeTax,
-              productName: previewItem.productName,
-              variantName: previewItem.variantName,
-              productSku: previewItem.productSku,
-              variantAttributes: previewItem.variantAttributes,
-              stockType: previewItem.stockType,
-              lineTotal: previewItem.lineTotal,
-              id: uuidv4(),
-              isReturned: false,
-              returnedQuantity: 0,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            });
+      await drizzleDb.transaction(async (tx: any): Promise<string> => {
+        // Create order with calculated totals
+        await this.ordersRepository.createOrder(
+          {
+            ...data,
+            storeId: store.id,
+            customerId: data.customerId,
+            orderType: OrderType.SALE,
+            source: data.source || OrderSource.POS,
+            status: OrderStatus.PENDING,
+            subtotal: previewOrder.subtotal,
+            totalDiscount: previewOrder.totalDiscount,
+            totalTax: previewOrder.totalTax,
+            totalAmount: previewOrder.totalAmount,
+            paymentMethod: data.paymentMethod,
+            paymentStatus: paymentStatus,
+            amountPaid: amountPaid,
+            amountDue: amountDue,
+            changeGiven: changeGiven,
+            notes: data.notes,
+            internalNotes: data.internalNotes,
+            orderDate: new Date(),
+            tenantId: tenant?.id ?? "",
+            id: orderId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+          store?.code ?? "",
+          tx
+        );
+        let toCreateOrderItems: OrderItemDto[] = [];
+        // Create order items
+        for (const previewItem of previewOrder.items) {
+          toCreateOrderItems.push({
+            orderId: orderId,
+            storeId: store.id ?? "",
+            tenantId: tenant?.id ?? "",
+            variantId: previewItem.variantId,
+            quantity: previewItem.quantity,
+            unitPrice: previewItem.unitPrice,
+            originalUnitPrice: previewItem.originalUnitPrice,
+            lineSubtotal: previewItem.lineSubtotal,
+            lineDiscount: previewItem.lineDiscount,
+            lineTotalBeforeTax: previewItem.lineTotalBeforeTax,
+            productName: previewItem.productName,
+            variantName: previewItem.variantName,
+            productSku: previewItem.productSku,
+            variantAttributes: previewItem.variantAttributes,
+            stockType: previewItem.stockType,
+            lineTotal: previewItem.lineTotal,
+            id: uuidv4(),
+            isReturned: false,
+            returnedQuantity: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
 
-            console.log("Order item created");
+          console.log("Order item created");
 
-            // Reserve inventory for stock items
-            if (
-              previewItem.stockType === OrderItemStockType.INVENTORY &&
-              previewItem.variantId
-            ) {
-              console.log("Reserving inventory for stock item");
-              await this.inventoryService.reserveStock(
-                {
-                  variantId: previewItem.variantId,
-                  storeId: store.id,
-                  quantity: previewItem.quantity,
-                  referenceId: orderId,
-                  currentUserId: user?.id as string,
-                  tenantId: tenant?.id ?? "",
-                },
-                tx
-              );
-            }
+          // Reserve inventory for stock items
+          if (
+            previewItem.stockType === OrderItemStockType.INVENTORY &&
+            previewItem.variantId
+          ) {
+            console.log("Reserving inventory for stock item");
+            await this.inventoryService.reserveStock(
+              {
+                variantId: previewItem.variantId,
+                storeId: store.id,
+                quantity: previewItem.quantity,
+                referenceId: orderId,
+                currentUserId: user?.id as string,
+                tenantId: tenant?.id ?? "",
+              },
+              tx
+            );
           }
-
-          await this.orderItemsService.createBulk(toCreateOrderItems, tx);
-          // Create initial order history entry
-          await this.orderHistoryRepository.create(
-            {
-              orderId: orderId,
-              userId: user?.id,
-              fromStatus: OrderStatus.PENDING,
-              toStatus: OrderStatus.PENDING,
-              storeId: store?.id ?? "",
-              tenantId: tenant?.id ?? "",
-            },
-            tx
-          );
-
-          return orderId;
         }
-      );
+
+        await this.orderItemsService.createBulk(toCreateOrderItems, tx);
+        // Create initial order history entry
+        await this.orderHistoryRepository.create(
+          {
+            orderId: orderId,
+            userId: user?.id,
+            fromStatus: OrderStatus.PENDING,
+            toStatus: OrderStatus.PENDING,
+            storeId: store?.id ?? "",
+            tenantId: tenant?.id ?? "",
+          },
+          tx
+        );
+
+        return orderId;
+      });
 
       console.log("Order created with ID:", orderId);
 
@@ -258,6 +255,16 @@ export class OrdersService {
       const items = await this.orderItemsService.findByOrderId(data.orderId);
 
       await drizzleDb.transaction(async (manager: any) => {
+        // Update order status
+        await this.ordersRepository.updateOrder(
+          data.orderId,
+          {
+            status: OrderStatus.COMPLETED,
+            completedAt: new Date(),
+          },
+          manager
+        );
+
         for (const item of items) {
           if (
             item.stockType === OrderItemStockType.INVENTORY &&
@@ -271,26 +278,6 @@ export class OrdersService {
                 referenceId: data.orderId,
                 currentUserId: user?.id as string,
                 tenantId: tenant?.id ?? "",
-              },
-              manager
-            );
-            const changeGiven = Math.max(
-              0,
-              data.amountPaid - order.totalAmount
-            );
-
-            // Update order status
-            await this.ordersRepository.updateOrder(
-              data.orderId,
-              {
-                status: OrderStatus.COMPLETED,
-                paymentMethod: data.paymentMethod,
-                paymentStatus: PaymentStatus.PAID,
-                amountPaid: data.amountPaid,
-                amountDue: 0,
-                changeGiven,
-                completedAt: data.orderDate || new Date(),
-                orderDate: data.orderDate || order.orderDate,
               },
               manager
             );
@@ -343,36 +330,51 @@ export class OrdersService {
       throw new Error("Only PENDING orders can be voided");
     }
 
+    const items = await this.orderItemsService.findByOrderId(data.orderId);
+
     try {
-      // Release inventory for all stock items
-      const items = await this.orderItemsService.findByOrderId(data.orderId);
+      await drizzleDb.transaction(async (manager: any) => {
+        // Update order status
+        await this.ordersRepository.updateOrder(
+          data.orderId,
+          {
+            status: OrderStatus.VOIDED,
+          },
+          manager
+        );
 
-      for (const item of items) {
-        if (item.stockType === OrderItemStockType.INVENTORY && item.variantId) {
-          await this.inventoryService.releaseStock({
-            variantId: item.variantId,
+        // Create order history entry for voiding
+        await this.orderHistoryRepository.create(
+          {
+            orderId: data.orderId,
+            userId: user?.id,
+            fromStatus: OrderStatus.PENDING,
+            toStatus: OrderStatus.VOIDED,
             storeId: order.storeId,
-            quantity: item.quantity,
-            referenceId: data.orderId,
-            currentUserId: user?.id as string,
             tenantId: tenant?.id ?? "",
-          });
+          },
+          manager
+        );
+        // Release inventory for all stock items
+
+        for (const item of items) {
+          if (
+            item.stockType === OrderItemStockType.INVENTORY &&
+            item.variantId
+          ) {
+            await this.inventoryService.releaseStock(
+              {
+                variantId: item.variantId,
+                storeId: order.storeId,
+                quantity: item.quantity,
+                referenceId: data.orderId,
+                currentUserId: user?.id as string,
+                tenantId: tenant?.id ?? "",
+              },
+              manager
+            );
+          }
         }
-      }
-
-      // Update order status
-      await this.ordersRepository.updateOrder(data.orderId, {
-        status: OrderStatus.VOIDED,
-      });
-
-      // Create order history entry for voiding
-      await this.orderHistoryRepository.create({
-        orderId: data.orderId,
-        userId: user?.id,
-        fromStatus: OrderStatus.PENDING,
-        toStatus: OrderStatus.VOIDED,
-        storeId: order.storeId,
-        tenantId: tenant?.id ?? "",
       });
     } catch (error) {
       console.error("Error voiding order:", error);

@@ -63,7 +63,6 @@ export interface OrderDto {
   customerPhone?: string;
   notes?: string;
   internalNotes?: string;
-  localId?: string;
   orderDate: Date;
   completedAt?: Date;
   createdAt: Date;
@@ -93,8 +92,6 @@ export interface CreateOrderDto {
   notes?: string;
 
   internalNotes?: string;
-
-  localId?: string;
 
   items: CreateOrderItemDto[];
 }

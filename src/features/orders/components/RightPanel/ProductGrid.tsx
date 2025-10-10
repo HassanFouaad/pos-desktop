@@ -1,11 +1,5 @@
 import { ShoppingCart as ProductIcon } from "@mui/icons-material";
-import {
-  Box,
-  CircularProgress,
-  Grid,
-  Typography,
-  useTheme,
-} from "@mui/material";
+import { CircularProgress, Grid, Typography, useTheme } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { ActionCard } from "../../../../components/cards/ActionCard";
@@ -94,107 +88,91 @@ export const ProductGrid = ({
 
   if (!categoryId) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          p: 4,
-        }}
-      >
-        <Typography
-          variant="body2"
-          sx={{
-            color: theme.palette.text.disabled,
-          }}
-        >
-          Select a category to view products
-        </Typography>
-      </Box>
+      <Grid container sx={{ minHeight: 200 }}>
+        <Grid size={12} sx={{ textAlign: "center", p: 4 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: theme.palette.text.disabled,
+            }}
+          >
+            Select a category to view products
+          </Typography>
+        </Grid>
+      </Grid>
     );
   }
 
   if (loading && variantList.length === 0) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          p: 4,
-        }}
-      >
-        <CircularProgress />
-      </Box>
+      <Grid container sx={{ minHeight: 200 }}>
+        <Grid size={12} sx={{ textAlign: "center", p: 4 }}>
+          <CircularProgress />
+        </Grid>
+      </Grid>
     );
   }
 
   if (variantList.length === 0 && !loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          p: 4,
-        }}
-      >
-        <Typography
-          variant="body2"
-          sx={{
-            color: theme.palette.text.disabled,
-          }}
-        >
-          No products in this category
-        </Typography>
-      </Box>
+      <Grid container sx={{ minHeight: 200 }}>
+        <Grid size={12} sx={{ textAlign: "center", p: 4 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: theme.palette.text.disabled,
+            }}
+          >
+            No products in this category
+          </Typography>
+        </Grid>
+      </Grid>
     );
   }
 
   return (
-    <Box
-      id="productScrollContainer"
-      sx={{
-        height: 1,
-        overflow: "auto",
-      }}
-    >
-      <InfiniteScroll
-        dataLength={variantList.length}
-        next={loadMore}
-        hasMore={hasMore}
-        loader={
-          <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+    <InfiniteScroll
+      dataLength={variantList.length}
+      next={loadMore}
+      hasMore={hasMore}
+      loader={
+        <Grid container>
+          <Grid size={12} sx={{ textAlign: "center", p: 2 }}>
             <CircularProgress />
-          </Box>
-        }
-        endMessage={
-          <Typography
-            sx={{ textAlign: "center", p: 2, color: "text.secondary" }}
-          >
-            No more products
-          </Typography>
-        }
-        scrollableTarget="productScrollContainer"
-      >
-        <Grid container spacing={1} height={1}>
-          {variantList.map((variant) => (
-            <ActionCard
-              key={variant.id}
-              title={variant?.name || "Unknown Product"}
-              subtitle={`${variant.product?.name} - ${formatCurrency(
-                variant.baseSellingPrice,
-                store.currency
-              )}`}
-              icon={<ProductIcon sx={{ fontSize: 32 }} />}
-              iconColor={theme.palette.primary.main}
-              onClick={() => handleVariantClick(variant)}
-              disabled={(variant.inventory?.quantityAvailable || 0) === 0}
-              gridSize={{ xs: 6, sm: 4, md: 3, lg: 3 }}
-            />
-          ))}
+          </Grid>
         </Grid>
-      </InfiniteScroll>
-    </Box>
+      }
+      endMessage={
+        <Grid container>
+          <Grid size={12}>
+            <Typography
+              sx={{ textAlign: "center", p: 2, color: "text.secondary" }}
+            >
+              No more products
+            </Typography>
+          </Grid>
+        </Grid>
+      }
+      scrollableTarget="productScrollContainer"
+      style={{ overflow: "visible", width: "100%" }}
+    >
+      <Grid container spacing={1} sx={{ p: 1.5 }}>
+        {variantList.map((variant) => (
+          <ActionCard
+            key={variant.id}
+            title={variant?.name || "Unknown Product"}
+            subtitle={`${variant.product?.name} - ${formatCurrency(
+              variant.baseSellingPrice,
+              store.currency
+            )}`}
+            icon={<ProductIcon sx={{ fontSize: 32 }} />}
+            iconColor={theme.palette.primary.main}
+            onClick={() => handleVariantClick(variant)}
+            disabled={(variant.inventory?.quantityAvailable || 0) === 0}
+            gridSize={{ xs: 6, sm: 4, md: 3, lg: 3, xl: 2 }}
+          />
+        ))}
+      </Grid>
+    </InfiniteScroll>
   );
 };

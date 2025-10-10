@@ -5,10 +5,9 @@ import {
 } from "@mui/icons-material";
 import {
   Box,
+  Grid,
   IconButton,
   Paper,
-  Stack,
-  TextField,
   Typography,
   useTheme,
 } from "@mui/material";
@@ -19,8 +18,13 @@ import {
   selectPreview,
   updateCartItemQuantity,
 } from "../../../../store/orderSlice";
+import { formatCurrency } from "../../../products/utils/pricing";
 
-export const OrderCart = () => {
+interface OrderCartProps {
+  currency?: string;
+}
+
+export const OrderCart = ({ currency = "EGP" }: OrderCartProps) => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
@@ -38,214 +42,221 @@ export const OrderCart = () => {
 
   if (cartItems.length === 0) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-          p: 4,
-        }}
-      >
-        <Typography
-          variant="h6"
+      <Grid container sx={{ minHeight: 200 }}>
+        <Grid
+          size={12}
           sx={{
-            color: theme.palette.text.disabled,
             textAlign: "center",
+            p: 3,
           }}
         >
-          No items in cart
-          <br />
+          <Typography
+            variant="h6"
+            sx={{
+              color: theme.palette.text.disabled,
+            }}
+          >
+            No items in cart
+          </Typography>
           <Typography variant="body2" sx={{ mt: 1 }}>
             Select products to add them
           </Typography>
-        </Typography>
-      </Box>
+        </Grid>
+      </Grid>
     );
   }
 
   return (
-    <Stack spacing={1.5}>
+    <Grid container spacing={1} sx={{ p: 1.5 }}>
       {cartItems.map((item, index) => {
         // Get preview data for this item
         const previewItem = preview?.items[index];
 
         return (
-          <Paper
-            key={item.tempId}
-            elevation={0}
-            sx={{
-              p: 1.5,
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: 2,
-            }}
-          >
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}
+          <Grid size={12} key={item.tempId}>
+            <Paper
+              elevation={0}
+              sx={{
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 1.5,
+                overflow: "hidden",
+                "&:active": {
+                  bgcolor: theme.palette.action.hover,
+                },
+              }}
             >
-              <Box sx={{ flex: 1 }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 600,
-                    color: theme.palette.text.primary,
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  {previewItem?.variantName ||
-                    item.variantName ||
-                    "Custom Item"}
-                </Typography>
-                {previewItem?.productName && (
+              <Grid container spacing={1} sx={{ p: 1, minHeight: 56 }}>
+                {/* Quantity Controls */}
+                <Grid size="auto">
+                  <Box
+                    sx={{
+                      borderRadius: 1.5,
+                      bgcolor: theme.palette.background.default,
+                      border: `1px solid ${theme.palette.divider}`,
+                    }}
+                  >
+                    <Grid container>
+                      <Grid size="auto">
+                        <IconButton
+                          onClick={() =>
+                            handleQuantityChange(item.tempId, item.quantity - 1)
+                          }
+                          disabled={item.quantity <= 1}
+                          sx={{
+                            minWidth: 36,
+                            minHeight: 36,
+                            width: 36,
+                            height: 36,
+                            borderRadius: 1.5,
+                            "&:disabled": {
+                              opacity: 0.3,
+                            },
+                            "&:active:not(:disabled)": {
+                              bgcolor: theme.palette.action.selected,
+                            },
+                          }}
+                        >
+                          <RemoveIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+                      </Grid>
+                      <Grid
+                        size="auto"
+                        sx={{
+                          minWidth: 40,
+                          textAlign: "center",
+                          px: 0.5,
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: "1rem",
+                            color: theme.palette.text.primary,
+                            userSelect: "none",
+                            lineHeight: "36px",
+                          }}
+                        >
+                          {item.quantity}
+                        </Typography>
+                      </Grid>
+                      <Grid size="auto">
+                        <IconButton
+                          onClick={() =>
+                            handleQuantityChange(item.tempId, item.quantity + 1)
+                          }
+                          sx={{
+                            minWidth: 36,
+                            minHeight: 36,
+                            width: 36,
+                            height: 36,
+                            borderRadius: 1.5,
+                            "&:active": {
+                              bgcolor: theme.palette.action.selected,
+                            },
+                          }}
+                        >
+                          <AddIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Grid>
+
+                {/* Product Info */}
+                <Grid size="grow" sx={{ minWidth: 0 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 600,
+                      color: theme.palette.text.primary,
+                      fontSize: "0.875rem",
+                      lineHeight: 1.3,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {previewItem?.variantName ||
+                      item.variantName ||
+                      "Custom Item"}
+                  </Typography>
                   <Typography
                     variant="caption"
                     sx={{
                       color: theme.palette.text.secondary,
                       fontSize: "0.75rem",
+                      lineHeight: 1.2,
+                      display: "block",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    {previewItem.productName}
+                    {previewItem?.productName || ""}
+                    {previewItem?.variantAttributes &&
+                      Object.keys(previewItem.variantAttributes).length > 0 &&
+                      " • " +
+                        Object.values(previewItem.variantAttributes).join(", ")}
                   </Typography>
-                )}
-              </Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: theme.palette.text.secondary,
+                      fontSize: "0.7rem",
+                    }}
+                  >
+                    {formatCurrency(previewItem?.unitPrice || 0, currency)} each
+                  </Typography>
+                </Grid>
 
-              <IconButton
-                size="small"
-                onClick={() => handleRemoveItem(item.tempId)}
-                sx={{
-                  color: theme.palette.error.main,
-                  width: 28,
-                  height: 28,
-                  "&:hover": {
-                    bgcolor: `${theme.palette.error.main}15`,
-                  },
-                }}
-              >
-                <DeleteIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Box>
-
-            {/* Variant Attributes */}
-            {previewItem?.variantAttributes &&
-              Object.keys(previewItem.variantAttributes).length > 0 && (
-                <Box sx={{ mb: 1 }}>
-                  {Object.entries(previewItem.variantAttributes).map(
-                    ([key, value]) => (
-                      <Typography
-                        key={key}
-                        variant="caption"
-                        sx={{
-                          color: theme.palette.text.secondary,
-                          mr: 1,
-                        }}
-                      >
-                        {key}: <strong>{value}</strong>
-                      </Typography>
-                    )
-                  )}
-                </Box>
-              )}
-
-            {/* Quantity Controls and Price */}
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mt: 1,
-              }}
-            >
-              {/* Quantity Controls */}
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  border: `1px solid ${theme.palette.divider}`,
-                  borderRadius: 2,
-                  p: 0.25,
-                  bgcolor: theme.palette.background.default,
-                }}
-              >
-                <IconButton
-                  size="small"
-                  onClick={() =>
-                    handleQuantityChange(item.tempId, item.quantity - 1)
-                  }
-                  disabled={item.quantity <= 1}
+                {/* Price */}
+                <Grid
+                  size="auto"
                   sx={{
-                    minWidth: 28,
-                    height: 28,
-                    "&:disabled": {
-                      opacity: 0.5,
-                    },
+                    textAlign: "right",
+                    minWidth: 70,
                   }}
                 >
-                  <RemoveIcon sx={{ fontSize: 18 }} />
-                </IconButton>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{
+                      fontWeight: 700,
+                      color: theme.palette.primary.main,
+                      fontSize: "1rem",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {formatCurrency(previewItem?.lineTotal || 0, currency)}
+                  </Typography>
+                </Grid>
 
-                <TextField
-                  value={item.quantity}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value) || 0;
-                    handleQuantityChange(item.tempId, value);
-                  }}
-                  size="small"
-                  sx={{
-                    width: 50,
-                    "& input": {
-                      textAlign: "center",
-                      fontWeight: 600,
-                      fontSize: "0.875rem",
-                      p: "4px",
-                    },
-                    "& .MuiOutlinedInput-root": {
-                      "& fieldset": {
-                        border: "none",
+                {/* Delete Button */}
+                <Grid size="auto">
+                  <IconButton
+                    onClick={() => handleRemoveItem(item.tempId)}
+                    sx={{
+                      minWidth: 36,
+                      minHeight: 36,
+                      width: 36,
+                      height: 36,
+                      color: theme.palette.error.main,
+                      borderRadius: 1.5,
+                      "&:hover": {
+                        bgcolor: `${theme.palette.error.main}15`,
                       },
-                    },
-                  }}
-                />
-
-                <IconButton
-                  size="small"
-                  onClick={() =>
-                    handleQuantityChange(item.tempId, item.quantity + 1)
-                  }
-                  sx={{
-                    minWidth: 28,
-                    height: 28,
-                  }}
-                >
-                  <AddIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </Box>
-
-              {/* Line Total */}
-              <Box sx={{ textAlign: "right" }}>
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 700,
-                    color: theme.palette.primary.main,
-                  }}
-                >
-                  ${previewItem?.lineTotal.toFixed(2) || "0.00"}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: theme.palette.text.secondary,
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  ${previewItem?.unitPrice.toFixed(2) || "0.00"} each
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
+                      "&:active": {
+                        bgcolor: `${theme.palette.error.main}25`,
+                      },
+                    }}
+                  >
+                    <DeleteIcon sx={{ fontSize: 20 }} />
+                  </IconButton>
+                </Grid>
+              </Grid>
+            </Paper>
+          </Grid>
         );
       })}
-    </Stack>
+    </Grid>
   );
 };

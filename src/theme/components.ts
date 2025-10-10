@@ -57,6 +57,34 @@ export const getComponents = (theme: Theme): Components<Theme> => ({
       containedSecondary: {
         boxShadow: "none",
       },
+      containedSuccess: {
+        boxShadow: "none",
+        background:
+          theme.palette.mode === "light"
+            ? `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`
+            : theme.palette.success.main,
+        color: "#FFFFFF",
+        "&:hover": {
+          background:
+            theme.palette.mode === "light"
+              ? `linear-gradient(135deg, ${theme.palette.success.light} 0%, ${theme.palette.success.main} 100%)`
+              : theme.palette.success.light,
+        },
+      },
+      containedError: {
+        boxShadow: "none",
+        background:
+          theme.palette.mode === "light"
+            ? `linear-gradient(135deg, ${theme.palette.error.main} 0%, ${theme.palette.error.dark} 100%)`
+            : theme.palette.error.main,
+        color: "#FFFFFF",
+        "&:hover": {
+          background:
+            theme.palette.mode === "light"
+              ? `linear-gradient(135deg, ${theme.palette.error.light} 0%, ${theme.palette.error.main} 100%)`
+              : theme.palette.error.light,
+        },
+      },
       text: {
         "&:hover": {
           backgroundColor: theme.palette.action.hover,

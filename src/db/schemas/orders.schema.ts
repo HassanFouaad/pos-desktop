@@ -30,7 +30,6 @@ export const orders = sqliteTable("orders", {
   customerPhone: text("customerPhone"),
   notes: text("notes"),
   internalNotes: text("internalNotes"),
-  localId: text("localId"),
   orderDate: integer("orderDate", { mode: "timestamp_ms" }),
   completedAt: integer("completedAt", { mode: "timestamp_ms" }),
   createdAt: integer("createdAt", { mode: "timestamp_ms" }),

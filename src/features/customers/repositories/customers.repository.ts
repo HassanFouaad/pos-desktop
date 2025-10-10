@@ -53,21 +53,20 @@ export class CustomersRepository {
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<CustomerDTO> {
     const loggedInUser = await this.usersRepository.getLoggedInUser();
-    const localId = v4();
+    const customerId = v4();
     const now = new Date();
 
     const payload = {
       ...customerData,
-      id: localId,
+      id: customerId,
       tenantId: loggedInUser?.tenantId,
       createdAt: now,
       updatedAt: now,
-      localId,
     };
 
     await (manager ?? drizzleDb).insert(customers).values(payload).execute();
 
-    const result = await this.findById(localId, manager);
+    const result = await this.findById(customerId, manager);
     if (!result) {
       throw new Error("Failed to create customer");
     }

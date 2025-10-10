@@ -1,5 +1,5 @@
 import { Payment as PaymentIcon } from "@mui/icons-material";
-import { Box, Button, useTheme } from "@mui/material";
+import { Button, Grid, useTheme } from "@mui/material";
 import { useState } from "react";
 import { container } from "tsyringe";
 import { OrderSource, PaymentMethod } from "../../../../db/enums";
@@ -19,9 +19,13 @@ const ordersService = container.resolve(OrdersService);
 
 interface OrderActionsProps {
   storeId: string;
+  currency?: string;
 }
 
-export const OrderActions = ({ storeId }: OrderActionsProps) => {
+export const OrderActions = ({
+  storeId,
+  currency = "EGP",
+}: OrderActionsProps) => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
@@ -122,26 +126,30 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
 
   return (
     <>
-      <Box
+      <Grid
+        container
         sx={{
-          p: 2,
+          height: 1,
+          p: 1.5,
           bgcolor: theme.palette.background.default,
           borderTop: `1px solid ${theme.palette.divider}`,
         }}
       >
-        {/* Pay Button */}
-        <Button
-          variant="contained"
-          size="large"
-          fullWidth
-          disabled={!hasItems}
-          onClick={handlePayClick}
-          startIcon={<PaymentIcon />}
-          color="primary"
-        >
-          Pay
-        </Button>
-      </Box>
+        <Grid size={12}>
+          {/* Pay Button */}
+          <Button
+            variant="contained"
+            size="large"
+            fullWidth
+            disabled={!hasItems}
+            onClick={handlePayClick}
+            startIcon={<PaymentIcon />}
+            color="primary"
+          >
+            Pay
+          </Button>
+        </Grid>
+      </Grid>
 
       {/* Payment Modal */}
       <PaymentModal
@@ -149,6 +157,7 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
         onClose={() => setPaymentModalOpen(false)}
         totalAmount={totalAmount}
         onSubmit={handlePaymentSubmit}
+        currency={currency}
       />
 
       {/* Order Complete Dialog */}
@@ -161,6 +170,7 @@ export const OrderActions = ({ storeId }: OrderActionsProps) => {
         paymentMethod={createdOrder?.paymentMethod ?? PaymentMethod.CASH}
         onComplete={handleComplete}
         onVoid={handleVoid}
+        currency={currency}
       />
     </>
   );

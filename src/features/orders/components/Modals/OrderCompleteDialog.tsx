@@ -6,6 +6,7 @@ import {
 import { Box, Button, Typography } from "@mui/material";
 import { ResponsiveDialog } from "../../../../components/common/ResponsiveDialog";
 import { PaymentMethod } from "../../../../db/enums";
+import { formatCurrency } from "../../../products/utils/pricing";
 
 interface OrderCompleteDialogProps {
   open: boolean;
@@ -16,6 +17,7 @@ interface OrderCompleteDialogProps {
   paymentMethod: PaymentMethod;
   onComplete: () => void;
   onVoid: () => void;
+  currency?: string;
 }
 
 export const OrderCompleteDialog = ({
@@ -27,6 +29,7 @@ export const OrderCompleteDialog = ({
   paymentMethod,
   onComplete,
   onVoid,
+  currency = "EGP",
 }: OrderCompleteDialogProps) => {
   return (
     <ResponsiveDialog
@@ -94,7 +97,7 @@ export const OrderCompleteDialog = ({
             Total Amount
           </Typography>
           <Typography variant="h6" fontWeight={600}>
-            ${totalAmount.toFixed(2)}
+            {formatCurrency(totalAmount, currency)}
           </Typography>
         </Box>
 
@@ -119,7 +122,7 @@ export const OrderCompleteDialog = ({
                 Change to Give
               </Typography>
               <Typography variant="h4" color="warning.main" fontWeight={800}>
-                ${changeAmount.toFixed(2)}
+                {formatCurrency(changeAmount, currency)}
               </Typography>
             </Box>
           </>
@@ -132,7 +135,7 @@ export const OrderCompleteDialog = ({
           variant="contained"
           size="large"
           color="success"
-          startIcon={<CompleteIcon />}
+          startIcon={<CompleteIcon sx={{ fontSize: 28 }} />}
           onClick={onComplete}
           fullWidth
         >
@@ -146,6 +149,9 @@ export const OrderCompleteDialog = ({
           startIcon={<VoidIcon />}
           onClick={onVoid}
           fullWidth
+          sx={{
+            minHeight: 56,
+          }}
         >
           Void Order
         </Button>

@@ -1,8 +1,13 @@
-import { Box, Divider, Typography, useTheme } from "@mui/material";
+import { Divider, Grid, Typography, useTheme } from "@mui/material";
 import { useAppSelector } from "../../../../store/hooks";
 import { selectCartItems, selectPreview } from "../../../../store/orderSlice";
+import { formatCurrency } from "../../../products/utils/pricing";
 
-export const OrderTotals = () => {
+interface OrderTotalsProps {
+  currency?: string;
+}
+
+export const OrderTotals = ({ currency = "EGP" }: OrderTotalsProps) => {
   const theme = useTheme();
   const preview = useAppSelector(selectPreview);
   const cartItems = useAppSelector(selectCartItems);
@@ -26,100 +31,100 @@ export const OrderTotals = () => {
     color?: string;
     bold?: boolean;
   }) => (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        py: 0.75,
-      }}
-    >
-      <Typography
-        variant={variant}
-        sx={{
-          color: color || theme.palette.text.secondary,
-          fontWeight: bold ? 600 : 400,
-        }}
-      >
-        {label}
-      </Typography>
-      <Typography
-        variant={variant}
-        sx={{
-          color: color || theme.palette.text.primary,
-          fontWeight: bold ? 700 : 600,
-        }}
-      >
-        {value}
-      </Typography>
-    </Box>
+    <Grid container sx={{ py: 0.75 }}>
+      <Grid size="grow">
+        <Typography
+          variant={variant}
+          sx={{
+            color: color || theme.palette.text.secondary,
+            fontWeight: bold ? 600 : 400,
+          }}
+        >
+          {label}
+        </Typography>
+      </Grid>
+      <Grid size="auto">
+        <Typography
+          variant={variant}
+          sx={{
+            color: color || theme.palette.text.primary,
+            fontWeight: bold ? 700 : 600,
+          }}
+        >
+          {value}
+        </Typography>
+      </Grid>
+    </Grid>
   );
 
   return (
-    <Box sx={{ p: 2 }}>
-      {/* Item Count */}
-      <TotalRow
-        label="Items"
-        value={`${itemCount} ${itemCount === 1 ? "item" : "items"}`}
-        variant="body2"
-      />
-
-      <Divider sx={{ my: 1 }} />
-
-      {/* Subtotal */}
-      <TotalRow label="Subtotal" value={`$${subtotal.toFixed(2)}`} />
-
-      {/* Discount (if any) */}
-      {totalDiscount > 0 && (
+    <Grid container sx={{ p: 2 }}>
+      <Grid size={12}>
+        {/* Item Count */}
         <TotalRow
-          label="Discount"
-          value={`-$${totalDiscount.toFixed(2)}`}
-          color={theme.palette.success.main}
+          label="Items"
+          value={`${itemCount} ${itemCount === 1 ? "item" : "items"}`}
+          variant="body2"
         />
-      )}
 
-      {/* Tax */}
-      <TotalRow label="Tax" value={`$${totalTax.toFixed(2)}`} variant="body2" />
+        <Divider sx={{ my: 1 }} />
 
-      <Divider sx={{ my: 1.5 }} />
+        {/* Subtotal */}
+        <TotalRow label="Subtotal" value={formatCurrency(subtotal, currency)} />
 
-      {/* Total */}
-      <Box
-        sx={{
-          bgcolor: "primary.lighter",
-          borderRadius: 1,
-          p: 1.5,
-          border: "1px solid",
-          borderColor: "primary.light",
-        }}
-      >
-        <Box
+        {/* Discount (if any) */}
+        {totalDiscount > 0 && (
+          <TotalRow
+            label="Discount"
+            value={`-${formatCurrency(totalDiscount, currency)}`}
+            color={theme.palette.success.main}
+          />
+        )}
+
+        {/* Tax */}
+        <TotalRow
+          label="Tax"
+          value={formatCurrency(totalTax, currency)}
+          variant="body2"
+        />
+
+        <Divider sx={{ my: 1.5 }} />
+
+        {/* Total */}
+        <Grid
+          container
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            bgcolor: "primary.lighter",
+            borderRadius: 1,
+            p: 1.5,
+            border: "1px solid",
+            borderColor: "primary.light",
           }}
         >
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              color: theme.palette.text.primary,
-            }}
-          >
-            Total
-          </Typography>
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 800,
-              color: theme.palette.primary.main,
-            }}
-          >
-            ${totalAmount.toFixed(2)}
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
+          <Grid size="grow">
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                color: theme.palette.text.primary,
+              }}
+            >
+              Total
+            </Typography>
+          </Grid>
+          <Grid size="auto">
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: theme.palette.primary.main,
+              }}
+            >
+              {formatCurrency(totalAmount, currency)}
+            </Typography>
+          </Grid>
+        </Grid>
+      </Grid>
+    </Grid>
   );
 };

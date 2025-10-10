@@ -1,4 +1,4 @@
-import { Container, Grid, Typography } from "@mui/material";
+import { Grid, Typography } from "@mui/material";
 import { ReactNode } from "react";
 
 export interface GridLayoutProps {
@@ -20,31 +20,27 @@ export const GridLayout = ({
   title,
 }: GridLayoutProps) => {
   return (
-    <Container
-      maxWidth={maxWidth}
-      sx={{
-        height: 1,
-        display: "flex",
-        flexDirection: "column",
-        py: 2,
-      }}
-    >
-      <Grid container rowSpacing={2}>
-        {/* Header */}
-        {title && (
-          <Grid size={{ xs: 12 }} sx={{ textAlign: "center" }}>
-            <Typography variant="h4">{title}</Typography>
-          </Grid>
-        )}
-
-        {/* Main Content Area */}
-        <Grid size={{ xs: 12 }} sx={{ flexGrow: 1 }}>
-          {children}
+    <Grid container spacing={2} sx={{ height: "100vh", p: 1 }}>
+      {/* Header */}
+      {title && (
+        <Grid size={12} sx={{ textAlign: "center" }}>
+          <Typography variant="h4">{title}</Typography>
         </Grid>
+      )}
 
-        {/* Footer Section */}
-        {footer && <Grid size={{ xs: 12 }}>{footer}</Grid>}
+      {/* Main Content Area */}
+      <Grid
+        size={12}
+        sx={{
+          height: 1,
+          overflow: "hidden",
+        }}
+      >
+        {children}
       </Grid>
-    </Container>
+
+      {/* Footer Section */}
+      {footer && <Grid size={12}>{footer}</Grid>}
+    </Grid>
   );
 };

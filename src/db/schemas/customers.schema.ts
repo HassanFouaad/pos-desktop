@@ -15,5 +15,4 @@ export const customers = sqliteTable("customers", {
   notes: text("notes"),
   createdAt: integer("createdAt", { mode: "timestamp_ms" }),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
-  localId: text("localId"),
 });

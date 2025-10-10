@@ -10,12 +10,14 @@ import {
 import { useEffect, useState } from "react";
 import { ResponsiveDialog } from "../../../../components/common/ResponsiveDialog";
 import { PaymentMethod } from "../../../../db/enums";
+import { formatCurrency } from "../../../products/utils/pricing";
 
 interface PaymentModalProps {
   open: boolean;
   onClose: () => void;
   totalAmount: number;
   onSubmit: (amountPaid: number, paymentMethod: PaymentMethod) => void;
+  currency?: string;
 }
 
 export const PaymentModal = ({
@@ -23,6 +25,7 @@ export const PaymentModal = ({
   onClose,
   totalAmount,
   onSubmit,
+  currency = "EGP",
 }: PaymentModalProps) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     PaymentMethod.CASH
@@ -121,7 +124,7 @@ export const PaymentModal = ({
           Total Amount
         </Typography>
         <Typography variant="h4" color="primary.main" fontWeight={800}>
-          ${totalAmount.toFixed(2)}
+          {formatCurrency(totalAmount, currency)}
         </Typography>
       </Box>
 
@@ -158,7 +161,6 @@ export const PaymentModal = ({
         error={!!error}
         helperText={error}
         InputProps={{
-          startAdornment: <Typography sx={{ mr: 1 }}>$</Typography>,
           sx: {
             fontSize: "1.5rem",
             fontWeight: 600,
@@ -183,7 +185,7 @@ export const PaymentModal = ({
           onClick={() => handleQuickAmount(5)}
           sx={{ flex: 1 }}
         >
-          Round $5
+          Round {formatCurrency(5, currency)}
         </Button>
         <Button
           variant="outlined"
@@ -191,7 +193,7 @@ export const PaymentModal = ({
           onClick={() => handleQuickAmount(10)}
           sx={{ flex: 1 }}
         >
-          Round $10
+          Round {formatCurrency(10, currency)}
         </Button>
         <Button
           variant="outlined"
@@ -199,7 +201,7 @@ export const PaymentModal = ({
           onClick={() => handleQuickAmount(20)}
           sx={{ flex: 1 }}
         >
-          Round $20
+          Round {formatCurrency(20, currency)}
         </Button>
       </Box>
     </ResponsiveDialog>

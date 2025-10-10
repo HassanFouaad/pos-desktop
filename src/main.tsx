@@ -7,6 +7,14 @@ import "./App.css";
 import SyncService from "./features/sync/services/sync";
 import { AppProvider } from "./providers/AppProvider";
 
+// Import Inter font with multiple weights for better typography
+import "@fontsource/inter/300.css"; // Light
+import "@fontsource/inter/400.css"; // Regular
+import "@fontsource/inter/500.css"; // Medium
+import "@fontsource/inter/600.css"; // Semi-bold
+import "@fontsource/inter/700.css"; // Bold
+import "@fontsource/inter/800.css"; // Extra-bold
+
 await container.resolve(SyncService).init();
 /**
  * Application entry point
