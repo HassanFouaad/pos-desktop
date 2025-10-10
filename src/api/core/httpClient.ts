@@ -6,7 +6,16 @@ import {
   TokenType,
 } from "../../features/auth/services/db-token-storage";
 import { endpoints, getConfig } from "./config";
+import { isTokenExpired } from "./token-utils";
 import { ApiResponse } from "./types";
+
+/**
+ * Auth state events for notifying the app about auth changes
+ */
+export interface AuthStateEvent {
+  type: "USER_LOGOUT" | "POS_UNPAIRED";
+  reason: "token_expired" | "token_invalid" | "manual";
+}
 
 const posDeviceRepository = container.resolve(PosDeviceRepository);
 /**
@@ -17,8 +26,20 @@ class TauriHttpClient {
   private static instance: TauriHttpClient;
   private baseUrl: string;
 
-  private refreshPromise: Promise<string | null> | null = null;
-  private isRefreshing = false;
+  // Separate refresh state for USER and POS tokens
+  private userRefreshPromise: Promise<string | null> | null = null;
+  private isRefreshingUser = false;
+
+  private posRefreshPromise: Promise<string | null> | null = null;
+  private isRefreshingPos = false;
+
+  // Track last successful token refresh to avoid spam
+  private lastUserRefresh = 0;
+  private lastPosRefresh = 0;
+  private readonly MIN_REFRESH_INTERVAL = 5000; // 5 seconds minimum between refreshes
+
+  // Auth state change listeners (for notifying Redux store)
+  private authStateListeners: Array<(event: AuthStateEvent) => void> = [];
 
   private constructor() {
     const config = getConfig();
@@ -33,6 +54,34 @@ class TauriHttpClient {
       TauriHttpClient.instance = new TauriHttpClient();
     }
     return TauriHttpClient.instance;
+  }
+
+  /**
+   * Subscribe to auth state changes
+   * Returns an unsubscribe function
+   */
+  public onAuthStateChange(
+    listener: (event: AuthStateEvent) => void
+  ): () => void {
+    this.authStateListeners.push(listener);
+    return () => {
+      this.authStateListeners = this.authStateListeners.filter(
+        (l) => l !== listener
+      );
+    };
+  }
+
+  /**
+   * Notify all listeners of an auth state change
+   */
+  private notifyAuthStateChange(event: AuthStateEvent): void {
+    this.authStateListeners.forEach((listener) => {
+      try {
+        listener(event);
+      } catch (error) {
+        console.error("Error in auth state listener:", error);
+      }
+    });
   }
 
   /**
@@ -96,16 +145,53 @@ class TauriHttpClient {
 
   /**
    * Refresh user access token using refresh token
-   * If refresh fails with 401, clears user tokens
+   * If refresh fails with 401, clears user tokens and notifies app
    */
   private async refreshUserToken(): Promise<string | null> {
-    if (this.isRefreshing) {
-      // If already refreshing, return the existing promise
-      return this.refreshPromise;
+    // Check if we're already refreshing
+    if (this.isRefreshingUser && this.userRefreshPromise) {
+      return this.userRefreshPromise;
     }
 
-    this.isRefreshing = true;
+    // Check if current token is still valid (not expired)
+    const currentTokenResult = await dbTokenStorage.getToken(
+      "accessToken",
+      TokenType.USER
+    );
+    const currentToken =
+      typeof currentTokenResult === "string" ? currentTokenResult : null;
 
+    if (currentToken && !isTokenExpired(currentToken)) {
+      console.debug("User token still valid, skipping refresh");
+      return currentToken;
+    }
+
+    // Rate limit: don't refresh too frequently
+    const now = Date.now();
+    if (now - this.lastUserRefresh < this.MIN_REFRESH_INTERVAL) {
+      console.debug("User token refresh rate limited");
+      return null;
+    }
+
+    this.isRefreshingUser = true;
+    this.userRefreshPromise = this.performUserTokenRefresh();
+
+    try {
+      const result = await this.userRefreshPromise;
+      if (result) {
+        this.lastUserRefresh = Date.now();
+      }
+      return result;
+    } finally {
+      this.isRefreshingUser = false;
+      this.userRefreshPromise = null;
+    }
+  }
+
+  /**
+   * Actual token refresh logic for user tokens
+   */
+  private async performUserTokenRefresh(): Promise<string | null> {
     try {
       const refreshTokenResult = await dbTokenStorage.getToken(
         "refreshToken",
@@ -115,7 +201,9 @@ class TauriHttpClient {
         typeof refreshTokenResult === "string" ? refreshTokenResult : null;
 
       if (!refreshToken) {
-        throw new Error("Unauthorized");
+        console.warn("No user refresh token found");
+        await this.handleUserAuthFailure("token_invalid");
+        return null;
       }
 
       const response = await fetch(
@@ -132,7 +220,6 @@ class TauriHttpClient {
 
       if (response.ok) {
         const responseData = await response.json();
-
         const newAccessToken = responseData.data.accessToken;
 
         // Store the new user access token
@@ -142,43 +229,106 @@ class TauriHttpClient {
           TokenType.USER
         );
 
+        console.info("User token refreshed successfully");
         return newAccessToken;
       }
 
-      const responseData = await response.json();
+      // Handle non-OK responses
+      const responseData = await response.json().catch(() => ({}));
 
+      // Only logout on actual auth failures (401), not on network errors
       if (response.status === 401 || responseData?.error?.code === "ERR_401") {
-        throw new Error("Unauthorized");
+        console.warn("User refresh token expired or invalid");
+        await this.handleUserAuthFailure("token_expired");
+        return null;
       }
 
+      // For other errors (5xx, etc.), don't logout - might be temporary
+      console.warn("User token refresh failed with status:", response.status);
       return null;
     } catch (error: any) {
-      if (error?.message === "Unauthorized") {
-        // Clear user tokens on auth failure
-        console.warn("User refresh token expired, clearing user tokens");
-        await dbTokenStorage.clearTokens(TokenType.USER);
-        throw error;
+      // Only logout on auth-specific errors, not network errors
+      if (
+        error?.message === "Unauthorized" ||
+        error?.status === 401 ||
+        error?.code === "ERR_401"
+      ) {
+        console.warn("User auth error during refresh");
+        await this.handleUserAuthFailure("token_invalid");
+      } else {
+        // Network error or other temporary error - don't logout
+        console.warn("User token refresh failed (non-auth error):", error);
       }
-
       return null;
-    } finally {
-      this.isRefreshing = false;
-      this.refreshPromise = null;
+    }
+  }
+
+  /**
+   * Handle user authentication failure - clear tokens and notify app
+   */
+  private async handleUserAuthFailure(
+    reason: "token_expired" | "token_invalid"
+  ): Promise<void> {
+    try {
+      await dbTokenStorage.clearTokens(TokenType.USER);
+      this.notifyAuthStateChange({
+        type: "USER_LOGOUT",
+        reason,
+      });
+    } catch (error) {
+      console.error("Error handling user auth failure:", error);
     }
   }
 
   /**
    * Refresh POS access token using refresh token
-   * If refresh fails with 401, clears POS tokens
+   * If refresh fails with 401, clears POS tokens and notifies app
    */
   private async refreshPosToken(): Promise<string | null> {
-    if (this.isRefreshing) {
-      // If already refreshing, return the existing promise
-      return this.refreshPromise;
+    // Check if we're already refreshing
+    if (this.isRefreshingPos && this.posRefreshPromise) {
+      return this.posRefreshPromise;
     }
 
-    this.isRefreshing = true;
+    // Check if current token is still valid (not expired)
+    const currentTokenResult = await dbTokenStorage.getToken(
+      "accessToken",
+      TokenType.POS
+    );
+    const currentToken =
+      typeof currentTokenResult === "string" ? currentTokenResult : null;
 
+    if (currentToken && !isTokenExpired(currentToken)) {
+      console.debug("POS token still valid, skipping refresh");
+      return currentToken;
+    }
+
+    // Rate limit: don't refresh too frequently
+    const now = Date.now();
+    if (now - this.lastPosRefresh < this.MIN_REFRESH_INTERVAL) {
+      console.debug("POS token refresh rate limited");
+      return null;
+    }
+
+    this.isRefreshingPos = true;
+    this.posRefreshPromise = this.performPosTokenRefresh();
+
+    try {
+      const result = await this.posRefreshPromise;
+      if (result) {
+        this.lastPosRefresh = Date.now();
+      }
+      return result;
+    } finally {
+      this.isRefreshingPos = false;
+      this.posRefreshPromise = null;
+    }
+  }
+
+  /**
+   * Actual token refresh logic for POS tokens
+   */
+  private async performPosTokenRefresh(): Promise<string | null> {
     try {
       const refreshTokenResult = await dbTokenStorage.getToken(
         "refreshToken",
@@ -188,7 +338,9 @@ class TauriHttpClient {
         typeof refreshTokenResult === "string" ? refreshTokenResult : null;
 
       if (!refreshToken) {
-        throw new Error("Unauthorized");
+        console.warn("No POS refresh token found");
+        await this.handlePosAuthFailure("token_invalid");
+        return null;
       }
 
       const response = await fetch(
@@ -205,7 +357,6 @@ class TauriHttpClient {
 
       if (response.ok) {
         const responseData = await response.json();
-
         const newAccessToken = responseData.data.accessToken;
 
         // Store the new POS access token
@@ -219,27 +370,51 @@ class TauriHttpClient {
         return newAccessToken;
       }
 
-      const responseData = await response.json();
+      // Handle non-OK responses
+      const responseData = await response.json().catch(() => ({}));
 
+      // Only unpair on actual auth failures (401), not on network errors
       if (response.status === 401 || responseData?.error?.code === "ERR_401") {
-        throw new Error("Unauthorized");
+        console.warn("POS refresh token expired or invalid");
+        await this.handlePosAuthFailure("token_expired");
+        return null;
       }
 
+      // For other errors (5xx, etc.), don't unpair - might be temporary
+      console.warn("POS token refresh failed with status:", response.status);
       return null;
     } catch (error: any) {
-      console.log("error", error);
-      if (error?.message === "Unauthorized") {
-        // Clear POS tokens on auth failure
-        console.warn("POS refresh token expired, clearing POS tokens");
-        await dbTokenStorage.clearTokens(TokenType.POS);
-        await posDeviceRepository.clearPosDevice();
-        throw error;
+      // Only unpair on auth-specific errors, not network errors
+      if (
+        error?.message === "Unauthorized" ||
+        error?.status === 401 ||
+        error?.code === "ERR_401"
+      ) {
+        console.warn("POS auth error during refresh");
+        await this.handlePosAuthFailure("token_invalid");
+      } else {
+        // Network error or other temporary error - don't unpair
+        console.warn("POS token refresh failed (non-auth error):", error);
       }
-
       return null;
-    } finally {
-      this.isRefreshing = false;
-      this.refreshPromise = null;
+    }
+  }
+
+  /**
+   * Handle POS authentication failure - clear tokens and notify app
+   */
+  private async handlePosAuthFailure(
+    reason: "token_expired" | "token_invalid"
+  ): Promise<void> {
+    try {
+      await dbTokenStorage.clearTokens(TokenType.POS);
+      await posDeviceRepository.clearPosDevice();
+      this.notifyAuthStateChange({
+        type: "POS_UNPAIRED",
+        reason,
+      });
+    } catch (error) {
+      console.error("Error handling POS auth failure:", error);
     }
   }
 

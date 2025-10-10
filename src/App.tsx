@@ -57,17 +57,21 @@ function App() {
   );
   const { initialized } = useAppSelector((state) => state.auth);
 
+  // Combined initialization effect
   // Step 1: Check pairing status on mount
+  // Step 2: Initialize auth only if device is paired
   useEffect(() => {
-    dispatch(checkPairingStatus());
-  }, [dispatch]);
+    // Only run pairing check once on mount
+    if (!pairingCheckComplete) {
+      dispatch(checkPairingStatus());
+      return;
+    }
 
-  // Step 2: Only initialize auth if device is paired
-  useEffect(() => {
-    if (pairingCheckComplete && isPaired && !initialized) {
+    // Once pairing check is complete and device is paired, initialize auth
+    if (isPaired && !initialized) {
       dispatch(initAuth());
     }
-  }, [pairingCheckComplete, isPaired, initialized, dispatch]);
+  }, [dispatch, pairingCheckComplete, isPaired, initialized]);
 
   // Show loading screen while checking pairing status
   if (!pairingCheckComplete) {

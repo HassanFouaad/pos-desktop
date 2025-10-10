@@ -49,88 +49,98 @@ const initialState: AuthState = {
   offlineMode: !navigator.onLine,
 };
 
+/**
+ * Initialize authentication on app startup
+ * 1. Check for logged-in user in local database
+ * 2. Attempt to refresh user data from API (if online and token available)
+ * 3. Fall back to cached user data if refresh fails (but only for network errors)
+ * 4. If no user found or token invalid, throw error to trigger login flow
+ */
 export const initAuth = createAsyncThunk(
   "auth/init",
   async (_, { dispatch }) => {
-    try {
-      const currentLoggedInUser = await usersRepository.getLoggedInUser();
+    // Step 1: Get logged-in user from database
+    const currentLoggedInUser = await usersRepository.getLoggedInUser();
 
-      // Get USER token from database (not POS token)
-      const tokenResult = await dbTokenStorage.getToken(
-        "accessToken",
-        TokenType.USER
-      );
-      let token = typeof tokenResult === "string" ? tokenResult : null;
-
-      // Update offline mode status
-      const isNetworkOnline = true;
-
-      dispatch(authSlice.actions.setOfflineMode(!isNetworkOnline));
-
-      // CRITICAL FIX: If we have a logged in user in the database, use it regardless
-      // This ensures users stay logged in when refreshing the app
-      if (currentLoggedInUser) {
-        // If we have a user but no token, try to get it from the user object
-        if (!token && currentLoggedInUser.accessToken) {
-          token = currentLoggedInUser.accessToken;
-          // Save it to database for future use
-          await dbTokenStorage.storeToken("accessToken", token, TokenType.USER);
-        }
-
-        // If we have a user, consider them authenticated even without a token in offline mode
-        if (!isNetworkOnline || !token) {
-          // Return the cached user without sensitive data
-          const userToReturn = { ...currentLoggedInUser };
-          delete userToReturn.hashedPassword;
-          delete userToReturn.accessToken;
-          delete userToReturn.refreshToken;
-          delete userToReturn.lastLoginAt;
-
-          return userToReturn;
-        }
-
-        // If we're online and have a token, try to get updated user data
-        if (isNetworkOnline && token) {
-          try {
-            // HttpClient will automatically refresh the token if needed on 401
-            const user = await getMe();
-
-            if (!user.error && user.data) {
-              await usersRepository.upsertUser(
-                user.data as Partial<AuthResponse["user"]>,
-                token,
-                currentLoggedInUser?.refreshToken ?? undefined
-              );
-
-              const userToReturn = { ...user.data.user };
-              delete userToReturn.hashedPassword;
-              delete userToReturn.accessToken;
-              delete userToReturn.refreshToken;
-              delete userToReturn.lastLoginAt;
-
-              return userToReturn;
-            }
-          } catch (refreshError) {
-            // If getMe fails, continue to use cached user
-            console.warn("Failed to refresh user data:", refreshError);
-          }
-
-          // Return the cached user without sensitive data
-          const userToReturn = { ...currentLoggedInUser };
-          delete userToReturn.hashedPassword;
-          delete userToReturn.accessToken;
-          delete userToReturn.refreshToken;
-          delete userToReturn.lastLoginAt;
-
-          return userToReturn;
-        }
-      }
-
-      // If we get here, we don't have a logged in user
+    if (!currentLoggedInUser) {
       throw new Error("No logged in user found");
-    } catch (error) {
-      throw error;
     }
+
+    // Step 2: Ensure we have an access token
+    const tokenResult = await dbTokenStorage.getToken(
+      "accessToken",
+      TokenType.USER
+    );
+    let token = typeof tokenResult === "string" ? tokenResult : null;
+
+    // If no token in storage but user has it, restore it
+    if (!token && currentLoggedInUser.accessToken) {
+      token = currentLoggedInUser.accessToken;
+      await dbTokenStorage.storeToken("accessToken", token, TokenType.USER);
+    }
+
+    // Helper to sanitize user data before returning
+    const sanitizeUser = (user: any) => {
+      const sanitized = { ...user };
+      delete sanitized.hashedPassword;
+      delete sanitized.accessToken;
+      delete sanitized.refreshToken;
+      delete sanitized.lastLoginAt;
+      return sanitized;
+    };
+
+    // Step 3: Try to get fresh user data from API
+    // httpClient will handle token refresh automatically if needed
+    if (token) {
+      try {
+        const response = await getMe();
+
+        if (response.success && response.data) {
+          // Update local user data with fresh data from API
+          await usersRepository.upsertUser(
+            response.data as Partial<AuthResponse["user"]>,
+            token,
+            currentLoggedInUser.refreshToken ?? undefined
+          );
+
+          console.info("User data refreshed from API");
+          return sanitizeUser(response.data.user);
+        }
+
+        // If API call failed but it's a network error, use cached user
+        if (response.error?.isNetworkError) {
+          console.info("Network error refreshing user data, using cached user");
+          dispatch(authSlice.actions.setOfflineMode(true));
+          return sanitizeUser(currentLoggedInUser);
+        }
+
+        // If API call failed due to auth error, httpClient will have:
+        // 1. Attempted token refresh
+        // 2. Cleared tokens if refresh failed
+        // 3. Dispatched logout event
+        // So we should throw error to trigger login flow
+        throw new Error("Failed to authenticate user");
+      } catch (error) {
+        // Check if this is a network error or auth error
+        // Network errors: keep user logged in with cached data
+        // Auth errors: throw to trigger login flow
+        if (
+          error instanceof Error &&
+          error.message !== "Failed to authenticate user"
+        ) {
+          console.info("Using cached user data due to temporary error");
+          dispatch(authSlice.actions.setOfflineMode(true));
+          return sanitizeUser(currentLoggedInUser);
+        }
+
+        throw error;
+      }
+    }
+
+    // Step 4: No token available - return cached user for offline mode
+    console.info("No token available, using cached user in offline mode");
+    dispatch(authSlice.actions.setOfflineMode(true));
+    return sanitizeUser(currentLoggedInUser);
   }
 );
 

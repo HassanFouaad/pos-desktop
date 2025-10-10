@@ -9,23 +9,11 @@ const PublicRoute = () => {
   const { isPaired, pairingCheckComplete } = useAppSelector(
     (state) => state.global.pairing
   );
-  console.log("PublicRoute", {
-    isAuthenticated,
-    initialized,
-    isPaired,
-    pairingCheckComplete,
-  });
 
   // Wait for both checks to complete
   if (!initialized && !pairingCheckComplete) {
     return null;
   }
-  console.log("public route after checks", {
-    isAuthenticated,
-    initialized,
-    isPaired,
-    pairingCheckComplete,
-  });
 
   // If device is not paired, redirect to pairing page
   if (!isPaired) {

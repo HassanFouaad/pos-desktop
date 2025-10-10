@@ -65,12 +65,13 @@ const initialState: GlobalState = {
 
 /**
  * Check if device is paired by looking for POS tokens in database
+ * Fetches all pairing-related data in one optimized call
  */
 export const checkPairingStatus = createAsyncThunk(
   "global/checkPairingStatus",
   async () => {
     try {
-      // Check if POS access token exists in database
+      // Step 1: Check if POS access token exists
       const posAccessTokenResult = await dbTokenStorage.getToken(
         "accessToken",
         TokenType.POS
@@ -80,6 +81,7 @@ export const checkPairingStatus = createAsyncThunk(
         typeof posAccessTokenResult === "string" ? posAccessTokenResult : null;
 
       if (!posAccessToken) {
+        console.info("No POS access token found, device not paired");
         return {
           store: null,
           pairing: null,
@@ -88,13 +90,14 @@ export const checkPairingStatus = createAsyncThunk(
         };
       }
 
-      // Get pairing data from database
+      // Step 2: Get pairing data from database
       const pairingDataResult = await dbTokenStorage.getToken(
         "pairingData",
         TokenType.POS
       );
 
       if (!pairingDataResult) {
+        console.warn("POS token exists but no pairing data found");
         return {
           store: null,
           pairing: null,
@@ -103,53 +106,45 @@ export const checkPairingStatus = createAsyncThunk(
         };
       }
 
-      // pairingDataResult is already a Record<string, unknown> if it exists
       const pairingData =
         typeof pairingDataResult === "string"
           ? JSON.parse(pairingDataResult)
           : pairingDataResult;
 
+      // Step 3: Fetch all device data in parallel
       const [pos, store, tenant] = await Promise.all([
         storesService.getCurrentPos(),
         storesService.getCurrentStore(),
         storesService.getCurrentTenant(),
       ]);
 
-      if (pos) {
-        pos.createdAt = new Date(
-          pos.createdAt ?? new Date()
-        ).toISOString() as any as Date;
-        pos.updatedAt = new Date(
-          pos.updatedAt ?? new Date()
-        ).toISOString() as any as Date;
-      }
+      // Helper to normalize date fields
+      const normalizeDates = <T extends { createdAt?: any; updatedAt?: any }>(
+        obj: T | null
+      ): T | null => {
+        if (!obj) return null;
+        return {
+          ...obj,
+          createdAt: obj.createdAt
+            ? (new Date(obj.createdAt).toISOString() as any)
+            : undefined,
+          updatedAt: obj.updatedAt
+            ? (new Date(obj.updatedAt).toISOString() as any)
+            : undefined,
+        };
+      };
 
-      if (store) {
-        store.createdAt = new Date(
-          store.createdAt
-        ).toISOString() as any as Date;
-        store.updatedAt = new Date(
-          store.updatedAt
-        ).toISOString() as any as Date;
-      }
-
-      if (tenant) {
-        tenant.createdAt = new Date(
-          tenant.createdAt
-        ).toISOString() as any as Date;
-        tenant.updatedAt = new Date(
-          tenant.updatedAt
-        ).toISOString() as any as Date;
-      }
+      console.info("Pairing status checked successfully");
 
       return {
-        store,
+        store: normalizeDates(store),
         pairing: pairingData,
-        pos,
-        tenant,
+        pos: normalizeDates(pos),
+        tenant: normalizeDates(tenant),
       };
     } catch (error) {
       console.error("Failed to check pairing status", error);
+      // Return null to indicate failure (will be handled in reducer)
       return null;
     }
   }

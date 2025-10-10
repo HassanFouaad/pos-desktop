@@ -91,12 +91,6 @@ export const PreLoginPage = () => {
     return <Navigate to="/pair" />;
   }
 
-  console.log({
-    loading,
-    pairingCheckComplete,
-    store,
-  });
-
   // Show loading state
   if (loading || !pairingCheckComplete || !store) {
     return (
