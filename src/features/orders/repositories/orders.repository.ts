@@ -19,13 +19,13 @@ export class OrdersRepository {
     const now = new Date();
 
     // Generate order number (will be replaced with server number on sync)
-    const orderNumber = this.generateOrderNumber(storeCode);
+    const orderNumber = this.generateRandomOrderNumber(storeCode);
 
     await (manager ?? drizzleDb)
       .insert(orders)
       .values({
         ...data,
-        orderDate: data.orderDate || now,
+        orderDate: now,
         orderNumber,
         createdAt: now,
         updatedAt: now,
@@ -154,7 +154,13 @@ export class OrdersRepository {
    * Generate a unique order number
    * Format: POS-YYYYMMDD-XXXX
    */
-  private generateOrderNumber(storeCode: string): string {
-    return `${storeCode}-${Date.now()}`;
+  private generateRandomOrderNumber(storeCode?: string): string {
+    // Generate 6 random numbers
+    let numbers = "";
+    for (let i = 0; i < 6; i++) {
+      numbers += Math.floor(Math.random() * 10); // 0–9
+    }
+
+    return `SO-${storeCode}-${numbers}`;
   }
 }
