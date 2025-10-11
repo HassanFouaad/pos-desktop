@@ -16,6 +16,7 @@ export const orders = sqliteTable("orders", {
   subtotal: real("subtotal"),
   totalDiscount: real("totalDiscount"),
   totalTax: real("totalTax"),
+  serviceFees: real("serviceFees"),
   totalAmount: real("totalAmount"),
   paymentMethod: text("paymentMethod"), // 'cash', 'card', 'check', 'store_credit', 'gift_card', 'mixed'
   paymentStatus: text("paymentStatus"), // 'pending', 'paid', 'partial', 'refunded'

@@ -14,6 +14,7 @@ export const OrderTotals = ({ currency = "EGP" }: OrderTotalsProps) => {
   const subtotal = preview?.subtotal || 0;
   const totalDiscount = preview?.totalDiscount || 0;
   const totalTax = preview?.totalTax || 0;
+  const serviceFees = preview?.serviceFees || 0;
   const totalAmount = preview?.totalAmount || 0;
 
   const TotalRow = ({
@@ -76,6 +77,16 @@ export const OrderTotals = ({ currency = "EGP" }: OrderTotalsProps) => {
           value={formatCurrency(totalTax, currency)}
           variant="body2"
         />
+
+        {/* Service Fees */}
+        {serviceFees > 0 && (
+          <TotalRow
+            label="Service Fees"
+            value={formatCurrency(serviceFees, currency)}
+            variant="body2"
+            color={theme.palette.success.main}
+          />
+        )}
 
         <Divider sx={{ my: 1.5 }} />
 

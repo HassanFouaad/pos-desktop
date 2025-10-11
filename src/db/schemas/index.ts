@@ -13,6 +13,7 @@ import { products } from "./products.schema";
 import { returnItems } from "./return-items.schema";
 import { returns } from "./returns.schema";
 import { storePrices } from "./store-prices.schema";
+import { storeServiceFees } from "./store-service-fees.schema";
 import { stores } from "./stores.schema";
 import { tenants } from "./tenants.schema";
 import { users } from "./users.schema";
@@ -32,6 +33,7 @@ export { products } from "./products.schema";
 export { returnItems } from "./return-items.schema";
 export { returns } from "./returns.schema";
 export { storePrices } from "./store-prices.schema";
+export { storeServiceFees } from "./store-service-fees.schema";
 export { stores } from "./stores.schema";
 export { tenants } from "./tenants.schema";
 export { users } from "./users.schema";
@@ -48,6 +50,7 @@ export const DatabaseSchema = {
   inventoryAdjustments,
   customers,
   storePrices,
+  storeServiceFees,
   posDevices,
   orders,
   orderItems,

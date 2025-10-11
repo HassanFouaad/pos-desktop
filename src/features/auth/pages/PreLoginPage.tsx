@@ -92,7 +92,7 @@ export const PreLoginPage = () => {
   }
 
   // Show loading state
-  if (loading || !pairingCheckComplete || !store || !pos) {
+  if (loading || !pairingCheckComplete || !store) {
     return (
       <CenteredPageLayout>
         <Grid size={{ xs: 12 }} sx={{ textAlign: "center", py: 8 }}>

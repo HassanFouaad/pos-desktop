@@ -49,6 +49,7 @@ export interface OrderDto {
   subtotal: number;
   totalDiscount: number;
   totalTax: number;
+  serviceFees: number;
   totalAmount: number;
   paymentMethod?: PaymentMethod;
   paymentStatus: PaymentStatus;
@@ -133,6 +134,7 @@ export interface PreviewOrderDto {
   subtotal: number;
   totalDiscount: number;
   totalTax: number;
+  serviceFees: number;
   totalAmount: number;
 }
 

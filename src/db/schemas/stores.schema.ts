@@ -16,6 +16,7 @@ export const stores = sqliteTable("stores", {
   currency: text("currency"),
   taxRegion: text("taxRegion"),
   isActive: integer("isActive", { mode: "boolean" }),
+  hasServiceFees: integer("hasServiceFees", { mode: "boolean" }),
   createdAt: integer("createdAt", { mode: "timestamp_ms" }),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
 });

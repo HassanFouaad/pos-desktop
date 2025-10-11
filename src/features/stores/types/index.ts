@@ -17,6 +17,7 @@ export interface StoreDto {
   currency: string;
   taxRegion: string | null;
   isActive: boolean;
+  hasServiceFees?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,3 +63,5 @@ export interface TenantDto {
   createdAt: integer("createdAt", { mode: "timestamp_ms" }),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
 */
+
+export * from "./store-service-fee.types";

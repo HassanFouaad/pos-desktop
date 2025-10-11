@@ -12,7 +12,9 @@ import {
 import { DatabaseSchema } from "../../../db/schemas";
 import { CustomersService } from "../../customers/services/customers.service";
 import { InventoryService } from "../../inventory/services/inventory.service";
+import { StoreServiceFeesService } from "../../stores/services/store-service-fees.service";
 import { StoresService } from "../../stores/services/stores.service";
+import { ServiceFeeType, StoreDto } from "../../stores/types";
 import { UsersRepository } from "../../users/repositories/users.repository";
 import { OrderHistoryRepository } from "../repositories/order-history.repository";
 import { OrdersRepository } from "../repositories/orders.repository";
@@ -43,6 +45,8 @@ export class OrdersService {
     private readonly inventoryService: InventoryService,
     @inject(StoresService)
     private readonly storesService: StoresService,
+    @inject(StoreServiceFeesService)
+    private readonly storeServiceFeesService: StoreServiceFeesService,
     @inject(UsersRepository)
     private readonly usersRepository: UsersRepository
   ) {}
@@ -60,6 +64,7 @@ export class OrdersService {
         subtotal: 0,
         totalDiscount: 0,
         totalTax: 0,
+        serviceFees: 0,
         totalAmount: 0,
       };
     }
@@ -75,16 +80,21 @@ export class OrdersService {
       items,
       storeId
     );
-
-    // Calculate order totals
-    const { subtotal, totalDiscount, totalTax, totalAmount } =
+    let { subtotal, totalDiscount, totalTax, totalAmount } =
       this.calculateSalesOrderTotals(previewItems);
+
+    // Calculate service fees based on store configuration
+    const serviceFees = await this.calculateServiceFees(store, totalAmount);
+
+    totalAmount += serviceFees;
+    // Recalculate final totals with service fees
 
     return {
       items: previewItems,
       subtotal,
       totalDiscount,
       totalTax,
+      serviceFees,
       totalAmount,
     };
   }
@@ -138,6 +148,7 @@ export class OrdersService {
             subtotal: previewOrder.subtotal,
             totalDiscount: previewOrder.totalDiscount,
             totalTax: previewOrder.totalTax,
+            serviceFees: previewOrder.serviceFees,
             totalAmount: previewOrder.totalAmount,
             paymentMethod: data.paymentMethod,
             paymentStatus: paymentStatus,
@@ -414,6 +425,7 @@ export class OrdersService {
   /**
    * Calculate order totals from preview items
    * @param previewItems Preview order items with calculated values
+   * @param serviceFees Service fees to add to the total
    * @returns Order totals
    */
   private calculateSalesOrderTotals(previewItems: PreviewOrderItemDto[]): {
@@ -433,7 +445,7 @@ export class OrdersService {
       totalTax += item.lineTax;
     }
 
-    // Calculate final amount
+    // Calculate final amount including service fees
     const totalAmount = subtotal - totalDiscount + totalTax;
 
     return {
@@ -498,5 +510,54 @@ export class OrdersService {
       amountDue,
       changeGiven,
     };
+  }
+
+  /**
+   * Calculate service fees based on store configuration
+   * Pure function that takes the base amounts and applies configured service fees
+   * @param store Store object with hasServiceFees flag
+   * @param subtotal Order subtotal
+   * @param totalDiscount Total discount amount
+   * @param totalTax Total tax amount
+   * @returns Calculated service fees amount
+   */
+  private async calculateServiceFees(
+    store: StoreDto,
+    totalAmount: number
+  ): Promise<number> {
+    console.log("Calculating service fees for store", store);
+    console.log("Total amount", totalAmount);
+    // Return 0 if store doesn't have service fees enabled
+    if (!store.hasServiceFees) {
+      return 0;
+    }
+
+    // Fetch service fees configuration for the store
+    const serviceFees =
+      await this.storeServiceFeesService.getAllServiceFeesByStoreId(store.id);
+
+    // Return 0 if no service fees are configured
+    if (!serviceFees || serviceFees.length === 0) {
+      return 0;
+    }
+
+    // Calculate base amount (subtotal - discount + tax)
+    const baseAmount = totalAmount;
+
+    let totalServiceFees = 0;
+
+    // Apply each service fee based on its type
+    for (const fee of serviceFees) {
+      if (fee.type === ServiceFeeType.PERCENTAGE) {
+        // Calculate percentage of base amount
+        totalServiceFees += (baseAmount * fee.value) / 100;
+      } else if (fee.type === ServiceFeeType.FIXED) {
+        // Add fixed amount
+        totalServiceFees += fee.value;
+      }
+    }
+
+    console.log("Total service fees", totalServiceFees);
+    return totalServiceFees;
   }
 }
