@@ -1,7 +1,7 @@
 import { CreditCard as CardIcon, Money as CashIcon } from "@mui/icons-material";
 import {
-  Box,
   Button,
+  Grid,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -11,12 +11,15 @@ import { useEffect, useState } from "react";
 import { ResponsiveDialog } from "../../../../components/common/ResponsiveDialog";
 import { PaymentMethod } from "../../../../db/enums";
 import { formatCurrency } from "../../../products/utils/pricing";
+import { OrderDto } from "../../types/order.types";
+import { PaymentModalOrderItems } from "./PaymentModalOrderItems";
 
 interface PaymentModalProps {
   open: boolean;
   onClose: () => void;
   totalAmount: number;
   onSubmit: (amountPaid: number, paymentMethod: PaymentMethod) => void;
+  order: OrderDto | null;
   currency?: string;
 }
 
@@ -25,6 +28,7 @@ export const PaymentModal = ({
   onClose,
   totalAmount,
   onSubmit,
+  order,
   currency = "EGP",
 }: PaymentModalProps) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
@@ -75,11 +79,6 @@ export const PaymentModal = ({
       return;
     }
 
-    console.log("handleSubmit", {
-      amountPaid: amount,
-      paymentMethod,
-      totalAmount,
-    });
     onSubmit(amount, paymentMethod);
   };
 
@@ -90,15 +89,10 @@ export const PaymentModal = ({
       maxWidth="md"
       title={
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Process Payment
+          {order?.orderNumber}
         </Typography>
       }
       showCloseButton
-      titleSx={{
-        borderBottom: "1px solid",
-        borderColor: "divider",
-        pb: 2,
-      }}
       contentSx={{ pt: 3 }}
       actions={
         <>
@@ -117,110 +111,134 @@ export const PaymentModal = ({
       }
       actionsSx={{ p: 3, borderTop: "1px solid", borderColor: "divider" }}
     >
-      {/* Total Amount */}
-      <Box
-        sx={{
-          p: 3,
-          mb: 3,
-          borderRadius: 2,
-          bgcolor: "primary.lighter",
-          border: "1px solid",
-          borderColor: "primary.light",
-          textAlign: "center",
-        }}
-      >
-        <Typography variant="body2" color="text.secondary">
-          Total Amount
-        </Typography>
-        <Typography variant="h4" color="primary.main" fontWeight={800}>
-          {formatCurrency(totalAmount, currency)}
-        </Typography>
-      </Box>
+      <Grid container spacing={2}>
+        {/* Order Information */}
+        {order && order.customerName && (
+          <Grid size={{ xs: 12 }}>
+            <Typography variant="body2" color="text.secondary">
+              Customer: {order.customerName}
+            </Typography>
+          </Grid>
+        )}
 
-      {/* Payment Method */}
-      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-        Payment Method
-      </Typography>
-      <ToggleButtonGroup
-        value={paymentMethod}
-        exclusive
-        onChange={(_, value) => value && setPaymentMethod(value)}
-        fullWidth
-        sx={{ mb: 3 }}
-      >
-        <ToggleButton value={PaymentMethod.CASH}>
-          <CashIcon sx={{ mr: 1 }} />
-          Cash
-        </ToggleButton>
-        <ToggleButton value={PaymentMethod.CARD}>
-          <CardIcon sx={{ mr: 1 }} />
-          Card
-        </ToggleButton>
-      </ToggleButtonGroup>
+        {/* Order Items */}
+        {order && order.items && order.items.length > 0 && (
+          <Grid size={{ xs: 12 }}>
+            <PaymentModalOrderItems items={order.items} currency={currency} />
+          </Grid>
+        )}
 
-      {/* Amount Paid */}
-      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-        Amount Paid
-      </Typography>
-      <TextField
-        fullWidth
-        value={amountPaid}
-        onChange={(e) => handleAmountChange(e.target.value)}
-        type="number"
-        error={!!error}
-        helperText={
-          error ||
-          (paymentMethod === PaymentMethod.CARD
-            ? "Card payments must be exact amount"
-            : undefined)
-        }
-        disabled={paymentMethod === PaymentMethod.CARD}
-        InputProps={{
-          sx: {
-            fontSize: "1.5rem",
-            fontWeight: 600,
-          },
-        }}
-        sx={{ mb: 2 }}
-      />
+        {/* Total Amount */}
+        <Grid size={{ xs: 12 }}>
+          <Grid container sx={{ p: 1, textAlign: "center" }}>
+            <Grid size={{ xs: 12 }}>
+              <Typography variant="body2" color="text.secondary">
+                Total Amount
+              </Typography>
+              <Typography variant="h4" color="primary.main" fontWeight={800}>
+                {formatCurrency(totalAmount, currency)}
+              </Typography>
+            </Grid>
+          </Grid>
+        </Grid>
 
-      {/* Quick Amount Buttons - Only for cash payments */}
-      {paymentMethod === PaymentMethod.CASH && (
-        <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => setAmountPaid(totalAmount.toFixed(2))}
-            sx={{ flex: 1 }}
+        {/* Payment Method */}
+        <Grid size={{ xs: 12 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+            Payment Method
+          </Typography>
+          <ToggleButtonGroup
+            value={paymentMethod}
+            exclusive
+            onChange={(_, value) => value && setPaymentMethod(value)}
+            fullWidth
           >
-            Exact
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => handleQuickAmount(5)}
-            sx={{ flex: 1 }}
-          >
-            Round {formatCurrency(5, currency)}
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => handleQuickAmount(10)}
-            sx={{ flex: 1 }}
-          >
-            Round {formatCurrency(10, currency)}
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => handleQuickAmount(20)}
-            sx={{ flex: 1 }}
-          >
-            Round {formatCurrency(20, currency)}
-          </Button>
-        </Box>
-      )}
+            <ToggleButton value={PaymentMethod.CASH}>
+              <CashIcon sx={{ mr: 1 }} />
+              Cash
+            </ToggleButton>
+            <ToggleButton value={PaymentMethod.CARD}>
+              <CardIcon sx={{ mr: 1 }} />
+              Card
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Grid>
+
+        {/* Amount Paid */}
+        <Grid size={{ xs: 12 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+            Amount Paid
+          </Typography>
+          <TextField
+            fullWidth
+            value={amountPaid}
+            onChange={(e) => handleAmountChange(e.target.value)}
+            type="number"
+            error={!!error}
+            helperText={
+              error ||
+              (paymentMethod === PaymentMethod.CARD
+                ? "Card payments must be exact amount"
+                : undefined)
+            }
+            disabled={paymentMethod === PaymentMethod.CARD}
+            InputProps={{
+              sx: {
+                fontSize: "1.5rem",
+                fontWeight: 600,
+              },
+            }}
+          />
+        </Grid>
+
+        {/* Quick Amount Buttons - Only for cash payments */}
+        {paymentMethod === PaymentMethod.CASH && (
+          <Grid size={{ xs: 12 }}>
+            <Grid container spacing={1}>
+              <Grid size={{ xs: 3 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setAmountPaid(totalAmount.toFixed(2))}
+                  fullWidth
+                >
+                  Exact
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 3 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleQuickAmount(5)}
+                  fullWidth
+                >
+                  Round {formatCurrency(5, currency)}
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 3 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleQuickAmount(10)}
+                  fullWidth
+                >
+                  Round {formatCurrency(10, currency)}
+                </Button>
+              </Grid>
+              <Grid size={{ xs: 3 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleQuickAmount(20)}
+                  fullWidth
+                >
+                  Round {formatCurrency(20, currency)}
+                </Button>
+              </Grid>
+            </Grid>
+          </Grid>
+        )}
+      </Grid>
     </ResponsiveDialog>
   );
 };

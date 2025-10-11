@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const storeServiceFees = sqliteTable("store_service_fees", {
   id: text("id").primaryKey(),
@@ -6,6 +6,6 @@ export const storeServiceFees = sqliteTable("store_service_fees", {
   tenantId: text("tenantId"),
   type: text("type"), // 'fixed' or 'percentage'
   value: real("value"), // amount for fixed, percentage for percentage
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });

@@ -22,8 +22,8 @@ export class OrderHistoryRepository {
     const historyData = {
       id,
       ...data,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     };
 
     await (manager ?? drizzleDb).insert(orderHistory).values(historyData);
@@ -49,8 +49,8 @@ export class OrderHistoryRepository {
     const item = history[0];
     return {
       ...item,
-      createdAt: new Date(item.createdAt!),
-      updatedAt: new Date(item.updatedAt!),
+      createdAt: new Date(item.createdAt!) as any,
+      updatedAt: new Date(item.updatedAt!) as any,
     } as OrderHistoryDto;
   }
 
@@ -69,8 +69,8 @@ export class OrderHistoryRepository {
 
     return history.map((item) => ({
       ...item,
-      createdAt: new Date(item.createdAt!),
-      updatedAt: new Date(item.updatedAt!),
+      createdAt: new Date(item.createdAt!) as any,
+      updatedAt: new Date(item.updatedAt!) as any,
     })) as OrderHistoryDto[];
   }
 }

@@ -20,8 +20,8 @@ export class CategoriesRepository {
       id,
       name: categoryData.name,
       tenantId: loggedInUser?.tenantId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     await drizzleDb.insert(categories).values(payload).execute();
@@ -35,7 +35,7 @@ export class CategoriesRepository {
       .update(categories)
       .set({
         name: categoryData.name,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(categories.id, categoryData.id))
       .execute();

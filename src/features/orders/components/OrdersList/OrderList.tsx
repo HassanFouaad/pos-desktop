@@ -1,9 +1,13 @@
 import { CircularProgress, Grid, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
+import { useNavigate } from "react-router-dom";
 import { container } from "tsyringe";
+import { OrderStatus, PaymentMethod } from "../../../../db/enums";
 import { OrdersService } from "../../services/orders.service";
 import { OrderDto } from "../../types/order.types";
+import { OrderConfirmationDialog } from "../Modals/OrderConfirmationDialog";
+import { PaymentModal } from "../Modals/PaymentModal";
 import { OrderListItem } from "./OrderListItem";
 import { OrderSearch } from "./OrderSearch";
 import { OrderSkeleton } from "./OrderSkeleton";
@@ -13,11 +17,18 @@ const ordersService = container.resolve(OrdersService);
 const LIMIT = 20;
 
 export const OrderList = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderDto[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // State for PENDING order handling
+  const [selectedPendingOrder, setSelectedPendingOrder] =
+    useState<OrderDto | null>(null);
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const fetchOrders = useCallback(async (search: string, offset: number) => {
     setLoading(true);
@@ -51,8 +62,65 @@ export const OrderList = () => {
   };
 
   const handleOrderClick = (order: OrderDto) => {
-    // TODO: Navigate to order details page or show order details modal
-    console.log("Order clicked:", order);
+    if (order.status === OrderStatus.PENDING) {
+      // For PENDING orders, show confirmation dialog
+      setSelectedPendingOrder(order);
+      setShowConfirmationDialog(true);
+    } else {
+      // For other statuses, navigate to details page
+      navigate(`/orders/${order.id}`);
+    }
+  };
+
+  const handleComplete = () => {
+    // Close confirmation dialog and open payment modal
+    setShowConfirmationDialog(false);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSubmit = async (
+    amountPaid: number,
+    method: PaymentMethod
+  ) => {
+    if (!selectedPendingOrder) return;
+
+    try {
+      await ordersService.completeOrder({
+        orderId: selectedPendingOrder.id,
+        paymentMethod: method,
+        amountPaid: amountPaid,
+        orderDate: new Date(),
+      });
+
+      // Close modal and refresh list
+      setShowPaymentModal(false);
+      setSelectedPendingOrder(null);
+      fetchOrders(searchTerm, 0);
+    } catch (error) {
+      console.error("Failed to complete order:", error);
+    }
+  };
+
+  const handleVoid = async () => {
+    if (!selectedPendingOrder) return;
+
+    try {
+      await ordersService.voidOrder({
+        orderId: selectedPendingOrder.id,
+      });
+
+      // Close dialogs and refresh list
+      setShowConfirmationDialog(false);
+      setShowPaymentModal(false);
+      setSelectedPendingOrder(null);
+      fetchOrders(searchTerm, 0);
+    } catch (error) {
+      console.error("Failed to void order:", error);
+    }
+  };
+
+  const handleDialogClose = () => {
+    setShowConfirmationDialog(false);
   };
 
   return (
@@ -149,6 +217,34 @@ export const OrderList = () => {
           </Grid>
         )}
       </Grid>
+
+      {/* Confirmation Dialog for PENDING orders */}
+      {selectedPendingOrder && (
+        <>
+          <OrderConfirmationDialog
+            open={showConfirmationDialog}
+            onClose={handleDialogClose}
+            totalAmount={selectedPendingOrder.totalAmount}
+            changeAmount={0}
+            orderNumber={selectedPendingOrder.orderNumber}
+            paymentMethod={
+              selectedPendingOrder.paymentMethod || PaymentMethod.CASH
+            }
+            onComplete={handleComplete}
+            onVoid={handleVoid}
+            currency="EGP"
+          />
+
+          <PaymentModal
+            open={showPaymentModal}
+            onClose={() => setShowPaymentModal(false)}
+            totalAmount={selectedPendingOrder.totalAmount}
+            onSubmit={handlePaymentSubmit}
+            order={selectedPendingOrder}
+            currency="EGP"
+          />
+        </>
+      )}
     </Grid>
   );
 };

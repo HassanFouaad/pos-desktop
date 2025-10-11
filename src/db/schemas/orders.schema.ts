@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { customers } from "./customers.schema";
 import { orderItems } from "./order-items.schema";
 
@@ -31,10 +31,10 @@ export const orders = sqliteTable("orders", {
   customerPhone: text("customerPhone"),
   notes: text("notes"),
   internalNotes: text("internalNotes"),
-  orderDate: integer("orderDate", { mode: "timestamp_ms" }),
-  completedAt: integer("completedAt", { mode: "timestamp_ms" }),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
+  orderDate: text("orderDate"),
+  completedAt: text("completedAt"),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });
 
 relations(orders, ({ many, one }) => ({

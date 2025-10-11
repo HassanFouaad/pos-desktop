@@ -36,7 +36,7 @@ export class InventoryRepository {
     const item = items[0];
     return {
       ...item,
-      createdAt: new Date(item.createdAt!),
+      createdAt: new Date(item.createdAt!) as any,
       updatedAt: new Date(item.updatedAt!),
     } as InventoryDto;
   }
@@ -58,7 +58,7 @@ export class InventoryRepository {
       .update(inventory)
       .set({
         ...quantities,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(inventory.id, inventoryId));
   }
@@ -83,8 +83,8 @@ export class InventoryRepository {
     const now = new Date();
     await (manager ?? drizzleDb).insert(inventory).values({
       ...data,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     });
   }
 
@@ -112,9 +112,11 @@ export class InventoryRepository {
       referenceType: data.referenceType,
       referenceId: data.referenceId,
       adjustedBy: data.adjustedBy,
-      adjustedAt: data.adjustedAt || now,
-      createdAt: now,
-      updatedAt: now,
+      adjustedAt:
+        new Date(data.adjustedAt ?? new Date()).toISOString() ||
+        now.toISOString(),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     });
   }
 }

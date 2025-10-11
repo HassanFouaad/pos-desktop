@@ -29,8 +29,8 @@ export class StoreServiceFeesRepository {
       tenantId: fee.tenantId!,
       type: fee.type as ServiceFeeType,
       value: fee.value!,
-      createdAt: fee.createdAt!,
-      updatedAt: fee.updatedAt!,
+      createdAt: fee.createdAt! as any,
+      updatedAt: fee.updatedAt! as any,
     }));
   }
 }

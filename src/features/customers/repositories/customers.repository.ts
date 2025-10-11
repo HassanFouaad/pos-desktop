@@ -60,8 +60,8 @@ export class CustomersRepository {
       ...customerData,
       id: customerId,
       tenantId: loggedInUser?.tenantId,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     };
 
     await (manager ?? drizzleDb).insert(customers).values(payload).execute();
@@ -92,8 +92,8 @@ export class CustomersRepository {
       .update(customers)
       .set({
         ...customerData,
-        updatedAt: new Date(),
-      })
+        updatedAt: new Date().toISOString(),
+      } as any)
       .where(eq(customers.id, id))
       .execute();
   }

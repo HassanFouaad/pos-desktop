@@ -12,6 +12,6 @@ export const products = sqliteTable("products", {
   tags: text("tags", { mode: "json" }), // Store arrays as JSON in SQLite
   status: text("status"),
   variantsCount: integer("variantsCount"),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });

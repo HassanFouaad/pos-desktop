@@ -1,7 +1,8 @@
 import { Payment as PaymentIcon } from "@mui/icons-material";
-import { Button, Grid, useTheme } from "@mui/material";
+import { Button, Grid, Typography, useTheme } from "@mui/material";
 import { useState } from "react";
 import { container } from "tsyringe";
+import { ResponsiveDialog } from "../../../../components/common/ResponsiveDialog";
 import { OrderSource, PaymentMethod } from "../../../../db/enums";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import {
@@ -14,7 +15,7 @@ import {
 } from "../../../../store/orderSlice";
 import { OrdersService } from "../../services/orders.service";
 import { OrderDto } from "../../types/order.types";
-import { OrderCompleteDialog } from "../Modals/OrderCompleteDialog";
+import { OrderConfirmationDialog } from "../Modals/OrderConfirmationDialog";
 import { PaymentModal } from "../Modals/PaymentModal";
 
 const ordersService = container.resolve(OrdersService);
@@ -35,6 +36,7 @@ export const OrderActions = ({
   const selectedCustomer = useAppSelector(selectSelectedCustomer);
   const notes = useAppSelector(selectNotes);
 
+  const [confirmCreateOpen, setConfirmCreateOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<OrderDto | null>(null);
@@ -42,21 +44,14 @@ export const OrderActions = ({
   const hasItems = cartItems.length > 0;
   const totalAmount = createdOrder?.totalAmount || preview?.totalAmount || 0;
 
-  const handlePayClick = () => {
-    setPaymentModalOpen(true);
+  const handleCreateClick = () => {
+    setConfirmCreateOpen(true);
   };
 
-  const handlePaymentSubmit = async (
-    amountPaid: number,
-    method: PaymentMethod
-  ) => {
+  const handleConfirmCreate = async () => {
     try {
-      console.log("handlePaymentSubmit", {
-        amountPaid,
-        method,
-      });
       // Validate cart has items
-      if (cartItems.length === 0 || !method) {
+      if (cartItems.length === 0) {
         console.error("Cannot create order without items");
         return;
       }
@@ -64,41 +59,52 @@ export const OrderActions = ({
       // Convert cart items to CreateOrderItemDto (remove tempId)
       const orderItems = cartItems.map(({ tempId, ...item }) => item);
 
-      // Create order with all items - this will reserve inventory
+      // Create order with default payment method (CASH) - this will reserve inventory
       const order = await ordersService.createOrder({
         storeId,
         items: orderItems,
         orderDate: new Date(),
         source: OrderSource.POS,
-        paymentMethod: method,
-        amountPaid: amountPaid,
+        paymentMethod: PaymentMethod.CASH, // Default payment method
         customerId: selectedCustomer.id || undefined,
         notes: notes || undefined,
       });
 
       setCreatedOrder(order);
 
-      // Close payment modal and show completion dialog
-      setPaymentModalOpen(false);
+      // Close confirmation and show completion dialog
+      setConfirmCreateOpen(false);
       setCompleteDialogOpen(true);
     } catch (error: any) {
-      console.error("Failed to process payment:", error);
+      console.error("Failed to create order:", error);
     }
   };
 
-  const handleComplete = async () => {
+  const handleShowPaymentModal = () => {
+    // When user clicks "Complete" in the dialog, show payment modal
+    setCompleteDialogOpen(false);
+    setPaymentModalOpen(true);
+  };
+
+  const handlePaymentSubmit = async (
+    amountPaid: number,
+    method: PaymentMethod
+  ) => {
     if (!createdOrder) return;
 
     try {
       const completedOrder = await ordersService.completeOrder({
         orderId: createdOrder.id,
+        paymentMethod: method,
+        amountPaid: amountPaid,
+        orderDate: new Date(),
       });
 
-      // Close dialog first
-      setCompleteDialogOpen(false);
+      // Close payment modal
+      setPaymentModalOpen(false);
       setCreatedOrder(null);
 
-      // Then close the tab
+      // Complete the tab
       dispatch(completeOrderAction(completedOrder));
     } catch (error: any) {
       console.error("Failed to complete order:", error);
@@ -142,20 +148,50 @@ export const OrderActions = ({
         }}
       >
         <Grid size={12}>
-          {/* Pay Button */}
+          {/* Create Order Button */}
           <Button
             variant="contained"
             size="large"
             fullWidth
             disabled={!hasItems}
-            onClick={handlePayClick}
+            onClick={handleCreateClick}
             startIcon={<PaymentIcon />}
             color="primary"
           >
-            Pay
+            Create Order
           </Button>
         </Grid>
       </Grid>
+
+      {/* Confirmation Dialog */}
+      <ResponsiveDialog
+        open={confirmCreateOpen}
+        onClose={() => setConfirmCreateOpen(false)}
+        maxWidth="sm"
+        title={<Typography variant="h6">Confirm Order Creation</Typography>}
+        actions={
+          <>
+            <Button
+              onClick={() => setConfirmCreateOpen(false)}
+              variant="outlined"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmCreate}
+              variant="contained"
+              color="primary"
+            >
+              Confirm
+            </Button>
+          </>
+        }
+      >
+        <Typography>
+          Are you sure you want to create this order? This will reserve
+          inventory.
+        </Typography>
+      </ResponsiveDialog>
 
       {/* Payment Modal */}
       <PaymentModal
@@ -163,18 +199,19 @@ export const OrderActions = ({
         onClose={() => setPaymentModalOpen(false)}
         totalAmount={totalAmount}
         onSubmit={handlePaymentSubmit}
+        order={createdOrder}
         currency={currency}
       />
 
       {/* Order Complete Dialog */}
-      <OrderCompleteDialog
+      <OrderConfirmationDialog
         open={completeDialogOpen}
         onClose={handleDialogClose}
         totalAmount={totalAmount}
-        changeAmount={createdOrder?.changeGiven || 0}
+        changeAmount={0}
         orderNumber={createdOrder?.orderNumber || ""}
-        paymentMethod={createdOrder?.paymentMethod ?? PaymentMethod.CASH}
-        onComplete={handleComplete}
+        paymentMethod={PaymentMethod.CASH}
+        onComplete={handleShowPaymentModal}
         onVoid={handleVoid}
         currency={currency}
       />

@@ -12,6 +12,6 @@ export const tenants = sqliteTable("tenants", {
   accentColor: text("accentColor"),
   storesCount: integer("storesCount"),
   isActive: integer("isActive", { mode: "boolean" }),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });

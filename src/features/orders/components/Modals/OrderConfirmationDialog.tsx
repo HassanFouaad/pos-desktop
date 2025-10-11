@@ -1,6 +1,5 @@
 import {
   CheckCircle as CompleteIcon,
-  Payment as PaymentIcon,
   Cancel as VoidIcon,
 } from "@mui/icons-material";
 import { Box, Button, Typography } from "@mui/material";
@@ -8,7 +7,7 @@ import { ResponsiveDialog } from "../../../../components/common/ResponsiveDialog
 import { PaymentMethod } from "../../../../db/enums";
 import { formatCurrency } from "../../../products/utils/pricing";
 
-interface OrderCompleteDialogProps {
+interface OrderConfirmationDialogProps {
   open: boolean;
   onClose: () => void;
   totalAmount: number;
@@ -20,7 +19,7 @@ interface OrderCompleteDialogProps {
   currency?: string;
 }
 
-export const OrderCompleteDialog = ({
+export const OrderConfirmationDialog = ({
   open,
   onClose,
   totalAmount,
@@ -30,7 +29,7 @@ export const OrderCompleteDialog = ({
   onComplete,
   onVoid,
   currency = "EGP",
-}: OrderCompleteDialogProps) => {
+}: OrderConfirmationDialogProps) => {
   return (
     <ResponsiveDialog
       open={open}
@@ -42,33 +41,6 @@ export const OrderCompleteDialog = ({
         px: 4,
       }}
     >
-      {/* Payment Icon */}
-      <Box
-        sx={{
-          display: "inline-flex",
-          p: 3,
-          borderRadius: "50%",
-          bgcolor: "primary.lighter",
-          mb: 3,
-        }}
-      >
-        <PaymentIcon
-          sx={{
-            fontSize: 80,
-            color: "primary.main",
-          }}
-        />
-      </Box>
-
-      {/* Title */}
-      <Typography
-        variant="h4"
-        color="primary.main"
-        sx={{ fontWeight: 700, mb: 1 }}
-      >
-        Payment Received
-      </Typography>
-
       <Typography
         variant="h6"
         color="text.primary"

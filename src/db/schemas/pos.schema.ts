@@ -8,7 +8,7 @@
   updatedAt: Date;
 } */
 
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const pos = sqliteTable("pos", {
   id: text("id").primaryKey(),
@@ -16,6 +16,6 @@ export const pos = sqliteTable("pos", {
   tenantId: text("tenantId"),
   name: text("name"),
   status: text("status"),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });

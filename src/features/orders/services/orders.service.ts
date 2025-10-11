@@ -127,16 +127,11 @@ export class OrdersService {
     try {
       // First preview the order to get all calculated values
       const previewOrder = await this.previewOrder(data.items, store.id);
-
-      // Calculate payment amounts
-      const { paymentStatus, amountPaid, amountDue, changeGiven } =
-        this.calculateSalesOrderPaymentAmounts(
-          previewOrder.totalAmount,
-          data.amountPaid
-        );
-
+      const customer = data.customerId
+        ? await this.customersService.findById(data.customerId)
+        : null;
       await drizzleDb.transaction(async (tx: any): Promise<string> => {
-        // Create order with calculated totals
+        // Create order with calculated totals (payment amounts set during completion)
         await this.ordersRepository.createOrder(
           {
             ...data,
@@ -151,17 +146,23 @@ export class OrdersService {
             serviceFees: previewOrder.serviceFees,
             totalAmount: previewOrder.totalAmount,
             paymentMethod: data.paymentMethod,
-            paymentStatus: paymentStatus,
-            amountPaid: amountPaid,
-            amountDue: amountDue,
-            changeGiven: changeGiven,
+            paymentStatus: PaymentStatus.PENDING,
+            amountPaid: 0,
+            amountDue: previewOrder.totalAmount,
+            changeGiven: 0,
             notes: data.notes,
             internalNotes: data.internalNotes,
-            orderDate: new Date(),
+            ...(customer
+              ? {
+                  customerName: customer?.name,
+                  customerPhone: customer?.phone,
+                }
+              : {}),
+            orderDate: new Date().toISOString(),
             tenantId: tenant?.id ?? "",
             id: orderId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           },
           store?.code ?? "",
           tx
@@ -261,17 +262,29 @@ export class OrdersService {
       throw new Error("Order must be in PENDING status to complete");
     }
 
+    // Calculate payment amounts and status
+    const { paymentStatus, amountPaid, amountDue, changeGiven } =
+      this.calculateSalesOrderPaymentAmounts(
+        order.totalAmount,
+        data.amountPaid
+      );
+
     try {
       // Consume inventory for all stock items
       const items = await this.orderItemsService.findByOrderId(data.orderId);
 
       await drizzleDb.transaction(async (manager: any) => {
-        // Update order status
+        // Update order status, payment method, and payment details
         await this.ordersRepository.updateOrder(
           data.orderId,
           {
             status: OrderStatus.COMPLETED,
-            completedAt: new Date(),
+            completedAt: data.orderDate,
+            paymentMethod: data.paymentMethod,
+            paymentStatus,
+            amountPaid,
+            amountDue,
+            changeGiven,
           },
           manager
         );
@@ -410,6 +423,20 @@ export class OrdersService {
     manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<OrderDto[]> {
     return this.ordersRepository.getOrders(searchTerm, limit, offset, manager);
+  }
+
+  async getOrdersByCustomerId(
+    customerId: string,
+    limit: number,
+    offset: number,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<OrderDto[]> {
+    return this.ordersRepository.getOrdersByCustomerId(
+      customerId,
+      limit,
+      offset,
+      manager
+    );
   }
 
   async updateOrder(

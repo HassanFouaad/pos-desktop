@@ -2,6 +2,7 @@ import { Add } from "@mui/icons-material";
 import { CircularProgress, Grid, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
+import { useNavigate } from "react-router-dom";
 import { container } from "tsyringe";
 import { TouchButton } from "../../../components/common/TouchButton";
 import { CreateCustomerDTO } from "../schemas/create-customer.schema";
@@ -17,6 +18,7 @@ const customersService = container.resolve(CustomersService);
 const LIMIT = 20;
 
 export const CustomerList = () => {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState<CustomerDTO[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -70,6 +72,10 @@ export const CustomerList = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCustomerClick = (customer: CustomerDTO) => {
+    navigate(`/customers/${customer.id}`);
   };
 
   return (
@@ -167,7 +173,11 @@ export const CustomerList = () => {
             >
               <Grid container spacing={2} sx={{ p: 2 }}>
                 {customers.map((customer) => (
-                  <CustomerListItem key={customer.id} customer={customer} />
+                  <CustomerListItem
+                    key={customer.id}
+                    customer={customer}
+                    onClick={handleCustomerClick}
+                  />
                 ))}
               </Grid>
             </InfiniteScroll>

@@ -22,6 +22,6 @@ export const orderItems = sqliteTable("order_items", {
   returnedQuantity: integer("returnedQuantity"),
   returnReason: text("returnReason"),
   lineTotal: real("lineTotal"),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });

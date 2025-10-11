@@ -25,10 +25,10 @@ export class OrdersRepository {
       .insert(orders)
       .values({
         ...data,
-        orderDate: now,
+        orderDate: now.toISOString(),
         orderNumber,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
       })
       .execute();
 
@@ -62,18 +62,20 @@ export class OrdersRepository {
 
     return {
       ...order,
-      orderDate: new Date(order.orderDate!),
-      completedAt: order.completedAt ? new Date(order.completedAt) : undefined,
-      createdAt: new Date(order.createdAt!),
-      updatedAt: new Date(order.updatedAt!),
+      orderDate: new Date(order.orderDate!) as any,
+      completedAt: order.completedAt
+        ? (new Date(order.completedAt) as any)
+        : undefined,
+      createdAt: new Date(order.createdAt!) as any,
+      updatedAt: new Date(order.updatedAt!) as any,
       items: items.map((item) => ({
         ...item,
         variantAttributes: item.variantAttributes as
           | Record<string, string>
           | undefined,
         isReturned: Boolean(item.isReturned),
-        createdAt: new Date(item.createdAt!),
-        updatedAt: new Date(item.updatedAt!),
+        createdAt: new Date(item.createdAt!) as any,
+        updatedAt: new Date(item.updatedAt!) as any,
       })),
     } as OrderDto;
   }
@@ -89,8 +91,7 @@ export class OrdersRepository {
     await (manager ?? drizzleDb)
       .update(orders)
       .set({
-        ...data,
-        updatedAt: new Date(),
+        ...(data as any),
       })
       .where(eq(orders.id, id));
   }
@@ -128,20 +129,70 @@ export class OrdersRepository {
 
         return {
           ...order,
-          orderDate: new Date(order.orderDate!),
+          orderDate: new Date(order.orderDate!) as any,
           completedAt: order.completedAt
-            ? new Date(order.completedAt)
+            ? (new Date(order.completedAt) as any)
             : undefined,
-          createdAt: new Date(order.createdAt!),
-          updatedAt: new Date(order.updatedAt!),
+          createdAt: new Date(order.createdAt!) as any,
+          updatedAt: new Date(order.updatedAt!) as any,
           items: items.map((item) => ({
             ...item,
             variantAttributes: item.variantAttributes as
               | Record<string, string>
               | undefined,
             isReturned: Boolean(item.isReturned),
-            createdAt: new Date(item.createdAt!),
-            updatedAt: new Date(item.updatedAt!),
+            createdAt: new Date(item.createdAt!) as any,
+            updatedAt: new Date(item.updatedAt!) as any,
+          })),
+        } as OrderDto;
+      })
+    );
+
+    return ordersWithItems;
+  }
+
+  /**
+   * Get orders by customer ID with pagination
+   */
+  async getOrdersByCustomerId(
+    customerId: string,
+    limit: number,
+    offset: number,
+    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+  ): Promise<OrderDto[]> {
+    const result = await (manager ?? drizzleDb)
+      .select()
+      .from(orders)
+      .where(eq(orders.customerId, customerId))
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(orders.orderDate))
+      .execute();
+
+    // Fetch items for each order
+    const ordersWithItems = await Promise.all(
+      result.map(async (order) => {
+        const items = await (manager ?? drizzleDb)
+          .select()
+          .from(orderItems)
+          .where(eq(orderItems.orderId, order.id));
+
+        return {
+          ...order,
+          orderDate: new Date(order.orderDate!) as any,
+          completedAt: order.completedAt
+            ? (new Date(order.completedAt) as any)
+            : undefined,
+          createdAt: new Date(order.createdAt!) as any,
+          updatedAt: new Date(order.updatedAt!) as any,
+          items: items.map((item) => ({
+            ...item,
+            variantAttributes: item.variantAttributes as
+              | Record<string, string>
+              | undefined,
+            isReturned: Boolean(item.isReturned),
+            createdAt: new Date(item.createdAt!) as any,
+            updatedAt: new Date(item.updatedAt!) as any,
           })),
         } as OrderDto;
       })

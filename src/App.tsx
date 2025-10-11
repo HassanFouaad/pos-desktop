@@ -16,7 +16,9 @@ import { LoginPage } from "./features/auth/pages/LoginPage";
 import { PairDevicePage } from "./features/auth/pages/PairDevicePage";
 import { PreLoginPage } from "./features/auth/pages/PreLoginPage";
 import CustomersPage from "./features/customers/pages";
+import CustomerDetailsPage from "./features/customers/pages/CustomerDetailsPage";
 import { CreateOrderPage, OrdersListPage } from "./features/orders";
+import OrderDetailsPage from "./features/orders/pages/OrderDetailsPage";
 import ProductsPage from "./features/products/pages";
 import ProductListPage from "./features/products/pages/ProductListPage";
 import { SettingsPage } from "./features/settings";
@@ -141,6 +143,17 @@ function App() {
               }
             />
 
+            {/* Customer Details */}
+            <Route
+              path="/customers/:customerId"
+              element={
+                <GridLayout title="Customer Details">
+                  <CustomerDetailsPage />
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
+
             {/* Inventory/Products Module */}
             <Route
               path="/products"
@@ -169,6 +182,17 @@ function App() {
               element={
                 <GridLayout title="Orders">
                   <OrdersListPage />
+                  <FloatingNavigation showBackButton />
+                </GridLayout>
+              }
+            />
+
+            {/* Order Details */}
+            <Route
+              path="/orders/:orderId"
+              element={
+                <GridLayout title="Order Details">
+                  <OrderDetailsPage />
                   <FloatingNavigation showBackButton />
                 </GridLayout>
               }

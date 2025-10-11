@@ -30,7 +30,7 @@ export class ReturnItemsRepository {
       totalRefundAmount: data.totalRefundAmount,
       returnToInventory: data.returnToInventory,
       inventoryAdjustmentId: data.inventoryAdjustmentId,
-      createdAt: now,
+      createdAt: now.toISOString(),
     };
 
     await (manager ?? drizzleDb).insert(returnItems).values(itemData);
@@ -58,7 +58,7 @@ export class ReturnItemsRepository {
       totalRefundAmount: item.totalRefundAmount,
       returnToInventory: item.returnToInventory,
       inventoryAdjustmentId: item.inventoryAdjustmentId,
-      createdAt: now,
+      createdAt: now.toISOString(),
     }));
 
     await (manager ?? drizzleDb).insert(returnItems).values(itemsData);
@@ -91,7 +91,7 @@ export class ReturnItemsRepository {
     return {
       ...item,
       returnToInventory: Boolean(item.returnToInventory),
-      createdAt: new Date(item.createdAt!),
+      createdAt: new Date(item.createdAt!) as any,
     } as ReturnItemDto;
   }
 
@@ -110,7 +110,7 @@ export class ReturnItemsRepository {
     return items.map((item) => ({
       ...item,
       returnToInventory: Boolean(item.returnToInventory),
-      createdAt: new Date(item.createdAt!),
+      createdAt: new Date(item.createdAt!) as any,
     })) as ReturnItemDto[];
   }
 

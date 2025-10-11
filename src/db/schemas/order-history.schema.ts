@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const orderHistory = sqliteTable("order_history", {
   id: text("id").primaryKey(),
@@ -8,6 +8,6 @@ export const orderHistory = sqliteTable("order_history", {
   userId: text("userId"),
   fromStatus: text("fromStatus"),
   toStatus: text("toStatus"),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });

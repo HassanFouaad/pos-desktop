@@ -40,7 +40,7 @@ This module handles the complete order creation flow in the desktop POS applicat
 
 - **VariantSelectorModal**: Multi-variant product selection with stock info
 - **PaymentModal**: Payment amount entry with quick buttons and change calculation
-- **OrderCompleteDialog**: Success confirmation with change display
+- **OrderConfirmationDialog**: Success confirmation with change display
 
 ## Order Flow
 

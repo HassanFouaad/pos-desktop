@@ -16,8 +16,8 @@ export const inventoryAdjustments = sqliteTable("inventory_adjustments", {
   referenceType: text("referenceType"), // 'order', 'return', 'purchase_order', 'manual', etc.
   referenceId: text("referenceId"),
   adjustedBy: text("adjustedBy"),
-  adjustedAt: integer("adjustedAt", { mode: "timestamp_ms" }),
+  adjustedAt: text("adjustedAt"),
   batchId: text("batchId"),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });

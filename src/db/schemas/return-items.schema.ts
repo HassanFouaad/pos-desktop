@@ -11,5 +11,5 @@ export const returnItems = sqliteTable("return_items", {
   totalRefundAmount: real("totalRefundAmount"),
   returnToInventory: integer("returnToInventory", { mode: "boolean" }),
   inventoryAdjustmentId: text("inventoryAdjustmentId"),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
+  createdAt: text("createdAt"),
 });

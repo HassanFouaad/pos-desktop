@@ -52,6 +52,7 @@ export const CreateOrderPage = () => {
             totalDiscount: 0,
             totalTax: 0,
             totalAmount: 0,
+            serviceFees: 0,
           })
         );
         return;

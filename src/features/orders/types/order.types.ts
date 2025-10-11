@@ -82,8 +82,6 @@ export interface CreateOrderDto {
 
   paymentMethod: PaymentMethod;
 
-  amountPaid?: number;
-
   cashierId?: string;
 
   shiftId?: string;
@@ -141,6 +139,10 @@ export interface PreviewOrderDto {
 // Complete Order DTO
 export interface CompleteOrderDto {
   orderId: string;
+  userId?: string;
+  orderDate: Date;
+  paymentMethod: PaymentMethod;
+  amountPaid: number;
 }
 
 // Void Order DTO

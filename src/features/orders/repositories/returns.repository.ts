@@ -32,8 +32,8 @@ export class ReturnsRepository {
       refundMethod: data.refundMethod,
       refundAmount: data.refundAmount ?? 0,
       notes: data.notes,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     };
 
     await (manager ?? drizzleDb).insert(returns).values(returnData);
@@ -69,12 +69,12 @@ export class ReturnsRepository {
       ...record,
       requiresApproval: Boolean(record.requiresApproval),
       refundAmount: record.refundAmount ?? 0,
-      createdAt: new Date(record.createdAt!),
+      createdAt: new Date(record.createdAt!) as any,
       updatedAt: new Date(record.updatedAt!),
       items: items.map((item) => ({
         ...item,
         returnToInventory: Boolean(item.returnToInventory),
-        createdAt: new Date(item.createdAt!),
+        createdAt: new Date(item.createdAt!) as any,
       })),
     } as ReturnDto;
   }
@@ -91,7 +91,7 @@ export class ReturnsRepository {
       .update(returns)
       .set({
         ...data,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(returns.id, id));
   }

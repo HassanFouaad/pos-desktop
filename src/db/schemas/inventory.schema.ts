@@ -12,6 +12,6 @@ export const inventory = sqliteTable("inventory", {
   maxStockLevel: integer("maxStockLevel"),
   costPerUnit: real("costPerUnit"),
   totalValue: real("totalValue"),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });

@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const productVariants = sqliteTable("product_variants", {
   id: text("id").primaryKey(),
@@ -9,7 +9,7 @@ export const productVariants = sqliteTable("product_variants", {
   sku: text("sku"),
   baseSellingPrice: real("baseSellingPrice"),
   basePurchasePrice: real("basePurchasePrice"),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
   latestPriceSnapshotId: text("latestPriceSnapshotId"),
 });
