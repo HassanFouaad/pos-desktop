@@ -12,6 +12,7 @@ import { productVariants } from "./product-variants.schema";
 import { products } from "./products.schema";
 import { returnItems } from "./return-items.schema";
 import { returns } from "./returns.schema";
+import { storePaymentMethods } from "./store-payment-methods.schema";
 import { storePrices } from "./store-prices.schema";
 import { storeServiceFees } from "./store-service-fees.schema";
 import { stores } from "./stores.schema";
@@ -32,6 +33,7 @@ export { productVariants } from "./product-variants.schema";
 export { products } from "./products.schema";
 export { returnItems } from "./return-items.schema";
 export { returns } from "./returns.schema";
+export { storePaymentMethods } from "./store-payment-methods.schema";
 export { storePrices } from "./store-prices.schema";
 export { storeServiceFees } from "./store-service-fees.schema";
 export { stores } from "./stores.schema";
@@ -50,6 +52,7 @@ export const DatabaseSchema = {
   inventoryAdjustments,
   customers,
   storePrices,
+  storePaymentMethods,
   storeServiceFees,
   posDevices,
   orders,

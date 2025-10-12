@@ -313,7 +313,7 @@ export class RefundService {
     // In this simplified implementation, we assume a single payment method
     // In a real implementation, this would handle split payments
 
-    const paymentMethod = originalOrder.paymentMethod || PaymentMethod.CASH;
+    const paymentMethod = originalOrder?.paymentMethod || PaymentMethod.CASH;
     let recommendedRefundMethod: RefundMethod;
 
     switch (paymentMethod) {

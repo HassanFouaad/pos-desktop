@@ -64,4 +64,5 @@ export interface TenantDto {
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }),
 */
 
+export * from "./store-payment-method.dto";
 export * from "./store-service-fee.types";
