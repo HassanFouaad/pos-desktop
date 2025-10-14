@@ -33,6 +33,9 @@ export const OrderCart = ({ currency = "EGP" }: OrderCartProps) => {
   const handleQuantityChange = (tempId: string, newQuantity: number) => {
     if (newQuantity > 0) {
       dispatch(updateCartItemQuantity({ tempId, quantity: newQuantity }));
+    } else {
+      // If quantity would be 0 or less, remove the item from cart
+      dispatch(removeCartItem(tempId));
     }
   };
 
@@ -101,7 +104,7 @@ export const OrderCart = ({ currency = "EGP" }: OrderCartProps) => {
                           onClick={() =>
                             handleQuantityChange(item.tempId, item.quantity - 1)
                           }
-                          disabled={item.quantity <= 1}
+                          disabled={item.quantity <= 0}
                           sx={{
                             minWidth: 36,
                             minHeight: 36,
@@ -144,13 +147,20 @@ export const OrderCart = ({ currency = "EGP" }: OrderCartProps) => {
                           onClick={() =>
                             handleQuantityChange(item.tempId, item.quantity + 1)
                           }
+                          disabled={
+                            item.quantityAvailable !== undefined &&
+                            item.quantity >= item.quantityAvailable
+                          }
                           sx={{
                             minWidth: 36,
                             minHeight: 36,
                             width: 36,
                             height: 36,
                             borderRadius: 1.5,
-                            "&:active": {
+                            "&:disabled": {
+                              opacity: 0.3,
+                            },
+                            "&:active:not(:disabled)": {
                               bgcolor: theme.palette.action.selected,
                             },
                           }}

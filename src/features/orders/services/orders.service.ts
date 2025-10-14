@@ -305,28 +305,27 @@ export class OrdersService {
               },
               manager
             );
-
-            // Create order history entry for completion
-            await this.orderHistoryRepository.create(
-              {
-                orderId: data.orderId,
-                userId: user?.id,
-                fromStatus: OrderStatus.PENDING,
-                toStatus: OrderStatus.COMPLETED,
-                storeId: order.storeId,
-                tenantId: tenant?.id ?? "",
-              },
-              manager
-            );
           }
+        }
 
-          if (order.customerId) {
-            await this.customersService.updateVisitData(
-              order.customerId,
-              order.totalAmount,
-              manager
-            );
-          }
+        await this.orderHistoryRepository.create(
+          {
+            orderId: data.orderId,
+            userId: user?.id,
+            fromStatus: OrderStatus.PENDING,
+            toStatus: OrderStatus.COMPLETED,
+            storeId: order.storeId,
+            tenantId: tenant?.id ?? "",
+          },
+          manager
+        );
+
+        if (order.customerId) {
+          await this.customersService.updateVisitData(
+            order.customerId,
+            order.totalAmount,
+            manager
+          );
         }
       });
 

@@ -6,6 +6,9 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: "./", // Important for Tauri
+
+  logLevel: "error",
   plugins: [react(), wasm(), topLevelAwait()],
   optimizeDeps: {
     exclude: ["@journeyapps/wa-sqlite", "@powersync/web"],

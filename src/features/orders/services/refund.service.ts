@@ -4,7 +4,7 @@ import { OrderItemsRepository } from "../repositories/order-items.repository";
 import { OrdersRepository } from "../repositories/orders.repository";
 import { ReturnItemsRepository } from "../repositories/return-items.repository";
 import { ReturnsRepository } from "../repositories/returns.repository";
-import { OrderItemDto } from "../types/order.types";
+import { OrderDto, OrderItemDto } from "../types/order.types";
 import {
   ProcessRefundDto,
   RefundCalculationResultDto,
@@ -12,6 +12,7 @@ import {
   RefundPaymentBreakdownDto,
   RefundResultDto,
   ReturnDto,
+  ReturnItemDto,
 } from "../types/return.types";
 
 @injectable()
@@ -292,8 +293,8 @@ export class RefundService {
    * @returns Restocking fee amount
    */
   private calculateRestockingFee(
-    returnItem: any,
-    orderItem: OrderItemDto
+    _returnItem: ReturnItemDto,
+    _orderItem: OrderItemDto
   ): number {
     // For now, we'll have a simple implementation with no restocking fee
     // In a real implementation, this would check store policy, item condition, etc.
@@ -307,7 +308,7 @@ export class RefundService {
    * @returns Array of payment breakdowns
    */
   private calculatePaymentBreakdown(
-    originalOrder: any,
+    originalOrder: OrderDto,
     totalRefundAmount: number
   ): RefundPaymentBreakdownDto[] {
     // In this simplified implementation, we assume a single payment method

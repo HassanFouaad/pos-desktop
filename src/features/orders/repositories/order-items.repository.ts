@@ -39,8 +39,8 @@ export class OrderItemsRepository {
       isReturned: false,
       returnedQuantity: 0,
       lineTotal: data.lineTotal,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
     };
 
     await (manager ?? drizzleDb).insert(orderItems).values(itemData);
@@ -82,8 +82,8 @@ export class OrderItemsRepository {
         isReturned: false,
         returnedQuantity: 0,
         lineTotal: item.lineTotal,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
       };
     });
 
@@ -180,7 +180,8 @@ export class OrderItemsRepository {
   ): Promise<void> {
     const updateData = {
       ...data,
-      updatedAt: new Date(),
+      createdAt: data.createdAt?.toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     await (manager ?? drizzleDb)

@@ -7,6 +7,7 @@ import {
 
 interface OrderItem extends CreateOrderItemDto {
   tempId: string; // Temporary ID for UI tracking
+  quantityAvailable?: number; // Available inventory for validation
 }
 
 interface OrderTab {
@@ -110,7 +111,10 @@ const orderSlice = createSlice({
     },
 
     // Order Operations (all operate on active tab)
-    addCartItem: (state, action: PayloadAction<CreateOrderItemDto>) => {
+    addCartItem: (
+      state,
+      action: PayloadAction<CreateOrderItemDto & { quantityAvailable?: number }>
+    ) => {
       const activeTab = state.tabs.find((tab) => tab.id === state.activeTabId);
       if (!activeTab) return;
 
@@ -121,13 +125,42 @@ const orderSlice = createSlice({
           item.stockType === action.payload.stockType
       );
 
+      const newQuantity = action.payload.quantity;
+      const quantityAvailable = action.payload.quantityAvailable;
+
       if (existingItem) {
-        existingItem.quantity += action.payload.quantity;
+        // Validate against available inventory if provided
+        if (
+          quantityAvailable !== undefined &&
+          existingItem.quantity + newQuantity > quantityAvailable
+        ) {
+          // Don't add if it would exceed available stock
+          console.warn(
+            `Cannot add ${newQuantity} more. Would exceed available stock of ${quantityAvailable}`
+          );
+          return;
+        }
+        existingItem.quantity += newQuantity;
+        // Update quantityAvailable if provided
+        if (quantityAvailable !== undefined) {
+          existingItem.quantityAvailable = quantityAvailable;
+        }
       } else {
+        // Validate for new item
+        if (
+          quantityAvailable !== undefined &&
+          newQuantity > quantityAvailable
+        ) {
+          console.warn(
+            `Cannot add ${newQuantity}. Exceeds available stock of ${quantityAvailable}`
+          );
+          return;
+        }
         const tempId = `temp-${Date.now()}-${Math.random()}`;
         activeTab.cartItems.push({
           ...action.payload,
           tempId,
+          quantityAvailable,
         });
       }
     },
@@ -143,6 +176,16 @@ const orderSlice = createSlice({
         (i) => i.tempId === action.payload.tempId
       );
       if (item && action.payload.quantity > 0) {
+        // Validate against available inventory if provided
+        if (
+          item.quantityAvailable !== undefined &&
+          action.payload.quantity > item.quantityAvailable
+        ) {
+          console.warn(
+            `Cannot set quantity to ${action.payload.quantity}. Exceeds available stock of ${item.quantityAvailable}`
+          );
+          return;
+        }
         item.quantity = action.payload.quantity;
       }
     },

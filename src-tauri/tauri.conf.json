@@ -9,17 +9,20 @@
     "beforeBuildCommand": "yarn build",
     "frontendDist": "../dist"
   },
+
   "app": {
     "windows": [
       {
         "label": "main",
         "title": "desktop-pos",
-        "fullscreen": false,
-        "decorations": false
+        "width": 1280,
+        "height": 800,
+        "resizable": true,
+        "devtools": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval';"
     }
   },
   "bundle": {

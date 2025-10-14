@@ -67,10 +67,10 @@ export class InventoryValidationService {
    * @returns ValidationResult
    */
   async validateReturnQuantity(
-    storeId: string,
-    variantId: string,
+    _storeId: string,
+    _variantId: string,
     quantity: number,
-    manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
+    _manager?: PowerSyncSQLiteDatabase<typeof DatabaseSchema>
   ): Promise<ValidationResult> {
     // Validate quantity is positive
     if (quantity <= 0) {

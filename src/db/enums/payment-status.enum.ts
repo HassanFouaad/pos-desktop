@@ -3,4 +3,5 @@ export enum PaymentStatus {
   PAID = "PAID",
   PARTIAL = "PARTIAL",
   REFUNDED = "REFUNDED",
+  CANCELLED = "CANCELLED",
 }

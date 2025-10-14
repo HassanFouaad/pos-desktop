@@ -23,7 +23,7 @@ export class UsersRepository {
       tenantId: userData.tenantId,
       permissions: userData.permissions || [],
       isLoggedIn: true,
-      lastLoginAt: new Date(),
+      lastLoginAt: new Date().toISOString(),
       refreshToken: refreshToken,
       accessToken: accessToken,
     };
@@ -81,7 +81,7 @@ export class UsersRepository {
       await tx.update(users).set({ isLoggedIn: false });
       await tx
         .update(users)
-        .set({ isLoggedIn: true, lastLoginAt: new Date() })
+        .set({ isLoggedIn: true, lastLoginAt: new Date().toISOString() })
         .where(eq(users.id, userId));
     });
   }

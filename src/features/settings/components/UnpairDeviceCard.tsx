@@ -1,7 +1,6 @@
 import { LinkOff as UnpairIcon } from "@mui/icons-material";
 import { Grid, useTheme } from "@mui/material";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { InfoCard } from "../../../components/cards";
 import { TouchButton } from "../../../components/common/TouchButton";
 import { UnpairConfirmDialog } from "../../../components/layouts/UnpairConfirmDialog";
@@ -12,7 +11,6 @@ import { UnpairConfirmDialog } from "../../../components/layouts/UnpairConfirmDi
  */
 export const UnpairDeviceCard = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
   const [showUnpairDialog, setShowUnpairDialog] = useState(false);
 
   const handleUnpairClick = () => {

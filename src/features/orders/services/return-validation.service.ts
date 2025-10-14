@@ -198,12 +198,11 @@ export class ReturnValidationService {
    * @param returnData Return data to evaluate
    * @returns boolean indicating if approval is required
    */
-  checkApprovalRequired(returnData: CreateReturnDto): boolean {
+  checkApprovalRequired(_returnData: CreateReturnDto): boolean {
     // This is a simplified implementation
     // In a real-world scenario, this would check against configurable policies
 
     // Check for high-value returns
-    const HIGH_VALUE_THRESHOLD = 500; // Example threshold
 
     // The actual implementation would:
     // 1. Check return value against configurable threshold

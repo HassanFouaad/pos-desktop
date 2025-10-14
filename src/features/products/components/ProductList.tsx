@@ -79,9 +79,13 @@ export const ProductList = ({
     [category.id, store.id]
   );
 
-  useEffect(() => {
+  const fetch = useCallback(() => {
     fetchVariants(searchTerm, 0);
-  }, [searchTerm, fetchVariants]);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
 
   const loadMore = () => {
     if (!loading && hasMore) {

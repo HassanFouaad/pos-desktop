@@ -14,6 +14,7 @@ import {
 import { StoresService } from "../../stores/services";
 import { StoreDto } from "../../stores/types";
 import { CustomerSelection } from "../components/LeftPanel/CustomerSelection";
+import { CustomItemButton } from "../components/LeftPanel/CustomItemButton";
 import { OrderActions } from "../components/LeftPanel/OrderActions";
 import { OrderCart } from "../components/LeftPanel/OrderCart";
 import { OrderNote } from "../components/LeftPanel/OrderNote";
@@ -111,6 +112,11 @@ export const CreateOrderPage = () => {
               {/* Fixed Order Note */}
               <Grid size={12} sx={{ flexShrink: 0 }}>
                 <OrderNote />
+              </Grid>
+
+              {/* Fixed Custom Item Button */}
+              <Grid size={12} sx={{ flexShrink: 0 }}>
+                <CustomItemButton />
               </Grid>
 
               {/* Scrollable Cart Area - Takes remaining space */}

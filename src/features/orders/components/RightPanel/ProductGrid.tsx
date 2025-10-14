@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { container } from "tsyringe";
 import { OrderItemStockType } from "../../../../db/enums";
-import { useAppDispatch } from "../../../../store/hooks";
-import { addCartItem } from "../../../../store/orderSlice";
+import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
+import { addCartItem, selectCartItems } from "../../../../store/orderSlice";
 import { ProductCard } from "../../../products/components/ProductCard";
 import { ProductSkeleton } from "../../../products/components/ProductSkeleton";
 import { ProductsService } from "../../../products/services";
@@ -29,6 +29,7 @@ export const ProductGrid = ({
 }: ProductGridProps) => {
   const theme = useTheme();
   const dispatch = useAppDispatch();
+  const cartItems = useAppSelector(selectCartItems);
 
   const [variantList, setVariantList] = useState<VariantDetailDTO[]>([]);
   const [hasMore, setHasMore] = useState(true);
@@ -76,12 +77,36 @@ export const ProductGrid = ({
     }
   };
 
+  const getCartQuantity = (variantId: string): number => {
+    return (
+      cartItems
+        .filter(
+          (item) =>
+            item.variantId === variantId &&
+            item.stockType === OrderItemStockType.INVENTORY
+        )
+        .reduce((sum, item) => sum + item.quantity, 0) || 0
+    );
+  };
+
   const handleVariantClick = (variant: VariantDetailDTO) => {
+    const quantityAvailable = variant.inventory?.quantityAvailable ?? 0;
+    const currentCartQuantity = getCartQuantity(variant.id);
+
+    // Check if adding 1 more would exceed available stock
+    if (currentCartQuantity + 1 > quantityAvailable) {
+      console.warn(
+        `Cannot add more. Already have ${currentCartQuantity} in cart. Available: ${quantityAvailable}`
+      );
+      return;
+    }
+
     dispatch(
       addCartItem({
         variantId: variant.id,
         quantity: 1,
         stockType: OrderItemStockType.INVENTORY,
+        quantityAvailable,
       })
     );
   };
@@ -160,18 +185,25 @@ export const ProductGrid = ({
       style={{ overflow: "visible", width: "100%" }}
     >
       <Grid container spacing={1} sx={{ p: 1.5 }}>
-        {variantList.map((variant) => (
-          <ProductCard
-            key={variant.id}
-            title={variant?.name || "Unknown Product"}
-            subtitle={variant.product?.name ?? undefined}
-            price={formatCurrency(variant.baseSellingPrice, store.currency)}
-            icon={<ProductIcon sx={{ fontSize: 32 }} />}
-            onClick={() => handleVariantClick(variant)}
-            disabled={(variant.inventory?.quantityAvailable || 0) === 0}
-            gridSize={{ xs: 6, sm: 4, md: 3, lg: 3, xl: 2 }}
-          />
-        ))}
+        {variantList.map((variant) => {
+          const quantityAvailable = variant.inventory?.quantityAvailable ?? 0;
+          const currentCartQuantity = getCartQuantity(variant.id);
+          const isDisabled =
+            quantityAvailable === 0 || currentCartQuantity >= quantityAvailable;
+
+          return (
+            <ProductCard
+              key={variant.id}
+              title={variant?.name || "Unknown Product"}
+              subtitle={variant.product?.name ?? undefined}
+              price={formatCurrency(variant.baseSellingPrice, store.currency)}
+              icon={<ProductIcon sx={{ fontSize: 32 }} />}
+              onClick={() => handleVariantClick(variant)}
+              disabled={isDisabled}
+              gridSize={{ xs: 6, sm: 4, md: 3, lg: 3, xl: 2 }}
+            />
+          );
+        })}
       </Grid>
     </InfiniteScroll>
   );

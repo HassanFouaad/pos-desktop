@@ -21,6 +21,7 @@ export class OrdersRepository {
     // Generate order number (will be replaced with server number on sync)
     const orderNumber = this.generateRandomOrderNumber(storeCode);
 
+    console.log("Data", data);
     await (manager ?? drizzleDb)
       .insert(orders)
       .values({
