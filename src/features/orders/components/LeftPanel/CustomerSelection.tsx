@@ -1,9 +1,12 @@
+import { Close as CloseIcon, Search as SearchIcon } from "@mui/icons-material";
 import {
-  Close as CloseIcon,
-  Person as PersonIcon,
-  Search as SearchIcon,
-} from "@mui/icons-material";
-import { Box, Grid, IconButton, Typography, useTheme } from "@mui/material";
+  Avatar,
+  Box,
+  Grid,
+  IconButton,
+  Typography,
+  useTheme,
+} from "@mui/material";
 import { useCallback, useState } from "react";
 import { TouchButton } from "../../../../components/common/TouchButton";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
@@ -59,22 +62,7 @@ export const CustomerSelection = () => {
                 bgcolor: theme.palette.action.hover,
               }}
             >
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: "50%",
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  mr: 1.5,
-                  flexShrink: 0,
-                }}
-              >
-                <PersonIcon sx={{ fontSize: 24 }} />
-              </Box>
+              <Avatar sx={{ mr: 1.5 }} />
 
               <Box sx={{ flexGrow: 1, minWidth: 0, mr: 1 }}>
                 <Typography variant="body1" sx={{ fontWeight: 600 }} noWrap>

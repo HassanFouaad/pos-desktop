@@ -61,17 +61,17 @@ export const ProductCard = ({
           "&:hover":
             !disabled && onClick
               ? {
-                  borderColor: theme.palette.primary.main,
+                  borderColor: theme.palette.primary.light,
                   bgcolor: theme.palette.action.hover,
                   transform: "translateY(-2px)",
-                  boxShadow: `0 4px 12px ${theme.palette.primary.main}25`,
+                  boxShadow: `0 4px 12px ${theme.palette.primary.light}10`,
                 }
               : {},
           "&:active":
             !disabled && onClick
               ? {
                   transform: "translateY(0)",
-                  boxShadow: `0 2px 8px ${theme.palette.primary.main}20`,
+                  boxShadow: `0 2px 8px ${theme.palette.primary.light}10`,
                 }
               : {},
         }}

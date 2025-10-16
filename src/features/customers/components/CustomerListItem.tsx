@@ -6,14 +6,7 @@ import {
   Stars,
   TrendingUp,
 } from "@mui/icons-material";
-import {
-  Box,
-  Card,
-  CardActionArea,
-  Grid,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { Box, Card, Grid, Tooltip, Typography } from "@mui/material";
 import dayjs from "dayjs";
 import { formatCurrency } from "../../products/utils/pricing";
 import { CustomerDTO } from "../types/customer.dto";
@@ -110,12 +103,11 @@ export const CustomerListItem = ({
 
   return (
     <Grid size={{ xs: 12 }}>
-      <Card sx={{ p: 2 }}>
-        {onClick ? (
-          <CardActionArea onClick={handleClick}>{cardContent}</CardActionArea>
-        ) : (
-          cardContent
-        )}
+      <Card
+        sx={{ p: 2, cursor: onClick ? "pointer" : "default" }}
+        onClick={handleClick}
+      >
+        {cardContent}
       </Card>
     </Grid>
   );

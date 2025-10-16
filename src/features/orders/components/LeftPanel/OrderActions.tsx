@@ -134,6 +134,10 @@ export const OrderActions = ({
   const handleDialogClose = () => {
     // When dialog is closed without action, just close the dialog
     setCompleteDialogOpen(false);
+    setCreatedOrder(null);
+    if (createdOrder) {
+      dispatch(voidOrderAction());
+    }
   };
 
   return (
